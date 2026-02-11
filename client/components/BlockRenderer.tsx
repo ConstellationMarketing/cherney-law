@@ -1,4 +1,4 @@
-import type { ContentBlock } from "@/lib/database.types";
+import type { ContentBlock } from "@site/lib/blocks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star, Phone } from "lucide-react";
