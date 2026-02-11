@@ -15,9 +15,10 @@ export default function Header() {
       {/* Green padding that scrolls away */}
       <div className="bg-law-accent h-[30px]"></div>
 
-      {/* Sticky dark header - no green on sticky wrapper */}
-      <div className="sticky top-0 z-50">
-        <div className="max-w-[2560px] mx-auto w-[95%] bg-[#161715]">
+      {/* Green wrapper (scrolls away) with sticky dark header inside */}
+      <div className="bg-law-accent">
+        <div className="sticky top-0 z-50 bg-[#161715]">
+          <div className="max-w-[2560px] mx-auto w-[95%]">
           <div className="border border-law-border px-[30px] py-[10px] flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center w-[300px]">
@@ -90,6 +91,7 @@ export default function Header() {
             </Sheet>
           </div>
         </div>
+      </div>
       </div>
     </>
   );
