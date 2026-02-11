@@ -30,14 +30,14 @@ export default function Index() {
       />
 
       {/* Hero and Contact Form Section */}
-      <div className="max-w-[2560px] mx-auto w-[95%] py-[27px] my-[20px] md:my-[40px]">
+      <div className="bg-law-accent max-w-[2560px] mx-auto w-[95%] py-[27px] my-[20px] md:my-[40px]">
         <div className="flex flex-col lg:flex-row lg:items-center gap-8 lg:gap-[3%]">
           {/* Left Side: Headline and Call Box */}
           <div className="lg:w-[65.667%]">
             <div className="mb-[30px] md:mb-[40px]">
               <div className="relative">
-                <p className="font-playfair text-[clamp(2.5rem,7vw,68.8px)] font-light leading-[1.2] text-white text-left">
-                  <span className="text-law-accent">
+                <p className="font-playfair text-[clamp(2.5rem,7vw,68.8px)] font-light leading-[1.2] text-black text-left">
+                  <span className="text-white">
                     {heroContent.highlightedText}
                   </span>
                   <br />
@@ -46,16 +46,16 @@ export default function Index() {
               </div>
               {/* H1 Title - All caps, positioned between headline and phone button */}
               {heroContent.h1Title && (
-                <h1 className="font-outfit text-[18px] md:text-[20px] font-medium tracking-wider uppercase text-white mt-[20px] md:mt-[30px]">
+                <h1 className="font-outfit text-[18px] md:text-[20px] font-medium tracking-wider uppercase text-black mt-[20px] md:mt-[30px]">
                   {heroContent.h1Title}
                 </h1>
               )}
             </div>
 
             {/* Call Box */}
-            <div className="bg-law-accent p-[8px] w-full max-w-[400px] cursor-pointer transition-all duration-300 hover:bg-law-accent-dark group">
+            <div className="bg-white p-[8px] w-full max-w-[400px] cursor-pointer transition-all duration-300 hover:bg-law-accent group">
               <div className="flex items-start gap-4">
-                <div className="bg-white p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
+                <div className="bg-law-accent p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
                   <svg
                     className="w-8 h-8 text-black group-hover:text-white transition-colors duration-300"
                     fill="currentColor"

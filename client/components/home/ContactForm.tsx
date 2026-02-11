@@ -45,7 +45,7 @@ export default function ContactForm() {
   };
 
   return (
-    <div className="bg-law-card border border-law-border p-[30px]">
+    <div className="bg-white border border-law-border p-[30px]">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-[25px]">
         {/* First Name */}
         <div>
@@ -131,7 +131,7 @@ export default function ContactForm() {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-law-accent-dark text-law-accent border-law-accent font-outfit text-[22px] h-[50px] hover:bg-law-accent-dark/90 transition-all duration-500"
+            className="w-full bg-law-accent text-black border-law-accent font-outfit text-[22px] h-[50px] hover:bg-law-accent-dark hover:text-white transition-all duration-500"
           >
             {isSubmitting ? 'SUBMITTING...' : 'SUBMIT'}
           </Button>
