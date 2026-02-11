@@ -10,19 +10,19 @@
       "dist/server/**/*.js"
     ]
   },
-  "scripts": {
-    "dev": "vite",
-    "build": "npm run build:client && npm run build:server",
-    "build:client": "vite build",
-    "build:ssg": "npm run build:client && npx tsx vendor/cms-core/scripts/ssg-generate.ts",
-    "build:server": "vite build --config vite.config.server.ts",
-    "start": "node dist/server/node-build.mjs",
-    "test": "vitest --run",
-    "format.fix": "prettier --write .",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "bootstrap": "git submodule update --init --recursive && pnpm install --frozen-lockfile",
-    "verify": "pnpm typecheck && pnpm build"
-  },
+ "scripts": {
+  "dev": "vite",
+  "build": "pnpm run build:client && pnpm run build:server",
+  "build:client": "vite build",
+  "build:ssg": "pnpm run build:client && pnpm exec tsx vendor/cms-core/scripts/ssg-generate.ts",
+  "build:server": "vite build --config vite.config.server.ts",
+  "start": "node dist/server/node-build.mjs",
+  "test": "vitest --run",
+  "format.fix": "prettier --write .",
+  "typecheck": "tsc -p tsconfig.json --noEmit",
+  "bootstrap": "git submodule update --init --recursive && pnpm install --frozen-lockfile",
+  "verify": "pnpm typecheck && pnpm build"
+},
   "dependencies": {
     "@supabase/supabase-js": "^2.94.1",
     "dotenv": "^17.2.1",
