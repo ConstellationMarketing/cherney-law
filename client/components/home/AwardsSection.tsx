@@ -26,33 +26,27 @@ export default function AwardsSection({ content }: AwardsSectionProps) {
   const logos = data.logos || defaultContent.logos;
 
   return (
-    <div
-      className="relative pt-[30px] md:pt-[54px]"
-      style={{
-        backgroundImage:
-          "linear-gradient(#161715 54%, rgb(255, 255, 255) 54%)",
-      }}
-    >
+    <div className="relative pt-[30px] md:pt-[54px] bg-[#161715]">
       <div className="max-w-[1640px] mx-auto w-[95%] md:w-[85%] lg:w-[80%] flex flex-col lg:flex-row relative">
         {/* Left Side - Text Content */}
-        <div className="lg:w-1/3 lg:min-w-[40%] bg-[rgb(239,239,239)] p-[30px] md:p-[40px] relative z-[2]">
+        <div className="lg:w-1/3 lg:min-w-[40%] bg-[#161715] p-[30px] md:p-[40px] relative z-[2]">
           <div className="mb-[10px]">
             <p className="font-outfit text-[18px] md:text-[24px] leading-tight md:leading-[36px] text-law-accent">
               {data.sectionLabel}
             </p>
           </div>
           <div>
-            <h2 className="font-playfair text-[32px] md:text-[48px] lg:text-[54px] leading-tight md:leading-[54px] text-black pb-[10px]">
+            <h2 className="font-playfair text-[32px] md:text-[48px] lg:text-[54px] leading-tight md:leading-[54px] text-white pb-[10px]">
               {data.heading}
             </h2>
-            <p className="font-outfit text-[20px] leading-[30px] text-black">
+            <p className="font-outfit text-[20px] leading-[30px] text-white">
               {data.description}
             </p>
           </div>
         </div>
 
         {/* Right Side - Logo Grid */}
-        <div className="lg:w-2/3 bg-[rgb(239,239,239)] relative z-[2]">
+        <div className="lg:w-2/3 bg-[#161715] relative z-[2]">
           {/* First Row */}
           <div className="flex p-[50px] px-[30px] w-full">
             {logos.slice(0, 4).map((logo, index) => (
