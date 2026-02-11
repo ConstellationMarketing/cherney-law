@@ -20,7 +20,8 @@
     "test": "vitest --run",
     "format.fix": "prettier --write .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "bootstrap": "git submodule update --init --recursive && pnpm install --frozen-lockfile"
+    "bootstrap": "git submodule update --init --recursive && pnpm install --frozen-lockfile",
+    "verify": "pnpm typecheck && pnpm build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.94.1",
