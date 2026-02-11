@@ -83,25 +83,35 @@ export default function Index() {
         </div>
       </div>
 
-      {/* Partner Badges Section - Bottom of Hero */}
-      <div className="bg-law-accent py-[20px] md:py-[30px]">
+      {/* Feature Boxes Section - Bottom of Hero */}
+      <div className="bg-law-accent py-[40px] md:py-[60px]">
         <div className="max-w-[2560px] mx-auto w-[95%]">
-          <div className="bg-white border border-law-border py-[10px] px-0 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 md:gap-0">
-            {partnerLogos.map((logo, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            {[
+              { title: "Veterans Discount Available" },
+              { title: "Chapter 7 Payment Plans Available!" },
+              { title: "File Bankruptcy From the Comfort of Your Home" }
+            ].map((item, index) => (
               <div
                 key={index}
-                className="px-[15px] md:px-[30px] flex items-center justify-center"
+                className="bg-[#161715] p-[30px] md:p-[40px] flex items-center gap-4"
               >
-                <div className="text-center">
-                  <img
-                    src={logo.src}
-                    alt={logo.alt}
-                    className="w-[120px] md:w-[190px] max-w-full inline-block"
-                    width={190}
-                    height={123}
-                    loading="lazy"
-                  />
+                <div className="flex-shrink-0">
+                  <svg
+                    className="w-8 h-8 md:w-10 md:h-10 text-green-400"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
                 </div>
+                <h3 className="font-outfit text-[18px] md:text-[20px] text-white font-normal">
+                  {item.title}
+                </h3>
               </div>
             ))}
           </div>
