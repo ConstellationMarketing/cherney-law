@@ -85,8 +85,8 @@ export default function Index() {
 
       {/* Feature Boxes Section - Bottom of Hero */}
       <div className="bg-law-accent py-[40px] md:py-[60px]">
-        <div className="max-w-[2560px] mx-auto w-[95%]">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+        <div className="max-w-[2560px] mx-auto w-[95%] flex justify-center">
+          <div className="flex flex-col md:flex-row gap-6 md:gap-8 max-w-[1200px]">
             {[
               { title: "Veterans Discount Available" },
               { title: "Chapter 7 Payment Plans Available!" },
@@ -94,22 +94,24 @@ export default function Index() {
             ].map((item, index) => (
               <div
                 key={index}
-                className="bg-[#161715] p-[30px] md:p-[40px] flex items-center gap-4"
+                className="bg-[#161715] p-[25px] md:p-[30px] flex items-start gap-4 flex-1"
               >
-                <div className="flex-shrink-0">
-                  <svg
-                    className="w-8 h-8 md:w-10 md:h-10 text-green-400"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                <div className="flex-shrink-0 mt-1">
+                  <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-law-accent flex items-center justify-center">
+                    <svg
+                      className="w-4 h-4 md:w-5 md:h-5 text-black"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
                 </div>
-                <h3 className="font-outfit text-[18px] md:text-[20px] text-white font-normal">
+                <h3 className="font-outfit text-[16px] md:text-[18px] text-white font-normal leading-tight">
                   {item.title}
                 </h3>
               </div>
