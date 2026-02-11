@@ -30,8 +30,8 @@ export default function Index() {
       />
 
       {/* Hero and Contact Form Section */}
-      <div className="bg-law-accent max-w-[2560px] mx-auto w-[95%] py-[27px] my-[20px] md:my-[40px]">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-8 lg:gap-[3%]">
+      <div className="bg-law-accent py-[27px]">
+        <div className="max-w-[2560px] mx-auto w-[95%] flex flex-col lg:flex-row lg:items-center gap-8 lg:gap-[3%]">
           {/* Left Side: Headline and Call Box */}
           <div className="lg:w-[65.667%]">
             <div className="mb-[30px] md:mb-[40px]">

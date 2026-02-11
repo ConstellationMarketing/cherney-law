@@ -12,13 +12,10 @@ export default function Header() {
 
   return (
     <>
-      {/* Top padding background that scrolls away */}
-      <div className="bg-law-dark h-[30px]"></div>
-
       {/* Sticky header wrapper */}
-      <div className="sticky top-0 z-50 bg-law-dark pb-[30px]">
+      <div className="sticky top-0 z-50 bg-[#161715] pb-[30px]">
         <div className="max-w-[2560px] mx-auto w-[95%]">
-          <div className="bg-law-card border border-law-border px-[30px] py-[10px] flex items-center justify-between">
+          <div className="bg-[#161715] border border-law-border px-[30px] py-[10px] flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center w-[300px]">
               <Link to="/" className="mr-[30px]">

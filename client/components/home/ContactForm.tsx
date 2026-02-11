@@ -45,7 +45,7 @@ export default function ContactForm() {
   };
 
   return (
-    <div className="bg-white border border-law-border p-[30px]">
+    <div className="bg-[#161715] border border-law-border p-[30px]">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-[25px]">
         {/* First Name */}
         <div>
@@ -53,7 +53,7 @@ export default function ContactForm() {
             {...register('firstName')}
             type="text"
             placeholder="First Name *"
-            className="bg-[rgb(247,247,247)] border-[rgb(196,196,196)] text-[rgb(107,107,107)] h-[50px] text-[16px] placeholder:text-[rgb(107,107,107)]"
+            className="bg-white border-white text-black h-[50px] text-[16px] placeholder:text-gray-400"
             aria-invalid={errors.firstName ? 'true' : 'false'}
           />
           {errors.firstName && (
@@ -67,7 +67,7 @@ export default function ContactForm() {
             {...register('lastName')}
             type="text"
             placeholder="Last Name *"
-            className="bg-[rgb(247,247,247)] border-[rgb(196,196,196)] text-[rgb(107,107,107)] h-[50px] text-[16px] placeholder:text-[rgb(107,107,107)]"
+            className="bg-white border-white text-black h-[50px] text-[16px] placeholder:text-gray-400"
             aria-invalid={errors.lastName ? 'true' : 'false'}
           />
           {errors.lastName && (
@@ -81,7 +81,7 @@ export default function ContactForm() {
             {...register('email')}
             type="email"
             placeholder="Email Address *"
-            className="bg-[rgb(247,247,247)] border-[rgb(196,196,196)] text-[rgb(107,107,107)] h-[50px] text-[16px] placeholder:text-[rgb(107,107,107)]"
+            className="bg-white border-white text-black h-[50px] text-[16px] placeholder:text-gray-400"
             aria-invalid={errors.email ? 'true' : 'false'}
           />
           {errors.email && (
@@ -95,7 +95,7 @@ export default function ContactForm() {
             {...register('phone')}
             type="tel"
             placeholder="Phone Number"
-            className="bg-[rgb(247,247,247)] border-[rgb(196,196,196)] text-[rgb(107,107,107)] h-[50px] text-[16px] placeholder:text-[rgb(107,107,107)]"
+            className="bg-white border-white text-black h-[50px] text-[16px] placeholder:text-gray-400"
           />
         </div>
 
@@ -104,7 +104,7 @@ export default function ContactForm() {
           <Textarea
             {...register('message')}
             placeholder="Message *"
-            className="bg-[rgb(247,247,247)] border-[rgb(196,196,196)] text-[rgb(107,107,107)] min-h-[200px] text-[16px] placeholder:text-[rgb(107,107,107)] resize-y"
+            className="bg-white border-white text-black min-h-[200px] text-[16px] placeholder:text-gray-400 resize-y"
             aria-invalid={errors.message ? 'true' : 'false'}
           />
           {errors.message && (
