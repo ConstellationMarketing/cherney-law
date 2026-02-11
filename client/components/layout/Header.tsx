@@ -12,10 +12,10 @@ export default function Header() {
 
   return (
     <>
-      {/* Sticky header wrapper */}
-      <div className="sticky top-0 z-50 bg-law-accent pb-[30px] pt-[30px]">
+      {/* Header wrapper with green padding */}
+      <div className="bg-law-accent pb-[30px] pt-[30px]">
         <div className="max-w-[2560px] mx-auto w-[95%]">
-          <div className="bg-[#161715] border border-law-border px-[30px] py-[10px] flex items-center justify-between">
+          <div className="sticky top-0 z-50 bg-[#161715] border border-law-border px-[30px] py-[10px] flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center w-[300px]">
               <Link to="/" className="mr-[30px]">
