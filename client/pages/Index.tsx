@@ -30,7 +30,7 @@ export default function Index() {
       />
 
       {/* Hero and Contact Form Section */}
-      <div className="bg-law-accent py-[27px]">
+      <div className="bg-law-accent py-[27px] w-full">
         <div className="max-w-[2560px] mx-auto w-[95%] flex flex-col lg:flex-row lg:items-center gap-8 lg:gap-[3%]">
           {/* Left Side: Headline and Call Box */}
           <div className="lg:w-[65.667%]">
@@ -84,7 +84,7 @@ export default function Index() {
       </div>
 
       {/* Feature Boxes Section - Bottom of Hero */}
-      <div className="bg-law-accent py-[40px] md:py-[60px]">
+      <div className="bg-law-accent py-[40px] md:py-[60px] w-full">
         <div className="max-w-[2560px] mx-auto w-[95%] flex justify-center">
           <div className="flex flex-col md:flex-row gap-6 md:gap-8 max-w-[1200px]">
             {[
