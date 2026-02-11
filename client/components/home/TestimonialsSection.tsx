@@ -55,10 +55,7 @@ export default function TestimonialsSection({
       {/* Header Section */}
       <div className="max-w-[1080px] mx-auto w-[95%] md:w-[85%] lg:w-[80%] py-[20px] md:py-[27px]">
         <div className="text-center mb-[10px]">
-          <p
-            className="font-outfit text-[18px] md:text-[24px] leading-tight md:leading-[36px]"
-            style={{ color: "#6b8d0c" }}
-          >
+          <p className="font-outfit text-[18px] md:text-[24px] leading-tight md:leading-[36px] text-law-accent">
             {data.sectionLabel}
           </p>
         </div>

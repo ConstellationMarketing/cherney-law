@@ -30,17 +30,14 @@ export default function AwardsSection({ content }: AwardsSectionProps) {
       className="relative pt-[30px] md:pt-[54px]"
       style={{
         backgroundImage:
-          "linear-gradient(rgb(6, 29, 27) 54%, rgb(255, 255, 255) 54%)",
+          "linear-gradient(#161715 54%, rgb(255, 255, 255) 54%)",
       }}
     >
       <div className="max-w-[1640px] mx-auto w-[95%] md:w-[85%] lg:w-[80%] flex flex-col lg:flex-row relative">
         {/* Left Side - Text Content */}
         <div className="lg:w-1/3 lg:min-w-[40%] bg-[rgb(239,239,239)] p-[30px] md:p-[40px] relative z-[2]">
           <div className="mb-[10px]">
-            <p
-              className="font-outfit text-[18px] md:text-[24px] leading-tight md:leading-[36px]"
-              style={{ color: "#6b8d0c" }}
-            >
+            <p className="font-outfit text-[18px] md:text-[24px] leading-tight md:leading-[36px] text-law-accent">
               {data.sectionLabel}
             </p>
           </div>

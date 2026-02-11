@@ -60,7 +60,7 @@ export default function AboutSection({ content }: AboutSectionProps) {
           {/* Left Column - About Text and CTAs */}
           <div className="md:w-full">
             {/* About Us Label */}
-            <div className="text-[rgb(107,141,12)] font-outfit text-[18px] md:text-[24px] leading-tight md:leading-[36px] mb-[10px]">
+            <div className="text-law-accent font-outfit text-[18px] md:text-[24px] leading-tight md:leading-[36px] mb-[10px]">
               {data.sectionLabel}
             </div>
 

@@ -158,7 +158,7 @@ export default function Footer() {
                 href="https://facebook.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block w-[52px] h-[52px] bg-[#142928] border border-[#616f6f] mr-[8px] align-middle transition-all duration-300 hover:bg-law-accent hover:border-law-accent group flex items-center justify-center"
+                className="inline-block w-[52px] h-[52px] bg-law-card border border-law-border mr-[8px] align-middle transition-all duration-300 hover:bg-law-accent hover:border-law-accent group flex items-center justify-center"
                 title="Follow on Facebook"
               >
                 <Facebook className="w-6 h-6 text-white group-hover:text-black transition-colors duration-300" />
@@ -170,7 +170,7 @@ export default function Footer() {
                 href="https://instagram.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block w-[52px] h-[52px] bg-[#142928] border border-[#616f6f] mr-[8px] align-middle transition-all duration-300 hover:bg-law-accent hover:border-law-accent group flex items-center justify-center"
+                className="inline-block w-[52px] h-[52px] bg-law-card border border-law-border mr-[8px] align-middle transition-all duration-300 hover:bg-law-accent hover:border-law-accent group flex items-center justify-center"
                 title="Follow on Instagram"
               >
                 <Instagram className="w-6 h-6 text-white group-hover:text-black transition-colors duration-300" />
@@ -182,7 +182,7 @@ export default function Footer() {
                 href="https://youtube.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block w-[52px] h-[52px] bg-[#142928] border border-[#616f6f] mr-[8px] align-middle transition-all duration-300 hover:bg-law-accent hover:border-law-accent group flex items-center justify-center"
+                className="inline-block w-[52px] h-[52px] bg-law-card border border-law-border mr-[8px] align-middle transition-all duration-300 hover:bg-law-accent hover:border-law-accent group flex items-center justify-center"
                 title="Follow on Youtube"
               >
                 <Youtube className="w-6 h-6 text-white group-hover:text-black transition-colors duration-300" />
@@ -194,7 +194,7 @@ export default function Footer() {
                 href="https://linkedin.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block w-[52px] h-[52px] bg-[#142928] border border-[#616f6f] mr-[8px] align-middle transition-all duration-300 hover:bg-law-accent hover:border-law-accent group flex items-center justify-center"
+                className="inline-block w-[52px] h-[52px] bg-law-card border border-law-border mr-[8px] align-middle transition-all duration-300 hover:bg-law-accent hover:border-law-accent group flex items-center justify-center"
                 title="Follow on LinkedIn"
               >
                 <Linkedin className="w-6 h-6 text-white group-hover:text-black transition-colors duration-300" />
@@ -206,7 +206,7 @@ export default function Footer() {
                 href="https://x.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block w-[52px] h-[52px] bg-[#142928] border border-[#616f6f] align-middle transition-all duration-300 hover:bg-law-accent hover:border-law-accent group flex items-center justify-center"
+                className="inline-block w-[52px] h-[52px] bg-law-card border border-law-border align-middle transition-all duration-300 hover:bg-law-accent hover:border-law-accent group flex items-center justify-center"
                 title="Follow on X"
               >
                 <Twitter className="w-6 h-6 text-white group-hover:text-black transition-colors duration-300" />

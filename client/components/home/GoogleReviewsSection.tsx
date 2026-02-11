@@ -63,10 +63,7 @@ export default function GoogleReviewsSection({
       {/* Header Section */}
       <div className="max-w-[1080px] mx-auto w-[80%] py-[27px]">
         <div className="text-center mb-[10px]">
-          <p
-            className="font-outfit text-[24px] leading-[36px]"
-            style={{ color: "#6b8d0c" }}
-          >
+          <p className="font-outfit text-[24px] leading-[36px] text-law-accent">
             {data.sectionLabel}
           </p>
         </div>

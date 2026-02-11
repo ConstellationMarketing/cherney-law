@@ -427,11 +427,11 @@ function PracticeAreasGridBlock({
             }}
           >
             {/* Dark Overlay with Gradient */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/50 to-black/70 transition-all duration-500 group-hover:from-[#6b8d0c]/60 group-hover:via-[#6b8d0c]/70 group-hover:to-black/90"></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/50 to-black/70 transition-all duration-500 group-hover:from-law-accent-dark/60 group-hover:via-law-accent-dark/70 group-hover:to-black/90"></div>
 
             {/* Content */}
             <div className="relative h-full flex items-end p-4">
-              <h3 className="font-outfit text-[36px] leading-tight text-white font-normal transition-all duration-300 group-hover:text-[#6b8d0c]">
+              <h3 className="font-outfit text-[36px] leading-tight text-white font-normal transition-all duration-300 group-hover:text-law-accent">
                 {area.title}
               </h3>
             </div>

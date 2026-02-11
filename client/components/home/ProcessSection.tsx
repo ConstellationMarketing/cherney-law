@@ -39,10 +39,7 @@ export default function ProcessSection({ content }: ProcessSectionProps) {
       {/* Header Section */}
       <div className="max-w-[1080px] mx-auto w-[80%] py-[27px]">
         <div className="text-center mb-[10px]">
-          <p
-            className="font-outfit text-[24px] leading-[36px]"
-            style={{ color: "rgb(186, 234, 160)" }}
-          >
+          <p className="font-outfit text-[24px] leading-[36px] text-law-accent">
             {data.sectionLabel}
           </p>
         </div>
@@ -61,16 +58,13 @@ export default function ProcessSection({ content }: ProcessSectionProps) {
         {steps.map((step, index) => (
           <div
             key={index}
-            className={`md:w-[31.3333%] bg-[rgb(30,50,49)] p-[20px] ${
+            className={`md:w-[31.3333%] bg-law-card p-[20px] ${
               index < steps.length - 1 ? "mb-4 md:mb-0" : ""
             }`}
           >
             {/* Step Number */}
             <div className="mb-[20px]">
-              <p
-                className="font-outfit text-[24px] leading-[36px]"
-                style={{ color: "rgb(186, 234, 160)" }}
-              >
+              <p className="font-outfit text-[24px] leading-[36px] text-law-accent">
                 {step.number}
               </p>
             </div>

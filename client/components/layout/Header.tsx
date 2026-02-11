@@ -53,7 +53,7 @@ export default function Header() {
               <Link to="/contact">
                 <Button className="bg-white text-black font-outfit text-[22px] py-[25px] px-[15.4px] h-auto w-[200px] hover:bg-law-accent hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
                   Contact Us
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-5 h-5 group-hover:text-white" />
                 </Button>
               </Link>
             </div>
@@ -82,7 +82,7 @@ export default function Header() {
                   <Link to="/contact" className="mt-4">
                     <Button className="bg-white text-black font-outfit text-[22px] py-[25px] w-full hover:bg-law-accent hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
                       Contact Us
-                      <ArrowRight className="w-5 h-5" />
+                      <ArrowRight className="w-5 h-5 group-hover:text-white" />
                     </Button>
                   </Link>
                 </nav>
