@@ -17,7 +17,7 @@ export default function Header() {
       <div className="bg-law-accent h-[30px]"></div>
 
       {/* Sticky dark header (only this sticks to top) */}
-      <div className="sticky top-0 z-[999] bg-[#94BA65]">
+      <div className="sticky top-0 z-[999] bg-transparent">
         <div className="max-w-[2560px] w-[95%] mx-auto bg-[#161715] border border-law-border px-[30px] py-[10px] flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center w-[300px]">
