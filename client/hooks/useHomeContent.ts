@@ -105,7 +105,16 @@ function mergeWithDefaults(
   if (!cmsContent) return defaults;
 
   return {
-    hero: { ...defaults.hero, ...cmsContent.hero },
+    hero: {
+      ...defaults.hero,
+      ...cmsContent.hero,
+      featureBoxes: cmsContent.hero?.featureBoxes?.length
+        ? cmsContent.hero.featureBoxes
+        : defaults.hero.featureBoxes,
+      buttons: cmsContent.hero?.buttons?.length
+        ? cmsContent.hero.buttons
+        : defaults.hero.buttons,
+    },
     partnerLogos: cmsContent.partnerLogos?.length
       ? cmsContent.partnerLogos
       : defaults.partnerLogos,
@@ -162,6 +171,12 @@ function mergeWithDefaults(
         : defaults.faq.items,
     },
     contact: { ...defaults.contact, ...cmsContent.contact },
+    firmDescription: {
+      ...defaults.firmDescription,
+      ...cmsContent.firmDescription,
+    },
+    awardsCTA: { ...defaults.awardsCTA, ...cmsContent.awardsCTA },
+    attorneyInfo: { ...defaults.attorneyInfo, ...cmsContent.attorneyInfo },
   };
 }
 

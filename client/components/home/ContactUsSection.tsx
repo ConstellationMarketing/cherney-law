@@ -2,7 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Scale } from "lucide-react";
-import type { ContactContent } from "@/lib/homePageTypes";
+import type { ContactContent } from "@/lib/cms/homePageTypes";
 
 interface ContactUsSectionProps {
   content?: ContactContent;
@@ -38,9 +38,10 @@ export default function ContactUsSection({ content }: ContactUsSectionProps) {
                 <h2 className="font-playfair text-[32px] md:text-[48px] lg:text-[54px] leading-tight md:leading-[54px] text-black pb-[10px]">
                   {data.heading}
                 </h2>
-                <p className="font-outfit text-[16px] md:text-[24px] leading-[24px] md:leading-[36px] text-black">
-                  {data.description}
-                </p>
+                <div
+                  className="font-outfit text-[16px] md:text-[24px] leading-[24px] md:leading-[36px] text-black [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
+                  dangerouslySetInnerHTML={{ __html: data.description }}
+                />
               </div>
             </div>
           </div>

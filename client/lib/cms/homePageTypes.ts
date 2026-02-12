@@ -1,12 +1,25 @@
 // Type definitions for structured homepage content
 // Each section maps directly to a static component's data needs
 
+// Hero feature boxes (the 3 boxes below the hero)
+export interface HeroFeatureBox {
+  title: string;
+}
+
+// Hero button links (Call box + Attorney Profile)
+export interface HeroButtonLink {
+  label: string;
+  href: string;
+}
+
 export interface HeroContent {
-  h1Title: string; // H1 title text (all caps, ~20px) between headline and phone button
+  h1Title: string;
   headline: string;
   highlightedText: string;
   phone: string;
   phoneLabel: string;
+  featureBoxes: HeroFeatureBox[];
+  buttons: HeroButtonLink[];
 }
 
 export interface PartnerLogo {
@@ -120,6 +133,34 @@ export interface ContactContent {
   formHeading: string;
 }
 
+// Firm Description section (green box)
+export interface FirmDescriptionContent {
+  heading: string;
+  body: string; // rich text HTML
+}
+
+// Awards CTA section (gray box with "What Are Your Options?")
+export interface AwardsCTAContent {
+  sectionLabel: string;
+  heading: string;
+  description: string; // rich text HTML
+  ctaText: string;
+  ctaLink: string;
+}
+
+// Attorney Info section
+export interface AttorneyInfoContent {
+  heading: string;
+  image: string;
+  imageAlt: string;
+  body: string; // rich text HTML
+  stayInformedHeading: string;
+  stayInformedText: string;
+  stayInformedImage: string;
+  stayInformedImageAlt: string;
+  stayInformedCaption: string;
+}
+
 // Complete homepage content structure
 export interface HomePageContent {
   hero: HeroContent;
@@ -133,238 +174,103 @@ export interface HomePageContent {
   googleReviews: GoogleReviewsContent;
   faq: FaqContent;
   contact: ContactContent;
+  firmDescription: FirmDescriptionContent;
+  awardsCTA: AwardsCTAContent;
+  attorneyInfo: AttorneyInfoContent;
 }
 
-// Default content - used as fallback when CMS content is not available
+// Default content - minimal placeholders as structural fallback
+// Real content lives in the database
 export const defaultHomeContent: HomePageContent = {
   hero: {
-    h1Title: "ATLANTA PERSONAL INJURY LAWYERS",
-    headline: "with integrity, experience, and relentless advocacy.",
-    highlightedText: "Protecting your rights",
-    phone: "404-555-5555",
-    phoneLabel: "Call Us 24/7",
+    h1Title: "",
+    headline: "",
+    highlightedText: "",
+    phone: "",
+    phoneLabel: "",
+    featureBoxes: [],
+    buttons: [],
   },
-  partnerLogos: [
-    { src: "/images/logos/google-rating.png", alt: "Google Rating" },
-    {
-      src: "/images/logos/atlanta-law-firm-marketing.png",
-      alt: "Atlanta Law Firm Marketing 2023",
-    },
-    { src: "/images/logos/award-badge-1.png", alt: "Award Badge" },
-    { src: "/images/logos/legal-talk-network.png", alt: "Legal Talk Network" },
-    { src: "/images/logos/award-badge-2.png", alt: "Award Badge" },
-    { src: "/images/logos/award-badge-3.png", alt: "Award Badge" },
-  ],
+  partnerLogos: [],
   about: {
-    sectionLabel: "– About Us",
-    heading: "A Leading Lawyer for an Atlanta Law Firm",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi",
-    phone: "404-555-5555",
-    phoneLabel: "Call Us 24/7",
-    contactLabel: "Contact Us",
-    contactText: "For a Free Consultation",
-    attorneyImage: "/images/team/attorney-1.png",
-    attorneyImageAlt: "Attorney",
-    features: [
-      {
-        number: "1",
-        title: "Nationwide Representation",
-        description:
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi eget augue tincidunt, rhoncus lacus a, congue diam.",
-      },
-      {
-        number: "2",
-        title: "Understanding Your Case",
-        description:
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi eget augue tincidunt, rhoncus lacus a, congue diam.",
-      },
-      {
-        number: "3",
-        title: "Seeking Compensation",
-        description:
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi eget augue tincidunt, rhoncus lacus a, congue diam.",
-      },
-    ],
-    stats: [
-      { value: "1000+", label: "Trusted Clients Served" },
-      { value: "$50 Million", label: "Recovered in Legal Dispute Settlements" },
-      { value: "98%", label: "Client Satisfaction Rate" },
-      { value: "150+", label: "Legal Professionals Available 24/7" },
-    ],
+    sectionLabel: "",
+    heading: "",
+    description: "",
+    phone: "",
+    phoneLabel: "",
+    contactLabel: "",
+    contactText: "",
+    attorneyImage: "",
+    attorneyImageAlt: "",
+    features: [],
+    stats: [],
   },
   practiceAreasIntro: {
-    sectionLabel: "– Practice Areas",
-    heading: "Legal Cases We Handle",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    sectionLabel: "",
+    heading: "",
+    description: "",
   },
-  practiceAreas: [
-    {
-      title: "Practice Area",
-      image: "/images/practice-areas/personal-injury.jpg",
-      link: "/practice-areas",
-    },
-    {
-      title: "Practice Area",
-      image: "/images/practice-areas/medical-malpractice.jpg",
-      link: "/practice-areas",
-    },
-    {
-      title: "Practice Area",
-      image: "/images/practice-areas/workers-compensation.jpg",
-      link: "/practice-areas",
-    },
-    {
-      title: "Practice Area",
-      image: "/images/practice-areas/wrongful-death.jpg",
-      link: "/practice-areas",
-    },
-  ],
+  practiceAreas: [],
   awards: {
-    sectionLabel: "– Achievements",
-    heading: "Awards & Membership",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi",
-    logos: [
-      { src: "/images/awards/award-1.png", alt: "Award Logo" },
-      { src: "/images/awards/award-2.png", alt: "Award Logo" },
-      { src: "/images/awards/award-3.png", alt: "Award Logo" },
-      { src: "/images/awards/award-4.png", alt: "Award Logo" },
-      { src: "/images/awards/award-5.png", alt: "Award Logo" },
-      { src: "/images/awards/award-6.png", alt: "Award Logo" },
-      { src: "/images/awards/forbes.png", alt: "Forbes" },
-      { src: "/images/awards/lc-logo.png", alt: "LC Logo" },
-    ],
+    sectionLabel: "",
+    heading: "",
+    description: "",
+    logos: [],
   },
   testimonials: {
-    sectionLabel: "– Testimonials",
-    heading: "Inspiring client success stories that drive change.",
-    backgroundImage: "/images/backgrounds/testimonials-bg.jpg",
-    items: [
-      {
-        text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi . Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.",
-        author: "Sharon",
-        ratingImage: "/images/logos/rating-stars.png",
-      },
-      {
-        text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi . Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.",
-        author: "Sharon",
-        ratingImage: "/images/logos/rating-stars.png",
-      },
-      {
-        text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi . Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.",
-        author: "Sharon",
-        ratingImage: "/images/logos/rating-stars.png",
-      },
-    ],
+    sectionLabel: "",
+    heading: "",
+    backgroundImage: "",
+    items: [],
   },
   process: {
-    sectionLabel: "– Process",
-    headingLine1: "Get Started Easily.",
-    headingLine2: "Take a Look at The Steps",
-    steps: [
-      {
-        number: "01",
-        title: "Step 1",
-        description:
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut.",
-      },
-      {
-        number: "02",
-        title: "Step 2",
-        description:
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut.",
-      },
-      {
-        number: "03",
-        title: "Step 3",
-        description:
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut.",
-      },
-    ],
+    sectionLabel: "",
+    headingLine1: "",
+    headingLine2: "",
+    steps: [],
   },
   googleReviews: {
-    sectionLabel: "– Google Reviews",
-    heading: "Real Voices, Real Trust: Our Google Reviews",
-    description:
-      "Our clients share their stories and insights about working with us. Dive into their experiences to understand how we prioritize your legal success.",
-    reviews: [
-      {
-        text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi . Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor. consectetur adipiscing elit, sed do eiusmod tempor.",
-        author: "Lorem Ipsum",
-        ratingImage:
-          "https://design.constellationdev.com/wp-content/uploads/2025/06/Group-2-min.png",
-      },
-      {
-        text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi . Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor. consectetur adipiscing elit, sed do eiusmod tempor.",
-        author: "Lorem Ipsum",
-        ratingImage:
-          "https://design.constellationdev.com/wp-content/uploads/2025/06/Group-2-min.png",
-      },
-      {
-        text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi . Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor. consectetur adipiscing elit, sed do eiusmod tempor.",
-        author: "Lorem Ipsum",
-        ratingImage:
-          "https://design.constellationdev.com/wp-content/uploads/2025/06/Group-2-min.png",
-      },
-      {
-        text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi . Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor. consectetur adipiscing elit, sed do eiusmod tempor.",
-        author: "Lorem Ipsum",
-        ratingImage:
-          "https://design.constellationdev.com/wp-content/uploads/2025/06/Group-2-min.png",
-      },
-      {
-        text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi . Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor. consectetur adipiscing elit, sed do eiusmod tempor.",
-        author: "Lorem Ipsum",
-        ratingImage:
-          "https://design.constellationdev.com/wp-content/uploads/2025/06/Group-2-min.png",
-      },
-      {
-        text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi . Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor. consectetur adipiscing elit, sed do eiusmod tempor.",
-        author: "Lorem Ipsum",
-        ratingImage:
-          "https://design.constellationdev.com/wp-content/uploads/2025/06/Group-2-min.png",
-      },
-    ],
+    sectionLabel: "",
+    heading: "",
+    description: "",
+    reviews: [],
   },
   faq: {
-    heading: "Frequently Asked Questions",
-    description:
-      "Aenean porta erat id urna porttitor scelerisque. Aliquam vitae auctor nunc.",
-    videoThumbnail: "/images/backgrounds/faq-bg.jpg",
-    videoUrl:
-      "https://www.youtube.com/embed/FkQuawiGWUw?autoplay=1&feature=oembed",
-    items: [
-      {
-        question: "This is an example FAQ",
-        answer:
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut.",
-      },
-      {
-        question: "This is an example FAQ",
-        answer:
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut.",
-      },
-      {
-        question: "This is an example FAQ",
-        answer:
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut.",
-      },
-      {
-        question: "This is an example FAQ",
-        answer:
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut.",
-      },
-    ],
+    heading: "",
+    description: "",
+    videoThumbnail: "",
+    videoUrl: "",
+    items: [],
   },
   contact: {
-    sectionLabel: "– Contact",
-    heading: "Get in Touch",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-    phone: "404-555-5555",
-    phoneLabel: "Call Us 24/7",
-    address: "4120 Presidential Parkway, Suite 200, Atlanta, GA 30340",
-    formHeading: "Send Us a Message",
+    sectionLabel: "",
+    heading: "",
+    description: "",
+    phone: "",
+    phoneLabel: "",
+    address: "",
+    formHeading: "",
+  },
+  firmDescription: {
+    heading: "",
+    body: "",
+  },
+  awardsCTA: {
+    sectionLabel: "",
+    heading: "",
+    description: "",
+    ctaText: "",
+    ctaLink: "",
+  },
+  attorneyInfo: {
+    heading: "",
+    image: "",
+    imageAlt: "",
+    body: "",
+    stayInformedHeading: "",
+    stayInformedText: "",
+    stayInformedImage: "",
+    stayInformedImageAlt: "",
+    stayInformedCaption: "",
   },
 };

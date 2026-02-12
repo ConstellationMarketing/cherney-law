@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import Seo from "@site/components/Seo";
 import Layout from "@site/components/layout/Layout";
-import Hero from "@site/components/home/Hero";
 import ContactForm from "@site/components/home/ContactForm";
 import AboutSection from "@site/components/home/AboutSection";
 import FirmDescriptionSection from "@site/components/home/FirmDescriptionSection";
@@ -18,9 +17,9 @@ export default function Index() {
   const { content, isLoading } = useHomeContent();
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
 
-  // Use CMS content for hero and partner logos
   const heroContent = content.hero;
-  const partnerLogos = content.partnerLogos;
+  const featureBoxes = heroContent.featureBoxes;
+  const heroButtons = heroContent.buttons;
 
   return (
     <Layout>
@@ -44,7 +43,6 @@ export default function Index() {
                   {heroContent.headline}
                 </p>
               </div>
-              {/* H1 Title - All caps, positioned between headline and phone button */}
               {heroContent.h1Title && (
                 <h1 className="font-outfit text-[18px] md:text-[20px] font-medium tracking-wider uppercase text-black mt-[20px] md:mt-[30px]">
                   {heroContent.h1Title}
@@ -54,7 +52,7 @@ export default function Index() {
 
             {/* Hero Buttons Row */}
             <div className="flex flex-col sm:flex-row gap-4 w-full max-w-[820px]">
-              {/* Call Box */}
+              {/* Call Box - always uses global phone */}
               <div className="bg-white p-[8px] w-full sm:w-1/2 cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
                 <div className="flex items-start gap-4">
                   <div className="bg-law-accent p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
@@ -77,14 +75,26 @@ export default function Index() {
                 </div>
               </div>
 
-              {/* Attorney Profile Button */}
-              <Link to="/about" className="w-full sm:w-1/2">
-                <div className="bg-white p-[8px] h-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group flex items-center justify-center">
-                  <span className="font-outfit text-[clamp(1.5rem,4vw,32px)] text-black font-light group-hover:text-white transition-colors duration-300">
-                    Attorney Profile
-                  </span>
-                </div>
-              </Link>
+              {/* Dynamic hero buttons from CMS */}
+              {heroButtons.length > 0 ? (
+                heroButtons.map((btn, i) => (
+                  <Link key={i} to={btn.href || "/about"} className="w-full sm:w-1/2">
+                    <div className="bg-white p-[8px] h-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group flex items-center justify-center">
+                      <span className="font-outfit text-[clamp(1.5rem,4vw,32px)] text-black font-light group-hover:text-white transition-colors duration-300">
+                        {btn.label}
+                      </span>
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <Link to="/about" className="w-full sm:w-1/2">
+                  <div className="bg-white p-[8px] h-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group flex items-center justify-center">
+                    <span className="font-outfit text-[clamp(1.5rem,4vw,32px)] text-black font-light group-hover:text-white transition-colors duration-300">
+                      Attorney Profile
+                    </span>
+                  </div>
+                </Link>
+              )}
             </div>
           </div>
 
@@ -96,62 +106,60 @@ export default function Index() {
       </div>
 
       {/* Feature Boxes Section - Bottom of Hero */}
-      <div className="bg-law-accent py-[40px] md:py-[60px] w-full">
-        <div className="max-w-[2560px] mx-auto w-[95%] flex justify-center">
-          <div className="flex flex-col md:flex-row gap-6 md:gap-8 max-w-[1200px]">
-            {[
-              { title: "Veterans Discount Available" },
-              { title: "Chapter 7 Payment Plans Available!" },
-              { title: "File Bankruptcy From the Comfort of Your Home" }
-            ].map((item, index) => (
-              <div
-                key={index}
-                className="bg-[#161715] p-[25px] md:p-[30px] flex items-start gap-4 flex-1"
-              >
-                <div className="flex-shrink-0 mt-1">
-                  <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-law-accent flex items-center justify-center">
-                    <svg
-                      className="w-4 h-4 md:w-5 md:h-5 text-black"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+      {featureBoxes.length > 0 && (
+        <div className="bg-law-accent py-[40px] md:py-[60px] w-full">
+          <div className="max-w-[2560px] mx-auto w-[95%] flex justify-center">
+            <div className="flex flex-col md:flex-row gap-6 md:gap-8 max-w-[1200px]">
+              {featureBoxes.map((item, index) => (
+                <div
+                  key={index}
+                  className="bg-[#161715] p-[25px] md:p-[30px] flex items-start gap-4 flex-1"
+                >
+                  <div className="flex-shrink-0 mt-1">
+                    <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-law-accent flex items-center justify-center">
+                      <svg
+                        className="w-4 h-4 md:w-5 md:h-5 text-black"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
                   </div>
+                  <h3 className="font-outfit text-[16px] md:text-[18px] text-white font-normal leading-tight">
+                    {item.title}
+                  </h3>
                 </div>
-                <h3 className="font-outfit text-[16px] md:text-[18px] text-white font-normal leading-tight">
-                  {item.title}
-                </h3>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* About Us Section */}
       <AboutSection content={content.about} />
 
       {/* Firm Description Section */}
-      <FirmDescriptionSection />
+      <FirmDescriptionSection content={content.firmDescription} />
 
       {/* Practice Areas Section */}
-      <PracticeAreasSection />
+      <PracticeAreasSection content={content.practiceAreasIntro} />
 
       {/* Practice Areas Grid */}
       <PracticeAreasGrid areas={content.practiceAreas} />
 
-      {/* Awards & Membership Section */}
-      <AwardsSection />
+      {/* Awards CTA Section */}
+      <AwardsSection content={content.awardsCTA} />
 
       {/* Testimonials Section */}
       <TestimonialsSection content={content.testimonials} />
 
       {/* Attorney Info Section */}
-      <AttorneyInfoSection />
+      <AttorneyInfoSection content={content.attorneyInfo} />
 
       {/* Contact Us Section */}
       <ContactUsSection content={content.contact} />

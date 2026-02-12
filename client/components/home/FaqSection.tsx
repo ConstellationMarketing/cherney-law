@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import type { FaqContent, FaqItem } from "@/lib/homePageTypes";
+import type { FaqContent, FaqItem } from "@/lib/cms/homePageTypes";
 
 interface FaqSectionProps {
   content?: FaqContent;
@@ -96,9 +96,10 @@ export default function FaqSection({ content }: FaqSectionProps) {
                 />
               </button>
               {openIndex === index && (
-                <div className="font-outfit text-[22px] leading-[33px] font-light px-[20px] pb-[20px] pt-[20px] text-white">
-                  {faq.answer}
-                </div>
+                <div
+                  className="font-outfit text-[22px] leading-[33px] font-light px-[20px] pb-[20px] pt-[20px] text-white [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
+                  dangerouslySetInnerHTML={{ __html: faq.answer }}
+                />
               )}
             </div>
           ))}

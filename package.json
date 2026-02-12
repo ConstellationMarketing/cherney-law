@@ -10,21 +10,25 @@
       "dist/server/**/*.js"
     ]
   },
- "scripts": {
-  "dev": "vite",
-  "build": "pnpm run build:client && pnpm run build:server",
-  "build:client": "vite build",
-  "build:ssg": "pnpm run build:client && pnpm exec tsx vendor/cms-core/scripts/ssg-generate.ts",
-  "build:server": "vite build --config vite.config.server.ts",
-  "start": "node dist/server/node-build.mjs",
-  "test": "vitest --run",
-  "format.fix": "prettier --write .",
-  "typecheck": "tsc -p tsconfig.json --noEmit",
-  "bootstrap": "git submodule update --init --recursive && pnpm install --frozen-lockfile",
-  "verify": "pnpm typecheck && pnpm build"
-},
+  "scripts": {
+    "dev": "vite",
+    "build": "pnpm run build:client && pnpm run build:server",
+    "build:client": "vite build",
+    "build:ssg": "pnpm run build:client && pnpm exec tsx vendor/cms-core/scripts/ssg-generate.ts",
+    "build:server": "vite build --config vite.config.server.ts",
+    "start": "node dist/server/node-build.mjs",
+    "test": "vitest --run",
+    "format.fix": "prettier --write .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "bootstrap": "git submodule update --init --recursive && pnpm install --frozen-lockfile",
+    "verify": "pnpm typecheck && pnpm build"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.94.1",
+    "@tiptap/extension-link": "^3.19.0",
+    "@tiptap/pm": "^3.19.0",
+    "@tiptap/react": "^3.19.0",
+    "@tiptap/starter-kit": "^3.19.0",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "react-helmet-async": "^2.0.5",
@@ -106,6 +110,6 @@
   },
   "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748",
   "engines": {
-  "node": "22.x"
-}
+    "node": "22.x"
+  }
 }
