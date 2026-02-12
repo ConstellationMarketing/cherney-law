@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import type { PracticeAreaItem } from "@/lib/homePageTypes";
+import type { PracticeAreaItem } from "@site/lib/cms/homePageTypes";
 
 interface PracticeAreasGridProps {
   areas?: PracticeAreaItem[];

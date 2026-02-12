@@ -1,4 +1,4 @@
-import type { AttorneyInfoContent } from "@/lib/cms/homePageTypes";
+import type { AttorneyInfoContent } from "@site/lib/cms/homePageTypes";
 
 interface AttorneyInfoSectionProps {
   content?: AttorneyInfoContent;

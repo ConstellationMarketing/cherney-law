@@ -1,4 +1,4 @@
-import type { ProcessContent, ProcessStep } from "@/lib/homePageTypes";
+import type { ProcessContent, ProcessStep } from "@site/lib/cms/homePageTypes";
 
 interface ProcessSectionProps {
   content?: ProcessContent;

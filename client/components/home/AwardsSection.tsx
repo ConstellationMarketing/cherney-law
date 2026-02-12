@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import type { AwardsCTAContent } from "@/lib/cms/homePageTypes";
+import type { AwardsCTAContent } from "@site/lib/cms/homePageTypes";
 
 interface AwardsSectionProps {
   content?: AwardsCTAContent;

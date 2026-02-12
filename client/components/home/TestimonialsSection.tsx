@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { TestimonialsContent, TestimonialItem } from "@/lib/homePageTypes";
+import type { TestimonialsContent, TestimonialItem } from "@site/lib/cms/homePageTypes";
 
 interface TestimonialsSectionProps {
   content?: TestimonialsContent;

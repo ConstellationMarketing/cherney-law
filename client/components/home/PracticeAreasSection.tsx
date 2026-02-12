@@ -1,5 +1,5 @@
 import { DollarSign } from "lucide-react";
-import type { PracticeAreasIntroContent } from "@/lib/cms/homePageTypes";
+import type { PracticeAreasIntroContent } from "@site/lib/cms/homePageTypes";
 
 interface PracticeAreasSectionProps {
   content?: PracticeAreasIntroContent;

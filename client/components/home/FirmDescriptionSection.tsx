@@ -1,4 +1,4 @@
-import type { FirmDescriptionContent } from "@/lib/cms/homePageTypes";
+import type { FirmDescriptionContent } from "@site/lib/cms/homePageTypes";
 
 interface FirmDescriptionSectionProps {
   content?: FirmDescriptionContent;

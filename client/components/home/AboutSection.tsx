@@ -1,6 +1,6 @@
 import { Phone, DollarSign } from "lucide-react";
 import { Link } from "react-router-dom";
-import type { AboutContent } from "@/lib/cms/homePageTypes";
+import type { AboutContent } from "@site/lib/cms/homePageTypes";
 import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
 
 interface AboutSectionProps {

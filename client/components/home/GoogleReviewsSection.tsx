@@ -1,7 +1,7 @@
 import type {
   GoogleReviewsContent,
   GoogleReviewItem,
-} from "@/lib/homePageTypes";
+} from "@site/lib/cms/homePageTypes";
 
 interface GoogleReviewsSectionProps {
   content?: GoogleReviewsContent;

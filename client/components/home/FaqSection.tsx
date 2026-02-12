@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import type { FaqContent, FaqItem } from "@/lib/cms/homePageTypes";
+import type { FaqContent, FaqItem } from "@site/lib/cms/homePageTypes";
 
 interface FaqSectionProps {
   content?: FaqContent;
