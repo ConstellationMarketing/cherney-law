@@ -67,12 +67,17 @@ function phoneToTel(str: string): string {
   return str.replace(/\D/g, "");
 }
 
+interface LocationLine {
+  text: string;
+  href?: string;
+}
+
 function LocationColumn({
   title,
   lines,
 }: {
   title: string;
-  lines: string[];
+  lines: LocationLine[];
 }) {
   return (
     <div>
@@ -81,7 +86,26 @@ function LocationColumn({
       </h3>
       <ul className="font-outfit text-[14px] md:text-[15px] font-light leading-[1.7] text-gray-300 space-y-0.5">
         {lines.map((line, i) => {
-          const trimmed = line.trim();
+          const text = typeof line === "string" ? line : line.text;
+          const href = typeof line === "string" ? undefined : line.href;
+          const trimmed = text.trim();
+
+          // If explicit href is set, use it directly
+          if (href) {
+            return (
+              <li key={i}>
+                <a
+                  href={href}
+                  className="text-law-accent hover:underline transition-colors"
+                  target={href.startsWith("http") ? "_blank" : undefined}
+                  rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
+                >
+                  {trimmed}
+                </a>
+              </li>
+            );
+          }
+          // Auto-detect emails
           if (isEmail(trimmed)) {
             return (
               <li key={i}>
@@ -94,6 +118,7 @@ function LocationColumn({
               </li>
             );
           }
+          // Auto-detect phone numbers
           if (isPhone(trimmed)) {
             return (
               <li key={i}>
@@ -103,15 +128,6 @@ function LocationColumn({
                 >
                   {trimmed}
                 </a>
-              </li>
-            );
-          }
-          if (trimmed.toLowerCase() === "download vcard") {
-            return (
-              <li key={i}>
-                <span className="text-law-accent cursor-pointer hover:underline">
-                  {trimmed}
-                </span>
               </li>
             );
           }

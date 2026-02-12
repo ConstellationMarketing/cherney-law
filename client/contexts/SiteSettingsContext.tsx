@@ -25,7 +25,7 @@ interface SiteSettings {
   mapEmbedUrl: string;
   socialLinks: { platform: string; url: string; enabled: boolean }[];
   footerTagline: string;
-  footerLocations: { title: string; lines: string[] }[];
+  footerLocations: { title: string; lines: { text: string; href?: string }[] }[];
   footerBottomLinks: { label: string; href?: string }[];
   copyrightText: string;
   siteNoindex: boolean;
