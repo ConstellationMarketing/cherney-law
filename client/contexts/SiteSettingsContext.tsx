@@ -24,6 +24,9 @@ interface SiteSettings {
   addressLine2: string;
   mapEmbedUrl: string;
   socialLinks: { platform: string; url: string; enabled: boolean }[];
+  footerTagline: string;
+  footerLocations: { title: string; lines: string[] }[];
+  footerBottomLinks: { label: string; href?: string }[];
   copyrightText: string;
   siteNoindex: boolean;
 }
@@ -51,6 +54,12 @@ const DEFAULT_SETTINGS: SiteSettings = {
   addressLine2: "",
   mapEmbedUrl: "",
   socialLinks: [],
+  footerTagline: "Bankruptcy should be pursued along with the counsel and representation of an experienced bankruptcy attorney with an outstanding attorney profile.",
+  footerLocations: [],
+  footerBottomLinks: [
+    { label: "Privacy Policy", href: "/privacy-policy" },
+    { label: "Disclaimer", href: "/disclaimer" },
+  ],
   copyrightText: `Copyright © ${new Date().getFullYear()} | All Rights Reserved`,
   siteNoindex: false,
 };
@@ -135,6 +144,13 @@ export function SiteSettingsProvider({ children }: SiteSettingsProviderProps) {
             addressLine2: row.address_line2 || DEFAULT_SETTINGS.addressLine2,
             mapEmbedUrl: row.map_embed_url || DEFAULT_SETTINGS.mapEmbedUrl,
             socialLinks: row.social_links || DEFAULT_SETTINGS.socialLinks,
+            footerTagline: row.footer_tagline || DEFAULT_SETTINGS.footerTagline,
+            footerLocations: row.footer_locations?.length
+              ? row.footer_locations
+              : DEFAULT_SETTINGS.footerLocations,
+            footerBottomLinks: row.footer_bottom_links?.length
+              ? row.footer_bottom_links
+              : DEFAULT_SETTINGS.footerBottomLinks,
             copyrightText: row.copyright_text || DEFAULT_SETTINGS.copyrightText,
             siteNoindex: row.site_noindex ?? DEFAULT_SETTINGS.siteNoindex,
           };
