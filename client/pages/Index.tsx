@@ -9,9 +9,7 @@ import PracticeAreasSection from "@site/components/home/PracticeAreasSection";
 import PracticeAreasGrid from "@site/components/home/PracticeAreasGrid";
 import AwardsSection from "@site/components/home/AwardsSection";
 import TestimonialsSection from "@site/components/home/TestimonialsSection";
-import ProcessSection from "@site/components/home/ProcessSection";
-import GoogleReviewsSection from "@site/components/home/GoogleReviewsSection";
-import FaqSection from "@site/components/home/FaqSection";
+import AttorneyInfoSection from "@site/components/home/AttorneyInfoSection";
 import ContactUsSection from "@site/components/home/ContactUsSection";
 import { useHomeContent } from "@site/hooks/useHomeContent";
 import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
@@ -152,14 +150,8 @@ export default function Index() {
       {/* Testimonials Section */}
       <TestimonialsSection content={content.testimonials} />
 
-      {/* Process Section */}
-      <ProcessSection content={content.process} />
-
-      {/* Google Reviews Section */}
-      <GoogleReviewsSection content={content.googleReviews} />
-
-      {/* FAQ Section */}
-      <FaqSection content={content.faq} />
+      {/* Attorney Info Section */}
+      <AttorneyInfoSection />
 
       {/* Contact Us Section */}
       <ContactUsSection content={content.contact} />
