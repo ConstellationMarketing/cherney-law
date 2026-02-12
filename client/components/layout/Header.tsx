@@ -2,13 +2,14 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, ArrowRight } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useSiteSettings } from "@site/contexts/SiteSettingsContext";
 
 export default function Header() {
-  const navItems = [
-    { label: "Home", href: "/" },
-    { label: "About Us", href: "/about" },
-    { label: "Practice Areas", href: "/practice-areas" },
-  ];
+  const { settings } = useSiteSettings();
+
+  const navItems = [...settings.navigationItems]
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .filter((item) => item.label && item.href);
 
   return (
     <>
@@ -22,8 +23,8 @@ export default function Header() {
             <div className="flex items-center w-[300px]">
               <Link to="/" className="mr-[30px]">
                 <img
-                  src="/images/logos/firm-logo.png"
-                  alt="Constellation Law Firm"
+                  src={settings.logoUrl}
+                  alt={settings.logoAlt}
                   className="w-[306px] max-w-full"
                   width={306}
                   height={50}
@@ -49,9 +50,9 @@ export default function Header() {
 
             {/* Contact CTA Button - Desktop */}
             <div className="hidden md:block w-[280px]">
-              <Link to="/contact">
+              <Link to={settings.headerCtaUrl}>
                 <Button className="bg-white text-black font-outfit text-[22px] py-[25px] px-[15.4px] h-auto w-[200px] hover:bg-law-accent hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
-                  Contact Us
+                  {settings.headerCtaText}
                   <ArrowRight className="w-5 h-5 group-hover:text-white" />
                 </Button>
               </Link>
@@ -78,9 +79,9 @@ export default function Header() {
                       {item.label}
                     </Link>
                   ))}
-                  <Link to="/contact" className="mt-4">
+                  <Link to={settings.headerCtaUrl} className="mt-4">
                     <Button className="bg-white text-black font-outfit text-[22px] py-[25px] w-full hover:bg-law-accent hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
-                      Contact Us
+                      {settings.headerCtaText}
                       <ArrowRight className="w-5 h-5 group-hover:text-white" />
                     </Button>
                   </Link>
