@@ -4,6 +4,7 @@ import Layout from "@site/components/layout/Layout";
 import Hero from "@site/components/home/Hero";
 import ContactForm from "@site/components/home/ContactForm";
 import AboutSection from "@site/components/home/AboutSection";
+import FirmDescriptionSection from "@site/components/home/FirmDescriptionSection";
 import PracticeAreasSection from "@site/components/home/PracticeAreasSection";
 import PracticeAreasGrid from "@site/components/home/PracticeAreasGrid";
 import AwardsSection from "@site/components/home/AwardsSection";
@@ -135,6 +136,9 @@ export default function Index() {
 
       {/* About Us Section */}
       <AboutSection content={content.about} />
+
+      {/* Firm Description Section */}
+      <FirmDescriptionSection />
 
       {/* Practice Areas Section */}
       <PracticeAreasSection />
