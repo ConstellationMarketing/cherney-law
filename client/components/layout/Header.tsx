@@ -51,7 +51,7 @@ export default function Header() {
             {/* Contact CTA Button - Desktop */}
             <div className="hidden md:block w-[280px]">
               <Link to={settings.headerCtaUrl}>
-                <Button className="bg-white text-black font-outfit text-[22px] py-[25px] px-[15.4px] h-auto w-[200px] hover:bg-law-accent hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
+                <Button className="bg-white text-black font-outfit text-[22px] py-[25px] px-[15.4px] h-auto w-[200px] border-2 border-transparent hover:border-black hover:bg-law-accent hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
                   {settings.headerCtaText}
                   <ArrowRight className="w-5 h-5 group-hover:text-white" />
                 </Button>
@@ -80,7 +80,7 @@ export default function Header() {
                     </Link>
                   ))}
                   <Link to={settings.headerCtaUrl} className="mt-4">
-                    <Button className="bg-white text-black font-outfit text-[22px] py-[25px] w-full hover:bg-law-accent hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
+                    <Button className="bg-white text-black font-outfit text-[22px] py-[25px] w-full border-2 border-transparent hover:border-black hover:bg-law-accent hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
                       {settings.headerCtaText}
                       <ArrowRight className="w-5 h-5 group-hover:text-white" />
                     </Button>

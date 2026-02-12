@@ -56,7 +56,7 @@ export default function Index() {
             {/* Hero Buttons Row */}
             <div className="flex flex-col sm:flex-row gap-4 w-full max-w-[820px]">
               {/* Call Box */}
-              <div className="bg-white p-[8px] w-full sm:w-1/2 cursor-pointer transition-all duration-300 hover:bg-law-accent group">
+              <div className="bg-white p-[8px] w-full sm:w-1/2 cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
                 <div className="flex items-start gap-4">
                   <div className="bg-law-accent p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
                     <svg
@@ -80,7 +80,7 @@ export default function Index() {
 
               {/* Attorney Profile Button */}
               <Link to="/about" className="w-full sm:w-1/2">
-                <div className="bg-white p-[8px] h-full cursor-pointer transition-all duration-300 hover:bg-law-accent group flex items-center justify-center">
+                <div className="bg-white p-[8px] h-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group flex items-center justify-center">
                   <span className="font-outfit text-[clamp(1.5rem,4vw,32px)] text-black font-light group-hover:text-white transition-colors duration-300">
                     Attorney Profile
                   </span>
