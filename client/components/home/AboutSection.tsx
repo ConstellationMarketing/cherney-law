@@ -118,14 +118,17 @@ export default function AboutSection({ content }: AboutSectionProps) {
 
           {/* Middle Column - Image */}
           <div className="md:w-full flex justify-center md:justify-start">
-            <img
-              src={data.attorneyImage}
-              alt={data.attorneyImageAlt}
-              className="max-w-full w-auto h-auto object-contain"
-              width={462}
-              height={631}
-              loading="lazy"
-            />
+            <div className="relative">
+              <img
+                src={data.attorneyImage}
+                alt={data.attorneyImageAlt}
+                className="max-w-full w-auto h-auto object-contain"
+                width={462}
+                height={631}
+                loading="lazy"
+              />
+              <div className="absolute bottom-0 left-0 right-0 h-[120px] bg-gradient-to-b from-transparent to-white pointer-events-none" />
+            </div>
           </div>
 
           {/* Right Column - Features */}
@@ -136,9 +139,10 @@ export default function AboutSection({ content }: AboutSectionProps) {
                   <h3 className="font-outfit text-[22px] md:text-[28px] leading-tight md:leading-[28px] text-black pb-[10px]">
                     {feature.number}. {feature.title}
                   </h3>
-                  <p className="font-outfit text-[16px] md:text-[20px] leading-[24px] md:leading-[30px] text-black">
-                    {feature.description}
-                  </p>
+                  <div
+                    className="font-outfit text-[16px] md:text-[20px] leading-[24px] md:leading-[30px] text-black [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
+                    dangerouslySetInnerHTML={{ __html: feature.description }}
+                  />
                   {feature.readMoreLink && (
                     <Link
                       to={feature.readMoreLink}

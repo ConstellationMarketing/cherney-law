@@ -36,11 +36,27 @@ export default function Index() {
             <div className="mb-[30px] md:mb-[40px]">
               <div className="relative">
                 <p className="font-playfair text-[clamp(2.5rem,7vw,68.8px)] font-light leading-[1.2] text-black text-left">
-                  <span className="text-white">
-                    {heroContent.highlightedText}
-                  </span>
-                  <br />
-                  {heroContent.headline}
+                  {(() => {
+                    const headline = heroContent.headline || '';
+                    const highlight = heroContent.highlightedText || '';
+                    if (!highlight || !headline.toLowerCase().includes(highlight.toLowerCase())) {
+                      return (
+                        <>
+                          {highlight && <><span className="text-white">{highlight}</span><br /></>}
+                          {headline}
+                        </>
+                      );
+                    }
+                    const idx = headline.toLowerCase().indexOf(highlight.toLowerCase());
+                    const before = headline.slice(0, idx);
+                    const match = headline.slice(idx, idx + highlight.length);
+                    const after = headline.slice(idx + highlight.length);
+                    return (
+                      <>
+                        {before}<span className="text-white">{match}</span>{after}
+                      </>
+                    );
+                  })()}
                 </p>
               </div>
               {heroContent.h1Title && (
