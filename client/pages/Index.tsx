@@ -147,7 +147,7 @@ export default function Index() {
       <PracticeAreasGrid areas={content.practiceAreas} />
 
       {/* Awards & Membership Section */}
-      <AwardsSection content={content.awards} />
+      <AwardsSection />
 
       {/* Testimonials Section */}
       <TestimonialsSection content={content.testimonials} />

@@ -1,101 +1,35 @@
-import type { AwardsContent } from "@/lib/homePageTypes";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
-interface AwardsSectionProps {
-  content?: AwardsContent;
-}
-
-const defaultContent: AwardsContent = {
-  sectionLabel: "– Achievements",
-  heading: "Awards & Membership",
-  description:
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi",
-  logos: [
-    { src: "/images/awards/award-1.png", alt: "Award Logo" },
-    { src: "/images/awards/award-2.png", alt: "Award Logo" },
-    { src: "/images/awards/award-3.png", alt: "Award Logo" },
-    { src: "/images/awards/award-4.png", alt: "Award Logo" },
-    { src: "/images/awards/award-5.png", alt: "Award Logo" },
-    { src: "/images/awards/award-6.png", alt: "Award Logo" },
-    { src: "/images/awards/forbes.png", alt: "Forbes" },
-    { src: "/images/awards/lc-logo.png", alt: "LC Logo" },
-  ],
-};
-
-export default function AwardsSection({ content }: AwardsSectionProps) {
-  const data = content || defaultContent;
-  const logos = data.logos || defaultContent.logos;
-
+export default function AwardsSection() {
   return (
-    <div className="relative pt-[30px] md:pt-[54px] bg-[#161715]">
-      <div className="max-w-[1640px] mx-auto w-[95%] md:w-[85%] lg:w-[80%] flex flex-col lg:flex-row relative">
-        {/* Left Side - Text Content */}
-        <div className="lg:w-1/3 lg:min-w-[40%] bg-[#161715] p-[30px] md:p-[40px] relative z-[2]">
-          <div className="mb-[10px]">
-            <p className="font-outfit text-[18px] md:text-[24px] leading-tight md:leading-[36px] text-law-accent">
-              {data.sectionLabel}
-            </p>
-          </div>
-          <div>
-            <h2 className="font-playfair text-[32px] md:text-[48px] lg:text-[54px] leading-tight md:leading-[54px] text-white pb-[10px]">
-              {data.heading}
-            </h2>
-            <p className="font-outfit text-[20px] leading-[30px] text-white">
-              {data.description}
-            </p>
-          </div>
-        </div>
+    <div className="relative">
+      {/* Split background: top 30% black, bottom 70% white */}
+      <div className="absolute inset-0">
+        <div className="h-[30%] bg-[#161715]"></div>
+        <div className="h-[70%] bg-white"></div>
+      </div>
 
-        {/* Right Side - Logo Grid */}
-        <div className="lg:w-2/3 bg-[#161715] relative z-[2]">
-          {/* First Row */}
-          <div className="flex p-[50px] px-[30px] w-full">
-            {logos.slice(0, 4).map((logo, index) => (
-              <div
-                key={index}
-                className="bg-white flex-shrink-0"
-                style={{
-                  width: "21.574%",
-                  marginRight: index < 3 ? "4.569%" : "0",
-                }}
-              >
-                <div className="text-center">
-                  <img
-                    src={logo.src}
-                    alt={logo.alt}
-                    width={240}
-                    height={155}
-                    loading="lazy"
-                    className="max-w-full inline-block"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* Centered gray box overlapping both backgrounds */}
+      <div className="relative z-10 max-w-[2560px] mx-auto w-[95%] md:w-[90%] py-[40px] md:py-[60px]">
+        <div className="bg-[#f0f0f0] py-[50px] md:py-[70px] px-[30px] md:px-[60px] lg:px-[100px] text-center">
+          <p className="font-outfit text-[16px] md:text-[18px] text-law-accent mb-[15px]">
+            — Weekend &amp; Evening Appointments
+          </p>
 
-          {/* Second Row */}
-          <div className="flex p-[50px] px-[30px] w-full">
-            {logos.slice(4, 8).map((logo, index) => (
-              <div
-                key={index}
-                className="bg-white flex-shrink-0"
-                style={{
-                  width: "21.574%",
-                  marginRight: index < 3 ? "4.569%" : "0",
-                }}
-              >
-                <div className="text-center">
-                  <img
-                    src={logo.src}
-                    alt={logo.alt}
-                    width={240}
-                    height={155}
-                    loading="lazy"
-                    className="max-w-full inline-block"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+          <h2 className="font-playfair text-[32px] md:text-[42px] lg:text-[48px] leading-[1.2] text-black mb-[20px]">
+            What Are Your Options?
+          </h2>
+
+          <p className="font-outfit text-[15px] md:text-[17px] leading-[1.7] text-black max-w-[700px] mx-auto mb-[30px]">
+            Contact attorney Matthew Cherney and see what your options are when it comes to filing for bankruptcy, or avoiding it all together.
+          </p>
+
+          <Link to="/contact">
+            <Button className="bg-law-accent text-black font-outfit text-[18px] md:text-[20px] py-[22px] px-[35px] h-auto hover:bg-law-accent-dark hover:text-white transition-all duration-300">
+              Contact Us
+            </Button>
+          </Link>
         </div>
       </div>
     </div>
