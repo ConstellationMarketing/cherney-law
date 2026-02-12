@@ -22,11 +22,6 @@ export interface HeroContent {
   buttons: HeroButtonLink[];
 }
 
-export interface PartnerLogo {
-  src: string;
-  alt: string;
-}
-
 export interface AboutFeature {
   number: string;
   title: string;
@@ -64,13 +59,6 @@ export interface PracticeAreasIntroContent {
   description: string;
 }
 
-export interface AwardsContent {
-  sectionLabel: string;
-  heading: string;
-  description: string;
-  logos: Array<{ src: string; alt: string }>;
-}
-
 export interface TestimonialItem {
   text: string;
   author: string;
@@ -82,45 +70,6 @@ export interface TestimonialsContent {
   heading: string;
   backgroundImage: string;
   items: TestimonialItem[];
-}
-
-export interface ProcessStep {
-  number: string;
-  title: string;
-  description: string;
-}
-
-export interface ProcessContent {
-  sectionLabel: string;
-  headingLine1: string;
-  headingLine2: string;
-  steps: ProcessStep[];
-}
-
-export interface GoogleReviewItem {
-  text: string;
-  author: string;
-  ratingImage: string;
-}
-
-export interface GoogleReviewsContent {
-  sectionLabel: string;
-  heading: string;
-  description: string;
-  reviews: GoogleReviewItem[];
-}
-
-export interface FaqItem {
-  question: string;
-  answer: string;
-}
-
-export interface FaqContent {
-  heading: string;
-  description: string;
-  videoThumbnail: string;
-  videoUrl: string;
-  items: FaqItem[];
 }
 
 export interface ContactContent {
@@ -164,15 +113,10 @@ export interface AttorneyInfoContent {
 // Complete homepage content structure
 export interface HomePageContent {
   hero: HeroContent;
-  partnerLogos: PartnerLogo[];
   about: AboutContent;
   practiceAreasIntro: PracticeAreasIntroContent;
   practiceAreas: PracticeAreaItem[];
-  awards: AwardsContent;
   testimonials: TestimonialsContent;
-  process: ProcessContent;
-  googleReviews: GoogleReviewsContent;
-  faq: FaqContent;
   contact: ContactContent;
   firmDescription: FirmDescriptionContent;
   awardsCTA: AwardsCTAContent;
@@ -191,7 +135,6 @@ export const defaultHomeContent: HomePageContent = {
     featureBoxes: [],
     buttons: [],
   },
-  partnerLogos: [],
   about: {
     sectionLabel: "",
     heading: "",
@@ -211,35 +154,10 @@ export const defaultHomeContent: HomePageContent = {
     description: "",
   },
   practiceAreas: [],
-  awards: {
-    sectionLabel: "",
-    heading: "",
-    description: "",
-    logos: [],
-  },
   testimonials: {
     sectionLabel: "",
     heading: "",
     backgroundImage: "",
-    items: [],
-  },
-  process: {
-    sectionLabel: "",
-    headingLine1: "",
-    headingLine2: "",
-    steps: [],
-  },
-  googleReviews: {
-    sectionLabel: "",
-    heading: "",
-    description: "",
-    reviews: [],
-  },
-  faq: {
-    heading: "",
-    description: "",
-    videoThumbnail: "",
-    videoUrl: "",
     items: [],
   },
   contact: {

@@ -115,9 +115,6 @@ function mergeWithDefaults(
         ? cmsContent.hero.buttons
         : defaults.hero.buttons,
     },
-    partnerLogos: cmsContent.partnerLogos?.length
-      ? cmsContent.partnerLogos
-      : defaults.partnerLogos,
     about: {
       ...defaults.about,
       ...cmsContent.about,
@@ -135,40 +132,12 @@ function mergeWithDefaults(
     practiceAreas: cmsContent.practiceAreas?.length
       ? cmsContent.practiceAreas
       : defaults.practiceAreas,
-    awards: {
-      ...defaults.awards,
-      ...cmsContent.awards,
-      logos: cmsContent.awards?.logos?.length
-        ? cmsContent.awards.logos
-        : defaults.awards.logos,
-    },
     testimonials: {
       ...defaults.testimonials,
       ...cmsContent.testimonials,
       items: cmsContent.testimonials?.items?.length
         ? cmsContent.testimonials.items
         : defaults.testimonials.items,
-    },
-    process: {
-      ...defaults.process,
-      ...cmsContent.process,
-      steps: cmsContent.process?.steps?.length
-        ? cmsContent.process.steps
-        : defaults.process.steps,
-    },
-    googleReviews: {
-      ...defaults.googleReviews,
-      ...cmsContent.googleReviews,
-      reviews: cmsContent.googleReviews?.reviews?.length
-        ? cmsContent.googleReviews.reviews
-        : defaults.googleReviews.reviews,
-    },
-    faq: {
-      ...defaults.faq,
-      ...cmsContent.faq,
-      items: cmsContent.faq?.items?.length
-        ? cmsContent.faq.items
-        : defaults.faq.items,
     },
     contact: { ...defaults.contact, ...cmsContent.contact },
     firmDescription: {
