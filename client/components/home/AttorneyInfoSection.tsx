@@ -1,18 +1,18 @@
 export default function AttorneyInfoSection() {
   return (
     <div className="bg-white py-[40px] md:py-[60px]">
-      <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%] lg:w-[85%]">
+      <div className="max-w-[1100px] mx-auto w-[90%] md:w-[85%]">
         {/* Centered Title */}
         <h2 className="font-playfair text-[32px] md:text-[42px] lg:text-[48px] leading-[1.2] text-black text-center mb-[30px] md:mb-[40px]">
           Top Bankruptcy Attorney Near Marietta, GA
         </h2>
 
         {/* Two Column Layout: Image (narrower) + Text (wider) */}
-        <div className="flex flex-col md:flex-row gap-[25px] md:gap-[40px] mb-[40px] md:mb-[60px]">
+        <div className="flex flex-col md:flex-row gap-[25px] md:gap-[35px] mb-[40px] md:mb-[60px]">
           {/* Left Column - City Image */}
           <div className="md:w-[35%] flex-shrink-0">
             <img
-              src="/images/content/atlanta-skyline.jpg"
+              src="https://cdn.builder.io/api/v1/image/assets%2F50bd0f2438824f8ea1271cf7dd2c508e%2Fafbca7c3ff824958916291dbbe9f1be4?format=webp&width=800&height=1200"
               alt="Atlanta, Georgia skyline"
               className="w-full h-full object-cover"
               loading="lazy"
@@ -36,7 +36,7 @@ export default function AttorneyInfoSection() {
         </div>
 
         {/* Green Box - Stay Informed */}
-        <div className="bg-law-accent px-[25px] md:px-[40px] lg:px-[60px] py-[30px] md:py-[40px]">
+        <div className="bg-law-accent px-[25px] md:px-[40px] lg:px-[50px] py-[30px] md:py-[40px]">
           <h3 className="font-playfair text-[28px] md:text-[36px] lg:text-[40px] leading-[1.2] text-black text-center mb-[10px]">
             Stay Informed
           </h3>
@@ -48,9 +48,9 @@ export default function AttorneyInfoSection() {
           <div className="flex flex-col sm:flex-row items-center gap-[20px] md:gap-[25px]">
             <div className="flex-shrink-0">
               <img
-                src="https://cherneylaw.com/wp-content/uploads/2023/05/business-innovators.png"
-                alt="Business Innovators Radio Network"
-                className="w-[140px] md:w-[170px] h-auto"
+                src="https://cdn.builder.io/api/v1/image/assets%2F50bd0f2438824f8ea1271cf7dd2c508e%2F97920c9d4cfe43cf8b5962fd8453e7ad?format=webp&width=800&height=1200"
+                alt="Business Innovators Radio Network featuring Matthew Cherney"
+                className="w-[280px] md:w-[340px] h-auto"
                 loading="lazy"
               />
             </div>
