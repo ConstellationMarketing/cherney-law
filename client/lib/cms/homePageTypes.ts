@@ -26,6 +26,8 @@ export interface AboutFeature {
   number: string;
   title: string;
   description: string;
+  readMoreLabel?: string;
+  readMoreLink?: string;
 }
 
 export interface AboutStat {
@@ -80,6 +82,8 @@ export interface ContactContent {
   phoneLabel: string;
   address: string;
   formHeading: string;
+  attorneyImage: string;
+  attorneyImageAlt: string;
 }
 
 // Firm Description section (green box)
@@ -168,6 +172,8 @@ export const defaultHomeContent: HomePageContent = {
     phoneLabel: "",
     address: "",
     formHeading: "",
+    attorneyImage: "",
+    attorneyImageAlt: "",
   },
   firmDescription: {
     heading: "",

@@ -17,6 +17,8 @@ const defaultContent: ContactContent = {
   phoneLabel: "Call Us 24/7",
   address: "4120 Presidential Parkway, Suite 200, Atlanta, GA 30340",
   formHeading: "Contact Us Today To Schedule a Consultation",
+  attorneyImage: "/images/team/attorney-2.png",
+  attorneyImageAlt: "Contact Us",
 };
 
 export default function ContactUsSection({ content }: ContactUsSectionProps) {
@@ -59,8 +61,8 @@ export default function ContactUsSection({ content }: ContactUsSectionProps) {
             {/* Left Image */}
             <div className="sm:w-[45.758%] sm:mr-[8.483%] relative -mt-[30px] ml-auto text-right">
               <img
-                src="/images/team/attorney-2.png"
-                alt="Contact Us"
+                src={data.attorneyImage || "/images/team/attorney-2.png"}
+                alt={data.attorneyImageAlt || "Contact Us"}
                 width={338}
                 height={462}
                 loading="lazy"

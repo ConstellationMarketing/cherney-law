@@ -139,6 +139,14 @@ export default function AboutSection({ content }: AboutSectionProps) {
                   <p className="font-outfit text-[16px] md:text-[20px] leading-[24px] md:leading-[30px] text-black">
                     {feature.description}
                   </p>
+                  {feature.readMoreLink && (
+                    <Link
+                      to={feature.readMoreLink}
+                      className="inline-block mt-[10px] font-outfit text-[16px] md:text-[18px] text-law-accent hover:text-law-accent-dark transition-colors duration-300"
+                    >
+                      {feature.readMoreLabel || "Read More"} →
+                    </Link>
+                  )}
                 </div>
                 {index < features.length - 1 && (
                   <div className="h-[23px]">
