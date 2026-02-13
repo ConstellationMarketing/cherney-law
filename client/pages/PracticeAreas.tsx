@@ -6,8 +6,6 @@ import ContentTabs from "@site/components/practice/ContentTabs";
 import PracticeAreasCTA from "@site/components/practice/PracticeAreasCTA";
 import PracticeAreasFAQ from "@site/components/practice/PracticeAreasFAQ";
 import AboutWhyChooseUs from "@site/components/about/AboutWhyChooseUs";
-import StatsGrid from "@site/components/shared/StatsGrid";
-import AboutFeatureBoxes from "@site/components/about/AboutFeatureBoxes";
 import AboutCTA from "@site/components/about/AboutCTA";
 import {
   Scale,
@@ -20,7 +18,6 @@ import {
 } from "lucide-react";
 import { usePracticeAreasContent } from "@site/hooks/usePracticeAreasContent";
 import { useAboutContent } from "@site/hooks/useAboutContent";
-import { useHomeContent } from "@site/hooks/useHomeContent";
 import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
 
 // Icon mapping for practice areas
@@ -36,12 +33,7 @@ const iconMap: Record<string, LucideIcon> = {
 export default function PracticeAreas() {
   const { content } = usePracticeAreasContent();
   const { content: aboutContent } = useAboutContent();
-  const { content: homeContent } = useHomeContent();
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
-
-  // Feature boxes and stats from homepage (shared)
-  const featureBoxes = homeContent.hero.featureBoxes;
-  const stats = homeContent.about.stats;
 
   // Map practice areas from CMS content with icon components
   const practiceAreas = content.grid.areas.map((area) => ({
@@ -94,16 +86,6 @@ export default function PracticeAreas() {
 
       {/* FAQ Section */}
       <PracticeAreasFAQ content={content.faq} />
-
-      {/* Feature Boxes (shared from homepage) */}
-      <AboutFeatureBoxes featureBoxes={featureBoxes} />
-
-      {/* Stats Section (shared from homepage) */}
-      <div className="bg-white py-[30px] md:py-[40px]">
-        <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%]">
-          <StatsGrid stats={stats} />
-        </div>
-      </div>
 
       {/* Why Choose Us (shared from About page) */}
       <AboutWhyChooseUs content={aboutContent.whyChooseUs} />
