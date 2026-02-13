@@ -54,7 +54,6 @@ export function useContactContent(): UseContactContentResult {
         const data = await response.json();
 
         if (!Array.isArray(data) || data.length === 0) {
-          // No CMS content, use defaults
           if (isMounted) {
             setContent(defaultContactContent);
             setIsLoading(false);
@@ -82,7 +81,6 @@ export function useContactContent(): UseContactContentResult {
         console.error("[useContactContent] Error:", err);
         if (isMounted) {
           setError(err instanceof Error ? err : new Error("Unknown error"));
-          // Fall back to defaults on error
           setContent(defaultContactContent);
         }
       } finally {
@@ -111,40 +109,15 @@ function mergeWithDefaults(
 
   return {
     hero: { ...defaults.hero, ...cmsContent.hero },
-    contactMethods: {
-      ...defaults.contactMethods,
-      ...cmsContent.contactMethods,
-      methods: cmsContent.contactMethods?.methods?.length
-        ? cmsContent.contactMethods.methods
-        : defaults.contactMethods.methods,
-    },
-    form: { ...defaults.form, ...cmsContent.form },
-    officeHours: {
-      ...defaults.officeHours,
-      ...cmsContent.officeHours,
-      items: cmsContent.officeHours?.items?.length
-        ? cmsContent.officeHours.items
-        : defaults.officeHours.items,
-    },
+    offices:
+      cmsContent.offices?.length ? cmsContent.offices : defaults.offices,
+    formSettings: { ...defaults.formSettings, ...cmsContent.formSettings },
     process: {
       ...defaults.process,
       ...cmsContent.process,
       steps: cmsContent.process?.steps?.length
         ? cmsContent.process.steps
         : defaults.process.steps,
-    },
-    visitOffice: { ...defaults.visitOffice, ...cmsContent.visitOffice },
-    cta: {
-      ...defaults.cta,
-      ...cmsContent.cta,
-      primaryButton: {
-        ...defaults.cta.primaryButton,
-        ...cmsContent.cta?.primaryButton,
-      },
-      secondaryButton: {
-        ...defaults.cta.secondaryButton,
-        ...cmsContent.cta?.secondaryButton,
-      },
     },
   };
 }

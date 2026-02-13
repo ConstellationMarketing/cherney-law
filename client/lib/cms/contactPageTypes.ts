@@ -7,31 +7,24 @@ export interface ContactHeroContent {
   description: string; // Description paragraph
 }
 
-export interface ContactMethodItem {
-  icon: string; // Lucide icon name
-  title: string; // "Phone", "Email", "Office"
-  detail: string; // Primary detail (phone number, email, address line 1)
-  subDetail: string; // Secondary detail (availability, response time, address line 2)
+export interface OfficeTab {
+  name: string; // Tab label, e.g. "Marietta"
+  heading: string; // "Contact a Marietta/Cobb County Bankruptcy Attorney"
+  content: string; // Rich text HTML body
+  address: string; // "1744 Roswell Road, Suite 100 Marietta, GA 30062"
+  mapEmbedUrl: string; // Google Maps embed URL for this office
+  phone: string; // tel: href value e.g. "770-485-4141"
+  phoneDisplay: string; // Formatted phone display e.g. "(770) 485-4141"
+  directions: string; // Rich text HTML for driving directions
 }
 
-export interface ContactMethodsContent {
-  methods: ContactMethodItem[];
-}
-
-export interface ContactFormContent {
-  heading: string; // "Send Us a Message"
-  subtext: string; // Description below heading
-}
-
-export interface OfficeHoursItem {
-  day: string;
-  hours: string;
-}
-
-export interface OfficeHoursContent {
-  heading: string; // "Office Hours"
-  items: OfficeHoursItem[];
-  note: string; // Additional note
+export interface ContactFormSettings {
+  heading: string; // e.g. "Free Case Evaluation"
+  subtext: string; // Description text
+  submitButtonText: string;
+  consentText: string; // "I agree to receive marketing messaging..."
+  privacyPolicyUrl: string;
+  termsOfServiceUrl: string;
 }
 
 export interface ProcessStepItem {
@@ -47,35 +40,12 @@ export interface ProcessContent {
   steps: ProcessStepItem[];
 }
 
-export interface VisitOfficeContent {
-  heading: string; // "Visit Our Office"
-  subtext: string; // Description text
-  mapEmbedUrl: string; // Google Maps embed URL
-}
-
-export interface CTAContent {
-  heading: string; // "Ready to Discuss Your Case?"
-  description: string; // Subtitle text
-  primaryButton: {
-    label: string; // "Call Us Now"
-    phone: string; // Phone number
-  };
-  secondaryButton: {
-    label: string; // "Schedule Consultation"
-    sublabel: string; // "Free Case Review"
-    link: string; // Link URL
-  };
-}
-
 // Complete Contact page content structure
 export interface ContactPageContent {
   hero: ContactHeroContent;
-  contactMethods: ContactMethodsContent;
-  form: ContactFormContent;
-  officeHours: OfficeHoursContent;
+  offices: OfficeTab[];
+  formSettings: ContactFormSettings;
   process: ProcessContent;
-  visitOffice: VisitOfficeContent;
-  cta: CTAContent;
 }
 
 // Default content - used as fallback when CMS content is not available
@@ -86,41 +56,50 @@ export const defaultContactContent: ContactPageContent = {
     description:
       "Our team is ready to listen, answer your questions, and provide the expert legal guidance you need. Contact us today for a free consultation.",
   },
-  contactMethods: {
-    methods: [
-      {
-        icon: "Phone",
-        title: "Phone",
-        detail: "404-555-5555",
-        subDetail: "Available 24/7",
-      },
-      {
-        icon: "Mail",
-        title: "Email",
-        detail: "contact@constellationlaw.com",
-        subDetail: "We respond within 24 hours",
-      },
-      {
-        icon: "MapPin",
-        title: "Office",
-        detail: "123 Legal Street",
-        subDetail: "Atlanta, GA 30303",
-      },
-    ],
-  },
-  form: {
-    heading: "Send Us a Message",
-    subtext:
-      "Fill out the form below and we'll get back to you as soon as possible.",
-  },
-  officeHours: {
-    heading: "Office Hours",
-    items: [
-      { day: "Monday - Friday", hours: "24/7 Available" },
-      { day: "Saturday - Sunday", hours: "24/7 Available" },
-      { day: "Holidays", hours: "24/7 Available" },
-    ],
-    note: "Our intake team is available 24 hours a day, seven days a week. We understand that legal emergencies don't follow a schedule.",
+  offices: [
+    {
+      name: "Marietta",
+      heading: "Contact a Marietta/Cobb County Bankruptcy Attorney",
+      content:
+        "<p>As a knowledgeable bankruptcy lawyer, I will seek to answer any and all questions you may have so that you can enter into the legal process with a peace of mind. My office offers weekend appointments for your convenience as I understand that it can be tricky attempting to get time off of work. Doing everything I can to make this process as smooth as possible for you and your family, I have provided a free case evaluation form. If you decide to fill it out, I can get in touch with you concerning your case and get you started on the road to freedom before you know it. For those who would rather speak with me over the phone or in person, your first consultation is always free. Please do not hesitate to contact my office today!</p>",
+      address: "1744 Roswell Road, Suite 100 Marietta, GA 30062",
+      mapEmbedUrl:
+        "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3311.5!2d-84.55!3d33.97!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2s1744+Roswell+Road+Marietta+GA!5e0!3m2!1sen!2sus",
+      phone: "770-485-4141",
+      phoneDisplay: "(770) 485-4141",
+      directions: "",
+    },
+    {
+      name: "Woodstock",
+      heading: "Contact a Woodstock/Cherokee County Bankruptcy Attorney",
+      content:
+        "<p>Contact our Woodstock office for a free consultation about your bankruptcy options.</p>",
+      address: "Woodstock, GA",
+      mapEmbedUrl: "",
+      phone: "770-485-4141",
+      phoneDisplay: "(770) 485-4141",
+      directions: "",
+    },
+    {
+      name: "Alpharetta",
+      heading: "Contact an Alpharetta/North Fulton Bankruptcy Attorney",
+      content:
+        "<p>Contact our Alpharetta office for a free consultation about your bankruptcy options.</p>",
+      address: "Alpharetta, GA",
+      mapEmbedUrl: "",
+      phone: "770-485-4141",
+      phoneDisplay: "(770) 485-4141",
+      directions: "",
+    },
+  ],
+  formSettings: {
+    heading: "Free Case Evaluation",
+    subtext: "Fill out the form below for a free case review.",
+    submitButtonText: "SUBMIT",
+    consentText:
+      "I agree to receive marketing messaging from Cherney Law Firm at the phone number provided above. Data rates may apply. Reply STOP to opt out.",
+    privacyPolicyUrl: "/privacy-policy",
+    termsOfServiceUrl: "/terms-of-service",
   },
   process: {
     sectionLabel: "– The Process",
@@ -152,25 +131,5 @@ export const defaultContactContent: ContactPageContent = {
           "Once you decide to work with us, we immediately begin building your case and fighting for the compensation you deserve.",
       },
     ],
-  },
-  visitOffice: {
-    heading: "Visit Our Office",
-    subtext:
-      "Located in the heart of Atlanta, our office is easily accessible.",
-    mapEmbedUrl:
-      "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d212271.35861186526!2d-84.42020704999999!3d33.7673845!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x88f5045d6993098d%3A0x66fede2f990b630b!2sAtlanta%2C%20GA%2C%20USA!5e0!3m2!1sen!2srs!4v1750395791543!5m2!1sen!2srs",
-  },
-  cta: {
-    heading: "Ready to Discuss Your Case?",
-    description: "Our experienced legal team is standing by to help you.",
-    primaryButton: {
-      label: "Call Us Now",
-      phone: "404-555-5555",
-    },
-    secondaryButton: {
-      label: "Schedule Consultation",
-      sublabel: "Free Case Review",
-      link: "/contact",
-    },
   },
 };
