@@ -28,7 +28,11 @@ export default function AboutUs() {
         phoneLabel={phoneLabel}
       />
 
-      <AboutStory content={content.story} />
+      <AboutStory
+        content={content.story}
+        phoneDisplay={phoneDisplay}
+        phoneLabel={phoneLabel}
+      />
 
       <AboutMissionVision content={content.missionVision} />
 

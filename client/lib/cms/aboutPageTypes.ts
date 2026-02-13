@@ -1,15 +1,9 @@
 // Type definitions for structured About page content
 // Each section maps directly to a static component's data needs
 
-export interface AboutHeroButton {
-  label: string;
-  href: string;
-}
-
 export interface AboutHeroContent {
   sectionLabel: string; // "– About Us" (H1)
   tagline: string; // Tagline below H1
-  buttons: AboutHeroButton[]; // White hero buttons (like homepage)
 }
 
 export interface BadgeItem {
@@ -67,15 +61,16 @@ export interface WhyChooseUsContent {
   items: WhyChooseUsItem[];
 }
 
-export interface CTAButton {
+export interface CTASecondaryButton {
   label: string;
+  sublabel: string;
   href: string;
 }
 
 export interface CTAContent {
   heading: string;
   description: string;
-  buttons: CTAButton[];
+  secondaryButton: CTASecondaryButton;
 }
 
 // Complete About page content structure
@@ -94,9 +89,6 @@ export const defaultAboutContent: AboutPageContent = {
   hero: {
     sectionLabel: "– About Us",
     tagline: "Matthew J. Cherney: Cobb County Bankruptcy Attorney Profile",
-    buttons: [
-      { label: "Attorney Profile", href: "/about" },
-    ],
   },
   story: {
     sectionLabel: "– Our Story",
@@ -137,7 +129,7 @@ export const defaultAboutContent: AboutPageContent = {
     heading: "What Sets Us Apart",
     description:
       "<p>When you choose Cherney Law Firm, you're choosing a team that combines legal expertise with genuine care for your well-being. Here's what makes us different:</p>",
-    image: "/images/stock/law-firm-team.jpg",
+    image: "",
     imageAlt: "Cherney Law Firm office",
     items: [
       {
@@ -169,9 +161,10 @@ export const defaultAboutContent: AboutPageContent = {
   cta: {
     heading: "Ready to Discuss Your Case?",
     description: "Our experienced legal team is standing by to help you.",
-    buttons: [
-      { label: "Call Us 24/7", href: "tel:7703831527" },
-      { label: "Schedule a Consultation", href: "/contact" },
-    ],
+    secondaryButton: {
+      label: "Schedule Now",
+      sublabel: "Free Consultation",
+      href: "/contact",
+    },
   },
 };

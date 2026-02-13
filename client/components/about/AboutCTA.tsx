@@ -20,11 +20,11 @@ export default function AboutCTA({ content, phoneDisplay, phoneLabel }: AboutCTA
           </p>
         </div>
 
-        {/* White CTA Buttons */}
-        <div className="flex flex-col md:flex-row gap-6 md:gap-8 justify-center items-center max-w-[820px] mx-auto">
-          {/* Phone Call Button */}
+        {/* Two equal-width white buttons with icons */}
+        <div className="flex flex-col md:flex-row gap-6 md:gap-8 justify-center items-stretch max-w-[820px] mx-auto">
+          {/* Phone Button */}
           <a href={`tel:${phoneDisplay.replace(/[^0-9]/g, "")}`} className="w-full md:w-1/2">
-            <div className="bg-white p-[8px] w-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
+            <div className="bg-white p-[8px] w-full h-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
               <div className="flex items-start gap-4">
                 <div className="bg-law-accent p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
                   <svg
@@ -47,30 +47,35 @@ export default function AboutCTA({ content, phoneDisplay, phoneLabel }: AboutCTA
             </div>
           </a>
 
-          {/* Dynamic CMS buttons */}
-          {content.buttons.map((btn, i) => {
-            const isExternal = btn.href.startsWith("http") || btn.href.startsWith("tel:");
-            if (isExternal) {
-              return (
-                <a key={i} href={btn.href} className="w-full md:w-1/2">
-                  <div className="bg-white p-[8px] h-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group flex items-center justify-center min-h-[80px]">
-                    <span className="font-outfit text-[clamp(1.5rem,4vw,32px)] text-black font-light group-hover:text-white transition-colors duration-300">
-                      {btn.label}
-                    </span>
-                  </div>
-                </a>
-              );
-            }
-            return (
-              <Link key={i} to={btn.href} className="w-full md:w-1/2">
-                <div className="bg-white p-[8px] h-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group flex items-center justify-center min-h-[80px]">
-                  <span className="font-outfit text-[clamp(1.5rem,4vw,32px)] text-black font-light group-hover:text-white transition-colors duration-300">
-                    {btn.label}
-                  </span>
+          {/* Schedule Button */}
+          <Link to={content.secondaryButton.href || "/contact"} className="w-full md:w-1/2">
+            <div className="bg-white p-[8px] w-full h-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
+              <div className="flex items-start gap-4">
+                <div className="bg-law-accent p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
+                  <svg
+                    className="w-8 h-8 text-black group-hover:text-white transition-colors duration-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
                 </div>
-              </Link>
-            );
-          })}
+                <div className="flex-1">
+                  <h4 className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] font-normal group-hover:text-white transition-colors duration-300">
+                    {content.secondaryButton.label || "Schedule Now"}
+                  </h4>
+                  <p className="font-outfit text-[clamp(1.75rem,5vw,40px)] text-black leading-tight group-hover:text-white transition-colors duration-300">
+                    {content.secondaryButton.sublabel || "Free Consultation"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Link>
         </div>
       </div>
     </div>

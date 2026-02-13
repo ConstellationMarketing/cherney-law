@@ -111,9 +111,6 @@ function mergeWithDefaults(
     hero: {
       ...defaults.hero,
       ...cmsContent.hero,
-      buttons: cmsContent.hero?.buttons?.length
-        ? cmsContent.hero.buttons
-        : defaults.hero.buttons,
     },
     story: {
       ...defaults.story,
@@ -152,9 +149,10 @@ function mergeWithDefaults(
     cta: {
       ...defaults.cta,
       ...cmsContent.cta,
-      buttons: cmsContent.cta?.buttons?.length
-        ? cmsContent.cta.buttons
-        : defaults.cta.buttons,
+      secondaryButton: {
+        ...defaults.cta.secondaryButton,
+        ...cmsContent.cta?.secondaryButton,
+      },
     },
   };
 }
