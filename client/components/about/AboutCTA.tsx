@@ -39,7 +39,7 @@ export default function AboutCTA({ content, phoneDisplay, phoneLabel }: AboutCTA
                   <h4 className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] font-normal group-hover:text-white transition-colors duration-300">
                     {phoneLabel}
                   </h4>
-                  <p className="font-outfit text-[clamp(1.75rem,5vw,40px)] text-black leading-tight group-hover:text-white transition-colors duration-300">
+                  <p className="font-outfit text-[22px] md:text-[26px] text-black leading-tight group-hover:text-white transition-colors duration-300">
                     {phoneDisplay}
                   </p>
                 </div>
@@ -69,7 +69,7 @@ export default function AboutCTA({ content, phoneDisplay, phoneLabel }: AboutCTA
                   <h4 className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] font-normal group-hover:text-white transition-colors duration-300">
                     {content.secondaryButton.label || "Schedule Now"}
                   </h4>
-                  <p className="font-outfit text-[clamp(1.75rem,5vw,40px)] text-black leading-tight group-hover:text-white transition-colors duration-300">
+                  <p className="font-outfit text-[22px] md:text-[26px] text-black leading-tight group-hover:text-white transition-colors duration-300">
                     {content.secondaryButton.sublabel || "Free Consultation"}
                   </p>
                 </div>
