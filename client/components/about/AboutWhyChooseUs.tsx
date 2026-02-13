@@ -28,7 +28,7 @@ export default function AboutWhyChooseUs({ content }: AboutWhyChooseUsProps) {
                 <img
                   src={content.image}
                   alt={content.imageAlt}
-                  className="w-full max-w-[400px] h-auto object-cover"
+                  className="w-full h-auto object-cover"
                   loading="lazy"
                 />
               </div>
