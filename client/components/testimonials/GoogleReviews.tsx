@@ -1,4 +1,4 @@
-import { Star, ExternalLink } from "lucide-react";
+import { Star, ExternalLink, Quote } from "lucide-react";
 import type { GoogleReviewsContent } from "@site/lib/cms/testimonialsPageTypes";
 
 interface GoogleReviewsProps {
@@ -42,16 +42,16 @@ export default function GoogleReviews({ content }: GoogleReviewsProps) {
                 ))}
               </div>
               <span className="font-outfit text-[17px] md:text-[19px] font-semibold text-black group-hover:text-white transition-colors duration-300">
-                Read Our Google Reviews
+                See All Reviews on Google
               </span>
               <ExternalLink className="w-5 h-5 text-black group-hover:text-white transition-colors duration-300" />
             </a>
           </div>
 
-          {/* Embedded Google Map with Reviews */}
-          {content.mapEmbedUrl && (
+          {/* Embedded Google Reviews Widget */}
+          {content.mapEmbedUrl ? (
             <div className="bg-gray-50 border-2 border-gray-200 p-[16px] md:p-[24px] mb-[30px]">
-              <div className="w-full" style={{ height: "450px" }}>
+              <div className="w-full" style={{ minHeight: "500px", height: "600px" }}>
                 <iframe
                   src={content.mapEmbedUrl}
                   width="100%"
@@ -75,6 +75,26 @@ export default function GoogleReviews({ content }: GoogleReviewsProps) {
                   View all reviews on Google →
                 </a>
               </p>
+            </div>
+          ) : (
+            // Fallback if no embed URL is provided
+            <div className="bg-gray-50 border-2 border-gray-200 p-[40px] md:p-[60px] mb-[30px] text-center">
+              <Quote className="w-16 h-16 text-gray-300 mx-auto mb-[20px]" />
+              <h3 className="font-playfair text-[24px] md:text-[28px] text-black mb-[12px]">
+                Google Reviews Widget
+              </h3>
+              <p className="font-outfit text-[15px] text-gray-600 mb-[20px] max-w-[500px] mx-auto">
+                Add your Google reviews widget embed URL in the CMS to display reviews here.
+              </p>
+              <a
+                href={googleReviewsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-law-accent px-[25px] py-[12px] font-outfit text-[15px] font-semibold text-black hover:bg-black hover:text-white transition-all duration-300 border-2 border-black"
+              >
+                View Reviews on Google
+                <ExternalLink className="w-4 h-4" />
+              </a>
             </div>
           )}
 
