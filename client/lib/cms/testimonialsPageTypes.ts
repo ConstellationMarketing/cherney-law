@@ -6,7 +6,8 @@ export interface TestimonialsHeroContent {
 }
 
 export interface GoogleReviewsContent {
-  placeId: string; // Google Place ID for reviews
+  placeId: string; // Google Place ID for reviews (used in direct link)
+  mapEmbedUrl: string; // Google Maps embed URL (get from Google Maps > Share > Embed a map)
   heading: string; // Section heading above reviews
   subtext: string; // Optional description text
 }
@@ -36,6 +37,7 @@ export const defaultTestimonialsContent: TestimonialsPageContent = {
   },
   reviews: {
     placeId: "0x88f513c2103ad111:0xf0c853b13f4aa2fc", // Cherney Law Firm, LLC
+    mapEmbedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d106243.86665951178!2d-84.63047908671876!3d33.95288770000001!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x88f513c2103ad111%3A0xf0c853b13f4aa2fc!2sCherney%20Law%20Firm%2C%20LLC!5e0!3m2!1sen!2sus!4v1234567890123!5m2!1sen!2sus",
     heading: "Client Reviews",
     subtext:
       "Read what our clients have to say about their experience working with Cherney Law Firm.",
