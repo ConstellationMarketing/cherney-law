@@ -93,7 +93,7 @@ export const defaultPracticeAreasContent: PracticeAreasPageContent = {
         title: "Chapter 7",
         description:
           "Liquidation bankruptcy that can eliminate most unsecured debts and give you a fresh financial start.",
-        image: "/images/practice-areas/personal-injury.jpg",
+        image: "https://images.pexels.com/photos/7926955/pexels-photo-7926955.jpeg?auto=compress&cs=tinysrgb&w=800",
         link: "/practice-areas/chapter-7",
       },
       {
@@ -101,7 +101,7 @@ export const defaultPracticeAreasContent: PracticeAreasPageContent = {
         title: "Chapter 13",
         description:
           "Reorganization bankruptcy that lets you keep your assets while repaying debts over a 3-5 year plan.",
-        image: "/images/practice-areas/medical-malpractice.jpg",
+        image: "https://images.pexels.com/photos/7821474/pexels-photo-7821474.jpeg?auto=compress&cs=tinysrgb&w=800",
         link: "/practice-areas/chapter-13",
       },
       {
@@ -109,7 +109,7 @@ export const defaultPracticeAreasContent: PracticeAreasPageContent = {
         title: "Debt Settlement",
         description:
           "Negotiate with creditors to reduce the total amount of debt you owe without filing for bankruptcy.",
-        image: "/images/practice-areas/workers-compensation.jpg",
+        image: "https://images.pexels.com/photos/6170758/pexels-photo-6170758.jpeg?auto=compress&cs=tinysrgb&w=800",
         link: "/practice-areas/debt-settlement",
       },
       {
