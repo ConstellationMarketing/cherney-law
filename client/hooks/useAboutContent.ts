@@ -108,13 +108,19 @@ function mergeWithDefaults(
   if (!cmsContent) return defaults;
 
   return {
-    hero: { ...defaults.hero, ...cmsContent.hero },
+    hero: {
+      ...defaults.hero,
+      ...cmsContent.hero,
+      buttons: cmsContent.hero?.buttons?.length
+        ? cmsContent.hero.buttons
+        : defaults.hero.buttons,
+    },
     story: {
       ...defaults.story,
       ...cmsContent.story,
-      paragraphs: cmsContent.story?.paragraphs?.length
-        ? cmsContent.story.paragraphs
-        : defaults.story.paragraphs,
+      badges: cmsContent.story?.badges?.length
+        ? cmsContent.story.badges
+        : defaults.story.badges,
     },
     missionVision: {
       mission: {
@@ -126,20 +132,9 @@ function mergeWithDefaults(
         ...cmsContent.missionVision?.vision,
       },
     },
-    team: {
-      ...defaults.team,
-      ...cmsContent.team,
-      members: cmsContent.team?.members?.length
-        ? cmsContent.team.members
-        : defaults.team.members,
-    },
-    values: {
-      ...defaults.values,
-      ...cmsContent.values,
-      items: cmsContent.values?.items?.length
-        ? cmsContent.values.items
-        : defaults.values.items,
-    },
+    featureBoxes: cmsContent.featureBoxes?.length
+      ? cmsContent.featureBoxes
+      : defaults.featureBoxes,
     stats: {
       ...defaults.stats,
       ...cmsContent.stats,
@@ -157,14 +152,9 @@ function mergeWithDefaults(
     cta: {
       ...defaults.cta,
       ...cmsContent.cta,
-      primaryButton: {
-        ...defaults.cta.primaryButton,
-        ...cmsContent.cta?.primaryButton,
-      },
-      secondaryButton: {
-        ...defaults.cta.secondaryButton,
-        ...cmsContent.cta?.secondaryButton,
-      },
+      buttons: cmsContent.cta?.buttons?.length
+        ? cmsContent.cta.buttons
+        : defaults.cta.buttons,
     },
   };
 }
