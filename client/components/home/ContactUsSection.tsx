@@ -59,7 +59,7 @@ export default function ContactUsSection({ content }: ContactUsSectionProps) {
             }}
           >
             {/* Left Image */}
-            <div className="sm:w-[45.758%] sm:mr-[8.483%] relative -mt-[30px] ml-auto text-right">
+            <div className="sm:w-[45.758%] sm:mr-[8.483%] relative ml-auto text-right self-end">
               <div className="relative inline-block">
                 <img
                   src={data.attorneyImage || "/images/team/attorney-2.png"}
@@ -67,9 +67,12 @@ export default function ContactUsSection({ content }: ContactUsSectionProps) {
                   width={338}
                   height={462}
                   loading="lazy"
-                  className="max-w-full w-[338px]"
+                  className="max-w-full w-[338px] block"
+                  style={{
+                    maskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
+                    WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
+                  }}
                 />
-                <div className="absolute bottom-0 left-0 right-0 h-[120px] bg-gradient-to-b from-transparent to-black/80 pointer-events-none" />
               </div>
             </div>
 

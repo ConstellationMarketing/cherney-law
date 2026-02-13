@@ -126,8 +126,11 @@ export default function AboutSection({ content }: AboutSectionProps) {
                 width={462}
                 height={631}
                 loading="lazy"
+                style={{
+                  maskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
+                  WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
+                }}
               />
-              <div className="absolute bottom-0 left-0 right-0 h-[120px] bg-gradient-to-b from-transparent to-white pointer-events-none" />
             </div>
           </div>
 
