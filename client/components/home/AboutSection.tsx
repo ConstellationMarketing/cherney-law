@@ -117,7 +117,7 @@ export default function AboutSection({ content }: AboutSectionProps) {
           </div>
 
           {/* Middle Column - Image */}
-          <div className="md:w-full flex justify-center md:justify-start">
+          <div className="md:w-full flex justify-center md:justify-start items-center">
             <div className="relative">
               <img
                 src={data.attorneyImage}
