@@ -111,6 +111,7 @@ function mergeWithDefaults(
 
   return {
     hero: { ...defaults.hero, ...cmsContent.hero },
+    tabs: cmsContent.tabs?.length ? cmsContent.tabs : defaults.tabs,
     grid: {
       ...defaults.grid,
       ...cmsContent.grid,
@@ -118,24 +119,13 @@ function mergeWithDefaults(
         ? cmsContent.grid.areas
         : defaults.grid.areas,
     },
-    whyChoose: {
-      ...defaults.whyChoose,
-      ...cmsContent.whyChoose,
-      items: cmsContent.whyChoose?.items?.length
-        ? cmsContent.whyChoose.items
-        : defaults.whyChoose.items,
-    },
-    cta: {
-      ...defaults.cta,
-      ...cmsContent.cta,
-      primaryButton: {
-        ...defaults.cta.primaryButton,
-        ...cmsContent.cta?.primaryButton,
-      },
-      secondaryButton: {
-        ...defaults.cta.secondaryButton,
-        ...cmsContent.cta?.secondaryButton,
-      },
+    cta: { ...defaults.cta, ...cmsContent.cta },
+    faq: {
+      ...defaults.faq,
+      ...cmsContent.faq,
+      items: cmsContent.faq?.items?.length
+        ? cmsContent.faq.items
+        : defaults.faq.items,
     },
   };
 }
