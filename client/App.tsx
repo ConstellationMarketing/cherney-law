@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import AboutUs from "./pages/AboutUs";
 import PracticeAreas from "./pages/PracticeAreas";
 import ContactPage from "./pages/ContactPage";
+import TestimonialsPage from "./pages/TestimonialsPage";
 import NotFound from "./pages/NotFound";
 import AdminRoutes from "./pages/AdminRoutes";
 import ScrollToTop from "./components/ScrollToTop";
@@ -31,6 +32,7 @@ const App = () => (
               <Route path="/about" element={<AboutUs />} />
               <Route path="/practice-areas" element={<PracticeAreas />} />
               <Route path="/contact" element={<ContactPage />} />
+              <Route path="/testimonials" element={<TestimonialsPage />} />
               <Route path="/admin/*" element={<AdminRoutes />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
