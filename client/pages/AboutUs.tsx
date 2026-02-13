@@ -1,8 +1,8 @@
-import { Link } from "react-router-dom";
 import Seo from "@site/components/Seo";
 import Layout from "@site/components/layout/Layout";
 import StatsGrid from "@site/components/shared/StatsGrid";
 import { useAboutContent } from "@site/hooks/useAboutContent";
+import { useHomeContent } from "@site/hooks/useHomeContent";
 import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
 import AboutHero from "@site/components/about/AboutHero";
 import AboutStory from "@site/components/about/AboutStory";
@@ -13,7 +13,12 @@ import AboutCTA from "@site/components/about/AboutCTA";
 
 export default function AboutUs() {
   const { content } = useAboutContent();
+  const { content: homeContent } = useHomeContent();
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
+
+  // Feature boxes and stats are managed on the homepage CMS only
+  const featureBoxes = homeContent.hero.featureBoxes;
+  const stats = homeContent.about.stats;
 
   return (
     <Layout>
@@ -36,12 +41,12 @@ export default function AboutUs() {
 
       <AboutMissionVision content={content.missionVision} />
 
-      <AboutFeatureBoxes featureBoxes={content.featureBoxes} />
+      <AboutFeatureBoxes featureBoxes={featureBoxes} />
 
       {/* Stats Section */}
       <div className="bg-white py-[30px] md:py-[40px]">
         <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%]">
-          <StatsGrid stats={content.stats.stats} />
+          <StatsGrid stats={stats} />
         </div>
       </div>
 
