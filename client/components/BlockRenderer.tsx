@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Star, Phone } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "z od";
+import * as z from "zod";
 import { toast } from "sonner";
 import {
   Car,
