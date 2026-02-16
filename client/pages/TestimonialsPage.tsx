@@ -4,6 +4,7 @@ import GoogleReviews from "@site/components/testimonials/GoogleReviews";
 import { useTestimonialsContent } from "@site/hooks/useTestimonialsContent";
 import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
 import { Link } from "react-router-dom";
+import { Phone } from "lucide-react";
 
 export default function TestimonialsPage() {
   const { content } = useTestimonialsContent();
@@ -31,22 +32,16 @@ export default function TestimonialsPage() {
             </div>
 
             {/* Right — Phone Button */}
-            <div className="shrink-0 w-full md:w-auto md:max-w-[380px]">
-              <a
-                href={`tel:${phoneDisplay.replace(/[^0-9]/g, "")}`}
-                className="block"
-              >
-                <div className="bg-white p-[8px] w-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-law-accent p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
-                      <svg
-                        className="w-8 h-8 text-black group-hover:text-white transition-colors duration-300"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 00-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z" />
-                      </svg>
-                    </div>
+          <div className="shrink-0 w-full md:w-auto md:max-w-[380px]">
+            <a
+              href={`tel:${phoneDisplay.replace(/[^0-9]/g, "")}`}
+              className="block"
+            >
+              <div className="bg-white p-[8px] w-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
+                <div className="flex items-start gap-4">
+                  <div className="bg-law-accent p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
+                    <Phone className="w-8 h-8 text-black group-hover:text-white transition-colors duration-300" strokeWidth={1.5} />
+                  </div>
                     <div className="flex-1">
                       <h4 className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] font-normal group-hover:text-white transition-colors duration-300">
                         {phoneLabel}
@@ -73,7 +68,7 @@ export default function TestimonialsPage() {
             <h2 className="font-playfair text-[36px] md:text-[48px] lg:text-[60px] leading-tight text-black pb-[15px]">
               {content.cta.heading}
             </h2>
-            <p className="font-outfit text-[18px] md:text-[22px] leading-[26px] md:leading-[32px] text-black/80">
+            <p className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black/80">
               {content.cta.description}
             </p>
           </div>
@@ -88,13 +83,7 @@ export default function TestimonialsPage() {
               <div className="bg-white p-[8px] w-full h-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
                 <div className="flex items-start gap-4">
                   <div className="bg-law-accent p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
-                    <svg
-                      className="w-8 h-8 text-black group-hover:text-white transition-colors duration-300"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 00-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z" />
-                    </svg>
+                    <Phone className="w-8 h-8 text-black group-hover:text-white transition-colors duration-300" strokeWidth={1.5} />
                   </div>
                   <div className="flex-1">
                     <h4 className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] font-normal group-hover:text-white transition-colors duration-300">

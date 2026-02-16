@@ -81,7 +81,7 @@ export default function ContactFormNew({ settings }: ContactFormNewProps) {
             {...register("firstName")}
             type="text"
             placeholder="First Name *"
-            className="bg-white border-white text-black h-[48px] text-[15px] placeholder:text-gray-400"
+            className="bg-white border-white text-black h-[50px] text-[15px] placeholder:text-gray-400"
             aria-invalid={errors.firstName ? "true" : "false"}
           />
         </FormField>
@@ -92,7 +92,7 @@ export default function ContactFormNew({ settings }: ContactFormNewProps) {
             {...register("lastName")}
             type="text"
             placeholder="Last Name *"
-            className="bg-white border-white text-black h-[48px] text-[15px] placeholder:text-gray-400"
+            className="bg-white border-white text-black h-[50px] text-[15px] placeholder:text-gray-400"
             aria-invalid={errors.lastName ? "true" : "false"}
           />
         </FormField>
@@ -103,7 +103,7 @@ export default function ContactFormNew({ settings }: ContactFormNewProps) {
             {...register("email")}
             type="email"
             placeholder="Email Address *"
-            className="bg-white border-white text-black h-[48px] text-[15px] placeholder:text-gray-400"
+            className="bg-white border-white text-black h-[50px] text-[15px] placeholder:text-gray-400"
             aria-invalid={errors.email ? "true" : "false"}
           />
         </FormField>
@@ -114,7 +114,7 @@ export default function ContactFormNew({ settings }: ContactFormNewProps) {
             {...register("phone")}
             type="tel"
             placeholder="Phone Number *"
-            className="bg-white border-white text-black h-[48px] text-[15px] placeholder:text-gray-400"
+            className="bg-white border-white text-black h-[50px] text-[15px] placeholder:text-gray-400"
             aria-invalid={errors.phone ? "true" : "false"}
           />
         </FormField>

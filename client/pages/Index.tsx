@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import Seo from "@site/components/Seo";
 import Layout from "@site/components/layout/Layout";
+import { Phone, User } from "lucide-react";
 import ContactForm from "@site/components/home/ContactForm";
 import AboutSection from "@site/components/home/AboutSection";
 import FirmDescriptionSection from "@site/components/home/FirmDescriptionSection";
@@ -72,13 +73,7 @@ export default function Index() {
               <div className="bg-white p-[8px] w-full sm:w-1/2 cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
                 <div className="flex items-start gap-4">
                   <div className="bg-law-accent p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
-                    <svg
-                      className="w-8 h-8 text-black group-hover:text-white transition-colors duration-300"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 00-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z" />
-                    </svg>
+                    <Phone className="w-8 h-8 text-black group-hover:text-white transition-colors duration-300" strokeWidth={1.5} />
                   </div>
                   <div className="flex-1">
                     <h4 className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] font-normal group-hover:text-white transition-colors duration-300">
@@ -104,10 +99,15 @@ export default function Index() {
                 ))
               ) : (
                 <Link to="/about" className="w-full sm:w-1/2">
-                  <div className="bg-white p-[8px] h-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group flex items-center justify-center">
-                    <span className="font-outfit text-[clamp(1.5rem,4vw,32px)] text-black font-light group-hover:text-white transition-colors duration-300">
-                      Attorney Profile
-                    </span>
+                  <div className="bg-white p-[8px] h-full group hover:bg-law-accent transition-colors duration-300">
+                    <div className="flex items-start gap-4">
+                      <div className="bg-law-accent p-[15px] mt-1 flex items-center justify-center group-hover:bg-white transition-colors duration-300">
+                        <User className="w-8 h-8 text-black group-hover:text-law-accent transition-colors duration-300" />
+                      </div>
+                      <span className="font-outfit text-[clamp(1.5rem,4vw,32px)] text-black font-semibold leading-tight tracking-wide group-hover:text-white transition-colors duration-300">
+                        Attorney Profile
+                      </span>
+                    </div>
                   </div>
                 </Link>
               )}

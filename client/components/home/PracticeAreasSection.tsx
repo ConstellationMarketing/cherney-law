@@ -1,4 +1,4 @@
-import { DollarSign } from "lucide-react";
+import { Scale } from "lucide-react";
 import type { PracticeAreasIntroContent } from "@site/lib/cms/homePageTypes";
 
 interface PracticeAreasSectionProps {
@@ -26,7 +26,7 @@ export default function PracticeAreasSection({
             <div className="bg-law-accent p-[8px] w-full max-w-[400px] mx-auto md:mx-auto cursor-pointer transition-all duration-300 hover:bg-law-accent-dark group">
               <div className="flex items-start gap-4">
                 <div className="bg-white p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
-                  <DollarSign className="w-8 h-8 text-black group-hover:text-white transition-colors duration-300" />
+                  <Scale className="w-8 h-8 text-black group-hover:text-white transition-colors duration-300" />
                 </div>
                 <div className="flex-1">
                   <h4 className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] group-hover:text-white transition-colors duration-300">

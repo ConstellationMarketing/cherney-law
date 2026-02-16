@@ -58,6 +58,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   footerLocations: [],
   footerBottomLinks: [
     { label: "Privacy Policy", href: "/privacy-policy" },
+    { label: "Terms of Service", href: "/terms-of-service" },
     { label: "Disclaimer", href: "/disclaimer" },
   ],
   copyrightText: `Copyright © ${new Date().getFullYear()} | All Rights Reserved`,
