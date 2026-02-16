@@ -105,8 +105,8 @@ export default function Index() {
                     <Link key={i} to={btn.href || "/about"} className="w-full sm:w-1/2">
                       <div className="bg-white p-[8px] h-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
                         {IconComponent ? (
-                          <div className="flex items-start gap-4">
-                            <div className="bg-law-accent p-[15px] mt-1 flex items-center justify-center group-hover:bg-white transition-colors duration-300">
+                          <div className="flex items-center gap-4">
+                            <div className="bg-law-accent p-[15px] flex items-center justify-center group-hover:bg-white transition-colors duration-300">
                               <IconComponent className="w-8 h-8 text-black group-hover:text-law-accent transition-colors duration-300" />
                             </div>
                             <span className="font-outfit text-[clamp(1.5rem,4vw,32px)] text-black font-semibold leading-tight tracking-wide group-hover:text-white transition-colors duration-300">
