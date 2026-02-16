@@ -34,7 +34,7 @@ export default function AwardsSection({ content }: AwardsSectionProps) {
 
           {content.description && (
             <div
-              className="font-outfit text-[15px] md:text-[17px] leading-[1.7] text-black max-w-[700px] mx-auto mb-[30px] [&_a]:underline"
+              className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black max-w-[700px] mx-auto mb-[30px] [&_a]:underline"
               dangerouslySetInnerHTML={{ __html: content.description }}
             />
           )}

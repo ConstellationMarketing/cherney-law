@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import Seo from "@site/components/Seo";
 import Layout from "@site/components/layout/Layout";
-import { Phone, User } from "lucide-react";
+import { Phone, User, Scale, Calendar, Briefcase, FileText } from "lucide-react";
 import ContactForm from "@site/components/home/ContactForm";
 import AboutSection from "@site/components/home/AboutSection";
 import FirmDescriptionSection from "@site/components/home/FirmDescriptionSection";
@@ -21,6 +21,16 @@ export default function Index() {
   const heroContent = content.hero;
   const featureBoxes = heroContent.featureBoxes;
   const heroButtons = heroContent.buttons;
+
+  // Icon map for CMS-driven icons
+  const iconMap: Record<string, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
+    User,
+    Phone,
+    Scale,
+    Calendar,
+    Briefcase,
+    FileText,
+  };
 
   return (
     <Layout>
@@ -88,15 +98,32 @@ export default function Index() {
 
               {/* Dynamic hero buttons from CMS */}
               {heroButtons.length > 0 ? (
-                heroButtons.map((btn, i) => (
-                  <Link key={i} to={btn.href || "/about"} className="w-full sm:w-1/2">
-                    <div className="bg-white p-[8px] h-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group flex items-center justify-center">
-                      <span className="font-outfit text-[clamp(1.5rem,4vw,32px)] text-black font-light group-hover:text-white transition-colors duration-300">
-                        {btn.label}
-                      </span>
-                    </div>
-                  </Link>
-                ))
+                heroButtons.map((btn, i) => {
+                  const IconComponent = btn.icon && iconMap[btn.icon] ? iconMap[btn.icon] : null;
+
+                  return (
+                    <Link key={i} to={btn.href || "/about"} className="w-full sm:w-1/2">
+                      <div className="bg-white p-[8px] h-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
+                        {IconComponent ? (
+                          <div className="flex items-start gap-4">
+                            <div className="bg-law-accent p-[15px] mt-1 flex items-center justify-center group-hover:bg-white transition-colors duration-300">
+                              <IconComponent className="w-8 h-8 text-black group-hover:text-law-accent transition-colors duration-300" />
+                            </div>
+                            <span className="font-outfit text-[clamp(1.5rem,4vw,32px)] text-black font-semibold leading-tight tracking-wide group-hover:text-white transition-colors duration-300">
+                              {btn.label}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center h-full">
+                            <span className="font-outfit text-[clamp(1.5rem,4vw,32px)] text-black font-light group-hover:text-white transition-colors duration-300">
+                              {btn.label}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })
               ) : (
                 <Link to="/about" className="w-full sm:w-1/2">
                   <div className="bg-white p-[8px] h-full group hover:bg-law-accent transition-colors duration-300">

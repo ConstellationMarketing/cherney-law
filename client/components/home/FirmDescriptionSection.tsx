@@ -22,7 +22,7 @@ export default function FirmDescriptionSection({
 
             {content.body && (
               <div
-                className="font-outfit text-[14px] md:text-[16px] leading-[1.7] text-[#2a2a2a] prose prose-sm max-w-none [&_p]:mb-[20px] [&_p:last-child]:mb-0 [&_a]:text-[#2a2a2a] [&_a]:underline"
+                className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-[#2a2a2a] prose prose-sm max-w-none [&_p]:mb-[20px] [&_p:last-child]:mb-0 [&_a]:text-[#2a2a2a] [&_a]:underline"
                 dangerouslySetInnerHTML={{ __html: content.body }}
               />
             )}

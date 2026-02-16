@@ -37,7 +37,7 @@ export default function AttorneyInfoSection({
           {content.body && (
             <div className={content.image ? "md:w-[65%]" : "w-full"}>
               <div
-                className="font-outfit text-[15px] md:text-[16px] leading-[1.8] text-black prose prose-sm max-w-none [&_p]:mb-[18px] [&_p:last-child]:mb-0 [&_a]:text-black [&_a]:underline"
+                className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black prose prose-sm max-w-none [&_p]:mb-[18px] [&_p:last-child]:mb-0 [&_a]:text-black [&_a]:underline"
                 dangerouslySetInnerHTML={{ __html: content.body }}
               />
             </div>
@@ -53,7 +53,7 @@ export default function AttorneyInfoSection({
               </h3>
             )}
             {content.stayInformedText && (
-              <p className="font-outfit text-[15px] md:text-[16px] leading-[1.7] text-black text-center mb-[25px] md:mb-[30px]">
+              <p className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black text-center mb-[25px] md:mb-[30px]">
                 {content.stayInformedText}
               </p>
             )}

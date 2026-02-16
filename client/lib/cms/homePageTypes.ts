@@ -10,6 +10,7 @@ export interface HeroFeatureBox {
 export interface HeroButtonLink {
   label: string;
   href: string;
+  icon?: string;
 }
 
 export interface HeroContent {
