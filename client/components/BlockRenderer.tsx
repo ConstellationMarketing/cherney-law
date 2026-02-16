@@ -70,13 +70,23 @@ export default function BlockRenderer({
     );
   }
 
-  return (
-    <div className={isPreview ? "space-y-4" : ""}>
-      {content.map((block, index) => (
-        <RenderBlock key={index} block={block} isPreview={isPreview} />
-      ))}
-    </div>
-  );
+  try {
+    return (
+      <div className={isPreview ? "space-y-4" : ""}>
+        {content.map((block, index) => (
+          <RenderBlock key={index} block={block} isPreview={isPreview} />
+        ))}
+      </div>
+    );
+  } catch (error) {
+    console.error("BlockRenderer error:", error);
+    return (
+      <div className="p-8 text-center text-red-500">
+        <p>Error rendering content</p>
+        <p className="text-sm mt-2">{String(error)}</p>
+      </div>
+    );
+  }
 }
 
 function RenderBlock({
@@ -86,37 +96,46 @@ function RenderBlock({
   block: ContentBlock;
   isPreview: boolean;
 }) {
-  switch (block.type) {
-    case "hero":
-      return <HeroBlock block={block} isPreview={isPreview} />;
-    case "heading":
-      return <HeadingBlock block={block} />;
-    case "paragraph":
-      return <ParagraphBlock block={block} />;
-    case "bullets":
-      return <BulletsBlock block={block} />;
-    case "cta":
-      return <CTABlock block={block} isPreview={isPreview} />;
-    case "image":
-      return <ImageBlock block={block} />;
-    case "attorney-bio":
-      return <AttorneyBioBlock block={block} />;
-    case "services-grid":
-      return <ServicesGridBlock block={block} />;
-    case "testimonials":
-      return <TestimonialsBlock block={block} />;
-    case "contact-form":
-      return <ContactFormBlock block={block} />;
-    case "map":
-      return <MapBlock block={block} />;
-    case "two-column":
-      return <TwoColumnBlock block={block} isPreview={isPreview} />;
-    case "practice-areas-grid":
-      return <PracticeAreasGridBlock block={block} />;
-    case "google-reviews":
-      return <GoogleReviewsBlock block={block} />;
-    default:
-      return <div className="p-4 bg-gray-100 rounded">Unknown block type</div>;
+  try {
+    switch (block.type) {
+      case "hero":
+        return <HeroBlock block={block} isPreview={isPreview} />;
+      case "heading":
+        return <HeadingBlock block={block} />;
+      case "paragraph":
+        return <ParagraphBlock block={block} />;
+      case "bullets":
+        return <BulletsBlock block={block} />;
+      case "cta":
+        return <CTABlock block={block} isPreview={isPreview} />;
+      case "image":
+        return <ImageBlock block={block} />;
+      case "attorney-bio":
+        return <AttorneyBioBlock block={block} />;
+      case "services-grid":
+        return <ServicesGridBlock block={block} />;
+      case "testimonials":
+        return <TestimonialsBlock block={block} />;
+      case "contact-form":
+        return <ContactFormBlock block={block} />;
+      case "map":
+        return <MapBlock block={block} />;
+      case "two-column":
+        return <TwoColumnBlock block={block} isPreview={isPreview} />;
+      case "practice-areas-grid":
+        return <PracticeAreasGridBlock block={block} />;
+      case "google-reviews":
+        return <GoogleReviewsBlock block={block} />;
+      default:
+        return <div className="p-4 bg-gray-100 rounded">Unknown block type: {block.type}</div>;
+    }
+  } catch (error) {
+    console.error("RenderBlock error:", error, "Block:", block);
+    return (
+      <div className="p-4 bg-red-50 border border-red-200 rounded text-red-600">
+        Error rendering block: {block.type} - {String(error)}
+      </div>
+    );
   }
 }
 
