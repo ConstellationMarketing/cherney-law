@@ -70,7 +70,7 @@ export default function AboutSection({ content }: AboutSectionProps) {
                 {data.heading}
               </h2>
               <div
-                className="font-outfit text-[16px] md:text-[20px] leading-[24px] md:leading-[30px] text-black [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
+                className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
                 dangerouslySetInnerHTML={{ __html: data.description }}
               />
             </div>
@@ -151,7 +151,7 @@ export default function AboutSection({ content }: AboutSectionProps) {
                     {feature.number}. {feature.title}
                   </h3>
                   <div
-                    className="font-outfit text-[16px] md:text-[20px] leading-[24px] md:leading-[30px] text-black [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
+                    className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
                     dangerouslySetInnerHTML={{ __html: feature.description }}
                   />
                   {feature.readMoreLink && (
