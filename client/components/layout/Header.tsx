@@ -1,7 +1,19 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, ArrowRight } from "lucide-react";
+import { Menu, ArrowRight, ChevronDown } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useSiteSettings } from "@site/contexts/SiteSettingsContext";
 
 export default function Header() {
@@ -9,7 +21,7 @@ export default function Header() {
 
   const navItems = [...settings.navigationItems]
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-    .filter((item) => item.label && item.href);
+    .filter((item) => item.label); // Don't require href - dropdown parents may not have href
 
   return (
     <>
@@ -36,13 +48,82 @@ export default function Header() {
             <nav className="hidden md:flex items-center flex-1 justify-end">
               <ul className="flex flex-wrap justify-end -mx-[11px]">
                 {navItems.map((item) => (
-                  <li key={item.href} className="px-[11px]">
-                    <Link
-                      to={item.href}
-                      className="font-outfit text-[20px] text-white py-[31px] mr-[20px] whitespace-nowrap hover:opacity-80 transition-opacity duration-400"
-                    >
-                      {item.label}
-                    </Link>
+                  <li key={item.id || item.href} className="px-[11px]">
+                    {item.children && item.children.length > 0 ? (
+                      // Item with dropdown
+                      <div className="flex items-center">
+                        {item.href && (
+                          <Link
+                            to={item.href}
+                            className="font-outfit text-[20px] text-white py-[31px] whitespace-nowrap hover:opacity-80 transition-opacity duration-400"
+                            target={
+                              item.external || item.openInNewTab
+                                ? "_blank"
+                                : undefined
+                            }
+                            rel={
+                              item.external || item.openInNewTab
+                                ? "noopener noreferrer"
+                                : undefined
+                            }
+                          >
+                            {item.label}
+                          </Link>
+                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className="font-outfit text-[20px] text-white py-[31px] mr-[20px] whitespace-nowrap hover:opacity-80 transition-opacity duration-400 flex items-center gap-1 bg-transparent border-0 cursor-pointer">
+                            {!item.href && <span>{item.label}</span>}
+                            <ChevronDown className="h-4 w-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="start"
+                            className="bg-law-dark border-law-border"
+                          >
+                            {item.children.map((child) => (
+                              <DropdownMenuItem
+                                key={child.id || child.href}
+                                asChild
+                              >
+                                <Link
+                                  to={child.href || "#"}
+                                  className="font-outfit text-[18px] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer"
+                                  target={
+                                    child.external || child.openInNewTab
+                                      ? "_blank"
+                                      : undefined
+                                  }
+                                  rel={
+                                    child.external || child.openInNewTab
+                                      ? "noopener noreferrer"
+                                      : undefined
+                                  }
+                                >
+                                  {child.label}
+                                </Link>
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    ) : (
+                      // Simple link (no dropdown)
+                      <Link
+                        to={item.href || "#"}
+                        className="font-outfit text-[20px] text-white py-[31px] mr-[20px] whitespace-nowrap hover:opacity-80 transition-opacity duration-400"
+                        target={
+                          item.external || item.openInNewTab
+                            ? "_blank"
+                            : undefined
+                        }
+                        rel={
+                          item.external || item.openInNewTab
+                            ? "noopener noreferrer"
+                            : undefined
+                        }
+                      >
+                        {item.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -69,20 +150,92 @@ export default function Header() {
                 side="right"
                 className="bg-law-card border-law-border"
               >
-                <nav className="flex flex-col gap-4 mt-8">
-                  {navItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      className="font-outfit text-[20px] text-white py-[10px] px-[5%] border-b border-black/5 hover:opacity-80 transition-opacity"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
+                <nav className="flex flex-col gap-2 mt-8">
+                  {navItems.map((item) =>
+                    item.children && item.children.length > 0 ? (
+                      // Item with accordion dropdown
+                      <Accordion
+                        key={item.id || item.href || item.label}
+                        type="single"
+                        collapsible
+                      >
+                        <AccordionItem
+                          value={item.id || item.href || item.label}
+                          className="border-b border-black/5"
+                        >
+                          <AccordionTrigger className="font-outfit text-[20px] text-white py-[10px] px-[5%] hover:no-underline hover:opacity-80">
+                            {item.href ? (
+                              <Link
+                                to={item.href}
+                                className="flex-1 text-left"
+                                onClick={(e) => e.stopPropagation()}
+                                target={
+                                  item.external || item.openInNewTab
+                                    ? "_blank"
+                                    : undefined
+                                }
+                                rel={
+                                  item.external || item.openInNewTab
+                                    ? "noopener noreferrer"
+                                    : undefined
+                                }
+                              >
+                                {item.label}
+                              </Link>
+                            ) : (
+                              <span className="flex-1 text-left">
+                                {item.label}
+                              </span>
+                            )}
+                          </AccordionTrigger>
+                          <AccordionContent className="pl-8 space-y-1">
+                            {item.children.map((child) => (
+                              <Link
+                                key={child.id || child.href}
+                                to={child.href || "#"}
+                                className="block font-outfit text-[18px] text-gray-300 py-2 hover:text-law-accent transition-colors"
+                                target={
+                                  child.external || child.openInNewTab
+                                    ? "_blank"
+                                    : undefined
+                                }
+                                rel={
+                                  child.external || child.openInNewTab
+                                    ? "noopener noreferrer"
+                                    : undefined
+                                }
+                              >
+                                {child.label}
+                              </Link>
+                            ))}
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    ) : (
+                      // Simple link (no accordion)
+                      <Link
+                        key={item.id || item.href}
+                        to={item.href || "#"}
+                        className="font-outfit text-[20px] text-white py-[10px] px-[5%] border-b border-black/5 hover:opacity-80 transition-opacity"
+                        target={
+                          item.external || item.openInNewTab
+                            ? "_blank"
+                            : undefined
+                        }
+                        rel={
+                          item.external || item.openInNewTab
+                            ? "noopener noreferrer"
+                            : undefined
+                        }
+                      >
+                        {item.label}
+                      </Link>
+                    )
+                  )}
                   <Link to={settings.headerCtaUrl} className="mt-4">
                     <Button className="bg-white text-black font-outfit text-[22px] py-[25px] w-full border-2 border-transparent hover:border-black hover:bg-law-accent hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
                       {settings.headerCtaText}
-                      <ArrowRight className="w-5 h-5 group-hover:text-white" />
+                      <ArrowRight className="w-5 w-5 group-hover:text-white" />
                     </Button>
                   </Link>
                 </nav>
