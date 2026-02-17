@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import Seo from "@site/components/Seo";
 import Layout from "@site/components/layout/Layout";
+import { Phone, User, Scale, Calendar, Briefcase, FileText } from "lucide-react";
 import ContactForm from "@site/components/home/ContactForm";
 import AboutSection from "@site/components/home/AboutSection";
 import FirmDescriptionSection from "@site/components/home/FirmDescriptionSection";
@@ -11,22 +13,36 @@ import TestimonialsSection from "@site/components/home/TestimonialsSection";
 import AttorneyInfoSection from "@site/components/home/AttorneyInfoSection";
 import ContactUsSection from "@site/components/home/ContactUsSection";
 import { useHomeContent } from "@site/hooks/useHomeContent";
-import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
+import { useGlobalPhone, useSiteSettings } from "@site/contexts/SiteSettingsContext";
+import { resolveSeo } from "@site/utils/resolveSeo";
 
 export default function Index() {
-  const { content, isLoading } = useHomeContent();
+  const { content, page, isLoading } = useHomeContent();
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
+  const siteSettings = useSiteSettings();
+  const { pathname } = useLocation();
+  const siteUrl = import.meta.env.VITE_SITE_URL || '';
+
+  // Centralized SEO resolution
+  const seo = resolveSeo(page, siteSettings, pathname, siteUrl);
 
   const heroContent = content.hero;
   const featureBoxes = heroContent.featureBoxes;
   const heroButtons = heroContent.buttons;
 
+  // Icon map for CMS-driven icons
+  const iconMap: Record<string, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
+    User,
+    Phone,
+    Scale,
+    Calendar,
+    Briefcase,
+    FileText,
+  };
+
   return (
     <Layout>
-      <Seo
-        title="Home"
-        description="Protecting your rights with integrity, experience, and relentless advocacy."
-      />
+      <Seo {...seo} />
 
       {/* Hero and Contact Form Section */}
       <div className="bg-law-accent py-[27px] w-full">
@@ -72,13 +88,7 @@ export default function Index() {
               <div className="bg-white p-[8px] w-full sm:w-1/2 cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
                 <div className="flex items-start gap-4">
                   <div className="bg-law-accent p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
-                    <svg
-                      className="w-8 h-8 text-black group-hover:text-white transition-colors duration-300"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 00-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z" />
-                    </svg>
+                    <Phone className="w-8 h-8 text-black group-hover:text-white transition-colors duration-300" strokeWidth={1.5} />
                   </div>
                   <div className="flex-1">
                     <h4 className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] font-normal group-hover:text-white transition-colors duration-300">
@@ -93,21 +103,43 @@ export default function Index() {
 
               {/* Dynamic hero buttons from CMS */}
               {heroButtons.length > 0 ? (
-                heroButtons.map((btn, i) => (
-                  <Link key={i} to={btn.href || "/about"} className="w-full sm:w-1/2">
-                    <div className="bg-white p-[8px] h-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group flex items-center justify-center">
-                      <span className="font-outfit text-[clamp(1.5rem,4vw,32px)] text-black font-light group-hover:text-white transition-colors duration-300">
-                        {btn.label}
-                      </span>
-                    </div>
-                  </Link>
-                ))
+                heroButtons.map((btn, i) => {
+                  const IconComponent = btn.icon && iconMap[btn.icon] ? iconMap[btn.icon] : null;
+
+                  return (
+                    <Link key={i} to={btn.href || "/about"} className="w-full sm:w-1/2">
+                      <div className="bg-white p-[8px] h-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
+                        {IconComponent ? (
+                          <div className="flex items-center gap-4">
+                            <div className="bg-law-accent p-[15px] flex items-center justify-center group-hover:bg-white transition-colors duration-300">
+                              <IconComponent className="w-8 h-8 text-black group-hover:text-law-accent transition-colors duration-300" />
+                            </div>
+                            <span className="font-outfit text-[clamp(1.5rem,4vw,32px)] text-black font-semibold leading-tight tracking-wide group-hover:text-white transition-colors duration-300">
+                              {btn.label}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center h-full">
+                            <span className="font-outfit text-[clamp(1.5rem,4vw,32px)] text-black font-light group-hover:text-white transition-colors duration-300">
+                              {btn.label}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })
               ) : (
                 <Link to="/about" className="w-full sm:w-1/2">
-                  <div className="bg-white p-[8px] h-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group flex items-center justify-center">
-                    <span className="font-outfit text-[clamp(1.5rem,4vw,32px)] text-black font-light group-hover:text-white transition-colors duration-300">
-                      Attorney Profile
-                    </span>
+                  <div className="bg-white p-[8px] h-full group hover:bg-law-accent transition-colors duration-300">
+                    <div className="flex items-start gap-4">
+                      <div className="bg-law-accent p-[15px] mt-1 flex items-center justify-center group-hover:bg-white transition-colors duration-300">
+                        <User className="w-8 h-8 text-black group-hover:text-law-accent transition-colors duration-300" />
+                      </div>
+                      <span className="font-outfit text-[clamp(1.5rem,4vw,32px)] text-black font-semibold leading-tight tracking-wide group-hover:text-white transition-colors duration-300">
+                        Attorney Profile
+                      </span>
+                    </div>
                   </div>
                 </Link>
               )}

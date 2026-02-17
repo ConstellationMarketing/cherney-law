@@ -1,4 +1,4 @@
-import { Phone, DollarSign } from "lucide-react";
+import { Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { AboutContent } from "@site/lib/cms/homePageTypes";
 import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
@@ -70,7 +70,7 @@ export default function AboutSection({ content }: AboutSectionProps) {
                 {data.heading}
               </h2>
               <div
-                className="font-outfit text-[16px] md:text-[20px] leading-[24px] md:leading-[30px] text-black [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
+                className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
                 dangerouslySetInnerHTML={{ __html: data.description }}
               />
             </div>
@@ -99,10 +99,18 @@ export default function AboutSection({ content }: AboutSectionProps) {
             <div className="bg-law-accent p-[8px] w-full max-w-[400px] cursor-pointer transition-all duration-300 hover:bg-law-accent-dark group">
               <div className="flex items-start gap-4">
                 <div className="bg-white p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
-                  <DollarSign
-                    className="w-8 h-8 [&>*]:fill-none [&>*]:stroke-black group-hover:[&>*]:stroke-white transition-colors duration-300"
-                    strokeWidth={1.5}
-                  />
+                  <svg
+                    className="w-8 h-8 text-black group-hover:text-white transition-colors duration-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
                 </div>
                 <div className="flex-1">
                   <h4 className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] group-hover:text-white transition-colors duration-300">
@@ -143,7 +151,7 @@ export default function AboutSection({ content }: AboutSectionProps) {
                     {feature.number}. {feature.title}
                   </h3>
                   <div
-                    className="font-outfit text-[16px] md:text-[20px] leading-[24px] md:leading-[30px] text-black [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
+                    className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
                     dangerouslySetInnerHTML={{ __html: feature.description }}
                   />
                   {feature.readMoreLink && (

@@ -15,7 +15,7 @@ export default function AboutCTA({ content, phoneDisplay, phoneLabel }: AboutCTA
           <h2 className="font-playfair text-[36px] md:text-[48px] lg:text-[60px] leading-tight text-black pb-[15px]">
             {content.heading}
           </h2>
-          <p className="font-outfit text-[18px] md:text-[22px] leading-[26px] md:leading-[32px] text-black/80">
+          <p className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black/80">
             {content.description}
           </p>
         </div>

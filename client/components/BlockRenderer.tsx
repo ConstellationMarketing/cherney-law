@@ -1,7 +1,14 @@
 import type { ContentBlock } from "@site/lib/blocks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Star, Phone } from "lucide-react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { toast } from "sonner";
 import {
   Car,
   Truck,
@@ -27,6 +34,24 @@ function getIcon(iconName: string): LucideIcon {
   return iconMap[iconName] || FileText;
 }
 
+// Contact form validation schema
+const contactFormSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email("Valid email is required"),
+  phone: z.string().min(1, "Phone number is required"),
+  message: z.string().min(1, "Message is required"),
+  preferredContact: z
+    .array(z.enum(["phone", "email", "text"]))
+    .min(1, "Please select at least one contact method"),
+  consent: z.literal(true, {
+    errorMap: () => ({ message: "You must agree to continue" }),
+  }),
+  honeypot: z.string().max(0, "Bot detected"),
+});
+
+type ContactFormData = z.infer<typeof contactFormSchema>;
+
 interface BlockRendererProps {
   content: ContentBlock[];
   isPreview?: boolean;
@@ -45,13 +70,23 @@ export default function BlockRenderer({
     );
   }
 
-  return (
-    <div className={isPreview ? "space-y-4" : ""}>
-      {content.map((block, index) => (
-        <RenderBlock key={index} block={block} isPreview={isPreview} />
-      ))}
-    </div>
-  );
+  try {
+    return (
+      <div className={isPreview ? "space-y-4" : ""}>
+        {content.map((block, index) => (
+          <RenderBlock key={index} block={block} isPreview={isPreview} />
+        ))}
+      </div>
+    );
+  } catch (error) {
+    console.error("BlockRenderer error:", error);
+    return (
+      <div className="p-8 text-center text-red-500">
+        <p>Error rendering content</p>
+        <p className="text-sm mt-2">{String(error)}</p>
+      </div>
+    );
+  }
 }
 
 function RenderBlock({
@@ -61,37 +96,46 @@ function RenderBlock({
   block: ContentBlock;
   isPreview: boolean;
 }) {
-  switch (block.type) {
-    case "hero":
-      return <HeroBlock block={block} isPreview={isPreview} />;
-    case "heading":
-      return <HeadingBlock block={block} />;
-    case "paragraph":
-      return <ParagraphBlock block={block} />;
-    case "bullets":
-      return <BulletsBlock block={block} />;
-    case "cta":
-      return <CTABlock block={block} isPreview={isPreview} />;
-    case "image":
-      return <ImageBlock block={block} />;
-    case "attorney-bio":
-      return <AttorneyBioBlock block={block} />;
-    case "services-grid":
-      return <ServicesGridBlock block={block} />;
-    case "testimonials":
-      return <TestimonialsBlock block={block} />;
-    case "contact-form":
-      return <ContactFormBlock block={block} />;
-    case "map":
-      return <MapBlock block={block} />;
-    case "two-column":
-      return <TwoColumnBlock block={block} isPreview={isPreview} />;
-    case "practice-areas-grid":
-      return <PracticeAreasGridBlock block={block} />;
-    case "google-reviews":
-      return <GoogleReviewsBlock block={block} />;
-    default:
-      return <div className="p-4 bg-gray-100 rounded">Unknown block type</div>;
+  try {
+    switch (block.type) {
+      case "hero":
+        return <HeroBlock block={block} isPreview={isPreview} />;
+      case "heading":
+        return <HeadingBlock block={block} />;
+      case "paragraph":
+        return <ParagraphBlock block={block} />;
+      case "bullets":
+        return <BulletsBlock block={block} />;
+      case "cta":
+        return <CTABlock block={block} isPreview={isPreview} />;
+      case "image":
+        return <ImageBlock block={block} />;
+      case "attorney-bio":
+        return <AttorneyBioBlock block={block} />;
+      case "services-grid":
+        return <ServicesGridBlock block={block} />;
+      case "testimonials":
+        return <TestimonialsBlock block={block} />;
+      case "contact-form":
+        return <ContactFormBlock block={block} />;
+      case "map":
+        return <MapBlock block={block} />;
+      case "two-column":
+        return <TwoColumnBlock block={block} isPreview={isPreview} />;
+      case "practice-areas-grid":
+        return <PracticeAreasGridBlock block={block} />;
+      case "google-reviews":
+        return <GoogleReviewsBlock block={block} />;
+      default:
+        return <div className="p-4 bg-gray-100 rounded">Unknown block type: {block.type}</div>;
+    }
+  } catch (error) {
+    console.error("RenderBlock error:", error, "Block:", block);
+    return (
+      <div className="p-4 bg-red-50 border border-red-200 rounded text-red-600">
+        Error rendering block: {block.type} - {String(error)}
+      </div>
+    );
   }
 }
 
@@ -329,35 +373,223 @@ function ContactFormBlock({
 }: {
   block: Extract<ContentBlock, { type: "contact-form" }>;
 }) {
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ContactFormData>({
+    resolver: zodResolver(contactFormSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      message: "",
+      preferredContact: [],
+      consent: undefined,
+      honeypot: "",
+    },
+  });
+
+  const onSubmit = async (data: ContactFormData) => {
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      console.log("Form submitted:", data);
+      toast.success("Thank you! We will contact you soon.");
+      reset();
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast.error("Something went wrong. Please try again.");
+    }
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg border">
       <h3 className="text-xl font-bold text-gray-900 mb-4">{block.heading}</h3>
-      <form className="space-y-4">
-        <input
-          type="text"
-          placeholder="Your Name"
-          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#183658]"
-        />
-        <input
-          type="email"
-          placeholder="Your Email"
-          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#183658]"
-        />
-        <input
-          type="tel"
-          placeholder="Your Phone"
-          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#183658]"
-        />
-        <textarea
-          placeholder="Tell us about your case..."
-          rows={4}
-          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#183658]"
-        />
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {/* First Name */}
+        <div>
+          <Input
+            {...register("firstName")}
+            type="text"
+            placeholder="First Name *"
+            className="w-full h-[50px] px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#183658]"
+            aria-invalid={errors.firstName ? "true" : "false"}
+          />
+          {errors.firstName && (
+            <p className="text-red-600 text-sm mt-1">{errors.firstName.message}</p>
+          )}
+        </div>
+
+        {/* Last Name */}
+        <div>
+          <Input
+            {...register("lastName")}
+            type="text"
+            placeholder="Last Name *"
+            className="w-full h-[50px] px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#183658]"
+            aria-invalid={errors.lastName ? "true" : "false"}
+          />
+          {errors.lastName && (
+            <p className="text-red-600 text-sm mt-1">{errors.lastName.message}</p>
+          )}
+        </div>
+
+        {/* Email */}
+        <div>
+          <Input
+            {...register("email")}
+            type="email"
+            placeholder="Email Address *"
+            className="w-full h-[50px] px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#183658]"
+            aria-invalid={errors.email ? "true" : "false"}
+          />
+          {errors.email && (
+            <p className="text-red-600 text-sm mt-1">{errors.email.message}</p>
+          )}
+        </div>
+
+        {/* Phone */}
+        <div>
+          <Input
+            {...register("phone")}
+            type="tel"
+            placeholder="Phone Number *"
+            className="w-full h-[50px] px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#183658]"
+            aria-invalid={errors.phone ? "true" : "false"}
+          />
+          {errors.phone && (
+            <p className="text-red-600 text-sm mt-1">{errors.phone.message}</p>
+          )}
+        </div>
+
+        {/* Message */}
+        <div>
+          <Textarea
+            {...register("message")}
+            placeholder="Tell us about your case... *"
+            rows={4}
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#183658]"
+            aria-invalid={errors.message ? "true" : "false"}
+          />
+          {errors.message && (
+            <p className="text-red-600 text-sm mt-1">{errors.message.message}</p>
+          )}
+        </div>
+
+        {/* Preferred Contact Method */}
+        <div>
+          <p className="text-sm text-gray-700 mb-2">
+            How would you like us to reach you? *
+          </p>
+          <Controller
+            control={control}
+            name="preferredContact"
+            render={({ field }) => (
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                {(["phone", "email", "text"] as const).map((method) => {
+                  const isChecked = field.value.includes(method);
+                  return (
+                    <label
+                      key={method}
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={isChecked}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            field.onChange([...field.value, method]);
+                          } else {
+                            field.onChange(
+                              field.value.filter((v) => v !== method)
+                            );
+                          }
+                        }}
+                        className="border-gray-300 data-[state=checked]:bg-[#183658] data-[state=checked]:border-[#183658]"
+                      />
+                      <span className="text-sm text-gray-700 capitalize">
+                        {method}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          />
+          {errors.preferredContact && (
+            <p className="text-red-600 text-sm mt-1">
+              {errors.preferredContact.message}
+            </p>
+          )}
+        </div>
+
+        {/* Consent Checkbox */}
+        <div>
+          <Controller
+            control={control}
+            name="consent"
+            render={({ field }) => (
+              <label className="flex items-start gap-2 cursor-pointer">
+                <Checkbox
+                  checked={field.value === true}
+                  onCheckedChange={(checked) =>
+                    field.onChange(checked === true ? true : undefined)
+                  }
+                  className="border-gray-300 data-[state=checked]:bg-[#183658] data-[state=checked]:border-[#183658] mt-0.5 shrink-0"
+                />
+                <span className="text-xs text-gray-600 leading-relaxed">
+                  I agree to receive marketing messaging from this law firm at the phone number provided above. Data rates may apply. Reply STOP to opt out.
+                </span>
+              </label>
+            )}
+          />
+          {errors.consent && (
+            <p className="text-red-600 text-sm mt-1">
+              {errors.consent.message}
+            </p>
+          )}
+        </div>
+
+        {/* Privacy / Terms links */}
+        <p className="text-xs text-gray-500">
+          <a
+            href="/privacy-policy"
+            className="underline hover:text-gray-700 transition-colors"
+          >
+            Privacy Policy
+          </a>
+          {" – "}
+          <a
+            href="/terms-of-service"
+            className="underline hover:text-gray-700 transition-colors"
+          >
+            Terms of Service
+          </a>
+        </p>
+
+        {/* Honeypot */}
+        <div className="absolute invisible" aria-hidden="true">
+          <label htmlFor="contact-form-block-hp">
+            Leave empty
+            <Input
+              {...register("honeypot")}
+              type="text"
+              id="contact-form-block-hp"
+              tabIndex={-1}
+              autoComplete="off"
+            />
+          </label>
+        </div>
+
+        {/* Submit */}
         <Button
           type="submit"
-          className="w-full bg-[#183658] hover:bg-[#0f2742]"
+          disabled={isSubmitting}
+          className="w-full h-[50px] bg-[#183658] hover:bg-[#0f2742]"
         >
-          Submit
+          {isSubmitting ? "SUBMITTING..." : "Submit"}
         </Button>
       </form>
     </div>

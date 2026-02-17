@@ -1,18 +1,24 @@
+import { useLocation } from "react-router-dom";
 import Seo from "@site/components/Seo";
 import Layout from "@site/components/layout/Layout";
 import OfficeTabs from "@site/components/contact/OfficeTabs";
 import ContactFormNew from "@site/components/contact/ContactFormNew";
 import { useContactContent } from "@site/hooks/useContactContent";
+import { useSiteSettings } from "@site/contexts/SiteSettingsContext";
+import { resolveSeo } from "@site/utils/resolveSeo";
 
 export default function ContactPage() {
-  const { content } = useContactContent();
+  const { content, page } = useContactContent();
+  const siteSettings = useSiteSettings();
+  const { pathname } = useLocation();
+  const siteUrl = import.meta.env.VITE_SITE_URL || '';
+
+  // Centralized SEO resolution
+  const seo = resolveSeo(page, siteSettings, pathname, siteUrl);
 
   return (
     <Layout>
-      <Seo
-        title="Contact Us"
-        description="Get in touch with our experienced legal team. Free consultation available. We're here to help with your bankruptcy needs."
-      />
+      <Seo {...seo} />
 
       {/* Hero Section */}
       <div className="bg-law-accent pt-[30px] md:pt-[54px] pb-[30px] md:pb-[54px]">

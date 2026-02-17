@@ -1,9 +1,8 @@
 import { Helmet } from 'react-helmet-async';
-import { useLocation } from 'react-router-dom';
 
 interface SeoProps {
-  title?: string;
-  description?: string;
+  title: string;
+  description: string;
   canonical?: string;
   image?: string;
   noindex?: boolean;
@@ -13,48 +12,39 @@ export default function Seo({
   title, 
   description, 
   canonical, 
-  image,
+  image, 
   noindex = false 
 }: SeoProps) {
-  const { pathname } = useLocation();
-  const siteUrl = import.meta.env.VITE_SITE_URL || '';
-  
-  // Build full canonical URL
-  const fullCanonical = canonical || (siteUrl ? `${siteUrl}${pathname}` : undefined);
-  
-  // Build full title
-  const siteName = 'Constellation Law Firm';
-  const fullTitle = title ? `${title} | ${siteName}` : siteName;
-  
-  // Default description
-  const defaultDescription = 'Protecting your rights with integrity, experience, and relentless advocacy.';
-  const fullDescription = description || defaultDescription;
-  
-  // Default image
-  const defaultImage = siteUrl ? `${siteUrl}/og-image.jpg` : undefined;
-  const fullImage = image || defaultImage;
+  // In production SSG builds, meta tags are already in static HTML
+  // Only use Helmet in dev mode or if SSG didn't run
+  const isProduction = import.meta.env.PROD;
+  const hasPrerenderedMeta = typeof document !== 'undefined' &&
+    document.querySelector('meta[name="description"]')?.getAttribute('content');
+
+  // Skip Helmet if production and meta tags already exist
+  if (isProduction && hasPrerenderedMeta) {
+    return null;
+  }
 
   return (
     <Helmet>
-      <title>{fullTitle}</title>
-      <meta name="description" content={fullDescription} />
-      
+      <title>{title}</title>
+      <meta name="description" content={description} />
       {noindex && <meta name="robots" content="noindex, nofollow" />}
-      
-      {fullCanonical && <link rel="canonical" href={fullCanonical} />}
+      {canonical && <link rel="canonical" href={canonical} />}
       
       {/* Open Graph */}
-      <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={fullDescription} />
+      <meta property="og:title" content={title} />
+      <meta property="og:description" content={description} />
       <meta property="og:type" content="website" />
-      {fullCanonical && <meta property="og:url" content={fullCanonical} />}
-      {fullImage && <meta property="og:image" content={fullImage} />}
+      {canonical && <meta property="og:url" content={canonical} />}
+      {image && <meta property="og:image" content={image} />}
       
-      {/* Twitter Card */}
+      {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={fullDescription} />
-      {fullImage && <meta name="twitter:image" content={fullImage} />}
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
+      {image && <meta name="twitter:image" content={image} />}
     </Helmet>
   );
 }

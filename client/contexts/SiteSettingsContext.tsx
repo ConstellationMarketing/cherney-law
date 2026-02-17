@@ -7,7 +7,7 @@ import {
 } from "react";
 
 // Site Settings types (matching submodule)
-interface SiteSettings {
+export interface SiteSettings {
   siteName: string;
   logoUrl: string;
   logoAlt: string;
@@ -17,7 +17,21 @@ interface SiteSettings {
   applyPhoneGlobally: boolean;
   headerCtaText: string;
   headerCtaUrl: string;
-  navigationItems: { label: string; href: string; order?: number }[];
+  navigationItems: {
+    id?: string;
+    label: string;
+    href?: string;
+    order?: number;
+    external?: boolean;
+    openInNewTab?: boolean;
+    children?: {
+      id?: string;
+      label: string;
+      href?: string;
+      external?: boolean;
+      openInNewTab?: boolean;
+    }[];
+  }[];
   footerAboutLinks: { label: string; href?: string }[];
   footerPracticeLinks: { label: string; href?: string }[];
   addressLine1: string;
@@ -42,12 +56,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   applyPhoneGlobally: true,
   headerCtaText: "Contact Us",
   headerCtaUrl: "/contact",
-  navigationItems: [
-    { label: "Home", href: "/", order: 1 },
-    { label: "About Us", href: "/about", order: 2 },
-    { label: "Practice Areas", href: "/practice-areas", order: 3 },
-    { label: "Contact", href: "/contact", order: 4 },
-  ],
+  navigationItems: [],
   footerAboutLinks: [],
   footerPracticeLinks: [],
   addressLine1: "",
@@ -58,6 +67,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   footerLocations: [],
   footerBottomLinks: [
     { label: "Privacy Policy", href: "/privacy-policy" },
+    { label: "Terms of Service", href: "/terms-of-service" },
     { label: "Disclaimer", href: "/disclaimer" },
   ],
   copyrightText: `Copyright © ${new Date().getFullYear()} | All Rights Reserved`,

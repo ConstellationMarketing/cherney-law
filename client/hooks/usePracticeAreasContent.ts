@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import type { PracticeAreasPageContent } from "../lib/cms/practiceAreasPageTypes";
 import { defaultPracticeAreasContent } from "../lib/cms/practiceAreasPageTypes";
+import type { PageSeoFields } from "../utils/resolveSeo";
 
 // Supabase configuration - use environment variables
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -8,17 +9,20 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
 interface UsePracticeAreasContentResult {
   content: PracticeAreasPageContent;
+  page: PageSeoFields | null;
   isLoading: boolean;
   error: Error | null;
 }
 
 // Cache for practice areas content
 let cachedContent: PracticeAreasPageContent | null = null;
+let cachedPage: PageSeoFields | null = null;
 
 export function usePracticeAreasContent(): UsePracticeAreasContentResult {
   const [content, setContent] = useState<PracticeAreasPageContent>(
     defaultPracticeAreasContent,
   );
+  const [page, setPage] = useState<PageSeoFields | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -28,17 +32,18 @@ export function usePracticeAreasContent(): UsePracticeAreasContentResult {
     async function fetchContent() {
       try {
         // Return cached content if available
-        if (cachedContent) {
+        if (cachedContent && cachedPage) {
           if (isMounted) {
             setContent(cachedContent);
+            setPage(cachedPage);
             setIsLoading(false);
           }
           return;
         }
 
-        // Fetch practice areas page from pages table
+        // Fetch practice areas page from pages table with SEO fields
         const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/pages?url_path=eq./practice-areas&status=eq.published&select=content`,
+          `${SUPABASE_URL}/rest/v1/pages?url_path=eq./practice-areas&status=eq.published&select=content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,url_path,title`,
           {
             headers: {
               apikey: SUPABASE_ANON_KEY,
@@ -57,6 +62,7 @@ export function usePracticeAreasContent(): UsePracticeAreasContentResult {
           // No CMS content, use defaults
           if (isMounted) {
             setContent(defaultPracticeAreasContent);
+            setPage(null);
             setIsLoading(false);
           }
           return;
@@ -71,11 +77,26 @@ export function usePracticeAreasContent(): UsePracticeAreasContentResult {
           defaultPracticeAreasContent,
         );
 
-        // Cache the result
+        // Extract SEO fields
+        const pageSeoFields: PageSeoFields = {
+          meta_title: pageData.meta_title,
+          meta_description: pageData.meta_description,
+          canonical_url: pageData.canonical_url,
+          og_title: pageData.og_title,
+          og_description: pageData.og_description,
+          og_image: pageData.og_image,
+          noindex: pageData.noindex ?? false,
+          url_path: pageData.url_path,
+          title: pageData.title,
+        };
+
+        // Cache the results
         cachedContent = mergedContent;
+        cachedPage = pageSeoFields;
 
         if (isMounted) {
           setContent(mergedContent);
+          setPage(pageSeoFields);
           setError(null);
         }
       } catch (err) {
@@ -99,7 +120,7 @@ export function usePracticeAreasContent(): UsePracticeAreasContentResult {
     };
   }, []);
 
-  return { content, isLoading, error };
+  return { content, page, isLoading, error };
 }
 
 // Deep merge CMS content with defaults
@@ -133,4 +154,5 @@ function mergeWithDefaults(
 // Helper to clear cache (useful after admin edits)
 export function clearPracticeAreasContentCache() {
   cachedContent = null;
+  cachedPage = null;
 }

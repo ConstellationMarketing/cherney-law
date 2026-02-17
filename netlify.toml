@@ -1,6 +1,6 @@
 [build]
   publish = "dist/spa"
-  command = "npm run build:ssg"
+  command = "pnpm run build:ssg"
   functions = "vendor/cms-core/netlify/functions"
 
 
@@ -13,3 +13,8 @@
   from = "/api/*"
   status = 200
   to = "/.netlify/functions/api/:splat"
+  
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

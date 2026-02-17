@@ -1,3 +1,4 @@
+import { useLocation } from "react-router-dom";
 import Seo from "@site/components/Seo";
 import Layout from "@site/components/layout/Layout";
 import PracticeAreaCard from "@site/components/practice/PracticeAreaCard";
@@ -18,7 +19,8 @@ import {
 } from "lucide-react";
 import { usePracticeAreasContent } from "@site/hooks/usePracticeAreasContent";
 import { useAboutContent } from "@site/hooks/useAboutContent";
-import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
+import { useGlobalPhone, useSiteSettings } from "@site/contexts/SiteSettingsContext";
+import { resolveSeo } from "@site/utils/resolveSeo";
 
 // Icon mapping for practice areas
 const iconMap: Record<string, LucideIcon> = {
@@ -31,9 +33,15 @@ const iconMap: Record<string, LucideIcon> = {
 };
 
 export default function PracticeAreas() {
-  const { content } = usePracticeAreasContent();
+  const { content, page } = usePracticeAreasContent();
   const { content: aboutContent } = useAboutContent();
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
+  const siteSettings = useSiteSettings();
+  const { pathname } = useLocation();
+  const siteUrl = import.meta.env.VITE_SITE_URL || '';
+
+  // Centralized SEO resolution
+  const seo = resolveSeo(page, siteSettings, pathname, siteUrl);
 
   // Map practice areas from CMS content with icon components
   const practiceAreas = content.grid.areas.map((area) => ({
@@ -46,10 +54,7 @@ export default function PracticeAreas() {
 
   return (
     <Layout>
-      <Seo
-        title="Practice Areas"
-        description="Do you need help understanding bankruptcy? A Marietta bankruptcy attorney can guide you through the bankruptcy process. Call Cherney Law Firm today."
-      />
+      <Seo {...seo} />
 
       {/* Hero Section - About page style */}
       <PracticeAreasHero
