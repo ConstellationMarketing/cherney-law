@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, ArrowRight, ChevronDown } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -18,6 +19,7 @@ import { useSiteSettings } from "@site/contexts/SiteSettingsContext";
 
 export default function Header() {
   const { settings } = useSiteSettings();
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const navItems = [...settings.navigationItems]
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
@@ -47,71 +49,82 @@ export default function Header() {
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center flex-1 justify-end">
               <ul className="flex flex-wrap justify-end -mx-[11px]">
-                {navItems.map((item) => (
-                  <li
-                    key={item.id || item.href}
-                    className={item.children && item.children.length > 0 ? "px-[11px] relative" : "px-[11px]"}
-                  >
-                    {item.children && item.children.length > 0 ? (
-                      // Item with dropdown - no wrapper, DropdownMenu is direct child
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="font-outfit text-[20px] text-white py-[31px] mr-[20px] whitespace-nowrap hover:opacity-80 transition-opacity duration-400 flex items-center gap-1 bg-transparent border-0 cursor-pointer">
-                            {item.label}
-                            <ChevronDown className="h-4 w-4" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="start"
-                          sideOffset={8}
-                          className="bg-law-dark border border-law-border z-50"
+                {(() => {
+                  // Shared class for both link and trigger to ensure identical alignment
+                  const navItemClass =
+                    "font-outfit text-[20px] text-white py-[31px] whitespace-nowrap hover:opacity-80 transition-opacity duration-400 inline-flex items-center gap-1";
+
+                  return navItems.map((item) => (
+                    <li
+                      key={item.id || item.href}
+                      className={item.children?.length ? "px-[11px] relative" : "px-[11px]"}
+                      onMouseEnter={() => item.children?.length && setOpenDropdown(item.id || item.href || item.label)}
+                      onMouseLeave={() => setOpenDropdown(null)}
+                    >
+                      {item.children && item.children.length > 0 ? (
+                        // Item with dropdown - no wrapper, DropdownMenu is direct child
+                        <DropdownMenu
+                          open={openDropdown === (item.id || item.href || item.label)}
+                          onOpenChange={(open) => setOpenDropdown(open ? (item.id || item.href || item.label) : null)}
                         >
-                          {item.children.map((child) => (
-                            <DropdownMenuItem
-                              key={child.id || child.href}
-                              asChild
-                            >
-                              <Link
-                                to={child.href || "#"}
-                                className="font-outfit text-[18px] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer"
-                                target={
-                                  child.external || child.openInNewTab
-                                    ? "_blank"
-                                    : undefined
-                                }
-                                rel={
-                                  child.external || child.openInNewTab
-                                    ? "noopener noreferrer"
-                                    : undefined
-                                }
+                          <DropdownMenuTrigger asChild>
+                            <button type="button" className={`${navItemClass} bg-transparent border-0 cursor-pointer`}>
+                              {item.label}
+                              <ChevronDown className="h-4 w-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="start"
+                            sideOffset={8}
+                            className="bg-law-dark border border-law-border z-50"
+                          >
+                            {item.children.map((child) => (
+                              <DropdownMenuItem
+                                key={child.id || child.href}
+                                asChild
                               >
-                                {child.label}
-                              </Link>
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    ) : (
-                      // Simple link (no dropdown) - unchanged
-                      <Link
-                        to={item.href || "#"}
-                        className="font-outfit text-[20px] text-white py-[31px] mr-[20px] whitespace-nowrap hover:opacity-80 transition-opacity duration-400"
-                        target={
-                          item.external || item.openInNewTab
-                            ? "_blank"
+                                <Link
+                                  to={child.href || "#"}
+                                  className="font-outfit text-[18px] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer"
+                                  target={
+                                    child.external || child.openInNewTab
+                                      ? "_blank"
+                                      : undefined
+                                  }
+                                  rel={
+                                    child.external || child.openInNewTab
+                                      ? "noopener noreferrer"
+                                      : undefined
+                                  }
+                                >
+                                  {child.label}
+                                </Link>
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : (
+                        // Simple link (no dropdown)
+                        <Link
+                          to={item.href || "#"}
+                          className={navItemClass}
+                          target={
+                            item.external || item.openInNewTab
+                              ? "_blank"
                             : undefined
-                        }
-                        rel={
-                          item.external || item.openInNewTab
-                            ? "noopener noreferrer"
-                            : undefined
-                        }
-                      >
-                        {item.label}
-                      </Link>
-                    )}
-                  </li>
-                ))}
+                          }
+                          rel={
+                            item.external || item.openInNewTab
+                              ? "noopener noreferrer"
+                              : undefined
+                          }
+                        >
+                          {item.label}
+                        </Link>
+                      )}
+                    </li>
+                  ));
+                })()}
               </ul>
             </nav>
 
