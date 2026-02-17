@@ -48,65 +48,51 @@ export default function Header() {
             <nav className="hidden md:flex items-center flex-1 justify-end">
               <ul className="flex flex-wrap justify-end -mx-[11px]">
                 {navItems.map((item) => (
-                  <li key={item.id || item.href} className="px-[11px]">
+                  <li
+                    key={item.id || item.href}
+                    className={item.children && item.children.length > 0 ? "px-[11px] relative" : "px-[11px]"}
+                  >
                     {item.children && item.children.length > 0 ? (
-                      // Item with dropdown
-                      <div className="flex items-center">
-                        {item.href && (
-                          <Link
-                            to={item.href}
-                            className="font-outfit text-[20px] text-white py-[31px] whitespace-nowrap hover:opacity-80 transition-opacity duration-400"
-                            target={
-                              item.external || item.openInNewTab
-                                ? "_blank"
-                                : undefined
-                            }
-                            rel={
-                              item.external || item.openInNewTab
-                                ? "noopener noreferrer"
-                                : undefined
-                            }
-                          >
+                      // Item with dropdown - no wrapper, DropdownMenu is direct child
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="font-outfit text-[20px] text-white py-[31px] mr-[20px] whitespace-nowrap hover:opacity-80 transition-opacity duration-400 flex items-center gap-1 bg-transparent border-0 cursor-pointer">
                             {item.label}
-                          </Link>
-                        )}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger className="font-outfit text-[20px] text-white py-[31px] mr-[20px] whitespace-nowrap hover:opacity-80 transition-opacity duration-400 flex items-center gap-1 bg-transparent border-0 cursor-pointer">
-                            {!item.href && <span>{item.label}</span>}
                             <ChevronDown className="h-4 w-4" />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="start"
-                            className="bg-law-dark border-law-border"
-                          >
-                            {item.children.map((child) => (
-                              <DropdownMenuItem
-                                key={child.id || child.href}
-                                asChild
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="start"
+                          sideOffset={8}
+                          className="bg-law-dark border border-law-border z-50"
+                        >
+                          {item.children.map((child) => (
+                            <DropdownMenuItem
+                              key={child.id || child.href}
+                              asChild
+                            >
+                              <Link
+                                to={child.href || "#"}
+                                className="font-outfit text-[18px] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer"
+                                target={
+                                  child.external || child.openInNewTab
+                                    ? "_blank"
+                                    : undefined
+                                }
+                                rel={
+                                  child.external || child.openInNewTab
+                                    ? "noopener noreferrer"
+                                    : undefined
+                                }
                               >
-                                <Link
-                                  to={child.href || "#"}
-                                  className="font-outfit text-[18px] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer"
-                                  target={
-                                    child.external || child.openInNewTab
-                                      ? "_blank"
-                                      : undefined
-                                  }
-                                  rel={
-                                    child.external || child.openInNewTab
-                                      ? "noopener noreferrer"
-                                      : undefined
-                                  }
-                                >
-                                  {child.label}
-                                </Link>
-                              </DropdownMenuItem>
-                            ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                                {child.label}
+                              </Link>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     ) : (
-                      // Simple link (no dropdown)
+                      // Simple link (no dropdown) - unchanged
                       <Link
                         to={item.href || "#"}
                         className="font-outfit text-[20px] text-white py-[31px] mr-[20px] whitespace-nowrap hover:opacity-80 transition-opacity duration-400"
