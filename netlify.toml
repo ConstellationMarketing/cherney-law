@@ -1,5 +1,5 @@
 [build]
-  publish = "dist"
+  publish = "dist/spa"
   command = "pnpm run build:ssg"
   functions = "vendor/cms-core/netlify/functions"
 
