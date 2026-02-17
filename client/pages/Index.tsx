@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import Seo from "@site/components/Seo";
 import Layout from "@site/components/layout/Layout";
 import { Phone, User, Scale, Calendar, Briefcase, FileText } from "lucide-react";
@@ -12,11 +13,18 @@ import TestimonialsSection from "@site/components/home/TestimonialsSection";
 import AttorneyInfoSection from "@site/components/home/AttorneyInfoSection";
 import ContactUsSection from "@site/components/home/ContactUsSection";
 import { useHomeContent } from "@site/hooks/useHomeContent";
-import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
+import { useGlobalPhone, useSiteSettings } from "@site/contexts/SiteSettingsContext";
+import { resolveSeo } from "@site/utils/resolveSeo";
 
 export default function Index() {
-  const { content, isLoading } = useHomeContent();
+  const { content, page, isLoading } = useHomeContent();
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
+  const siteSettings = useSiteSettings();
+  const { pathname } = useLocation();
+  const siteUrl = import.meta.env.VITE_SITE_URL || '';
+
+  // Centralized SEO resolution
+  const seo = resolveSeo(page, siteSettings, pathname, siteUrl);
 
   const heroContent = content.hero;
   const featureBoxes = heroContent.featureBoxes;
@@ -34,10 +42,7 @@ export default function Index() {
 
   return (
     <Layout>
-      <Seo
-        title="Home"
-        description="Protecting your rights with integrity, experience, and relentless advocacy."
-      />
+      <Seo {...seo} />
 
       {/* Hero and Contact Form Section */}
       <div className="bg-law-accent py-[27px] w-full">

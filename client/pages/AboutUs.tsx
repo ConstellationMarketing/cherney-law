@@ -1,9 +1,11 @@
+import { useLocation } from "react-router-dom";
 import Seo from "@site/components/Seo";
 import Layout from "@site/components/layout/Layout";
 import StatsGrid from "@site/components/shared/StatsGrid";
 import { useAboutContent } from "@site/hooks/useAboutContent";
 import { useHomeContent } from "@site/hooks/useHomeContent";
-import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
+import { useGlobalPhone, useSiteSettings } from "@site/contexts/SiteSettingsContext";
+import { resolveSeo } from "@site/utils/resolveSeo";
 import AboutHero from "@site/components/about/AboutHero";
 import AboutStory from "@site/components/about/AboutStory";
 import AboutMissionVision from "@site/components/about/AboutMissionVision";
@@ -12,9 +14,15 @@ import AboutWhyChooseUs from "@site/components/about/AboutWhyChooseUs";
 import AboutCTA from "@site/components/about/AboutCTA";
 
 export default function AboutUs() {
-  const { content } = useAboutContent();
+  const { content, page } = useAboutContent();
   const { content: homeContent } = useHomeContent();
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
+  const siteSettings = useSiteSettings();
+  const { pathname } = useLocation();
+  const siteUrl = import.meta.env.VITE_SITE_URL || '';
+
+  // Centralized SEO resolution
+  const seo = resolveSeo(page, siteSettings, pathname, siteUrl);
 
   // Feature boxes and stats are managed on the homepage CMS only
   const featureBoxes = homeContent.hero.featureBoxes;
@@ -22,10 +30,7 @@ export default function AboutUs() {
 
   return (
     <Layout>
-      <Seo
-        title="About Us"
-        description="Learn about Attorney Matthew J. Cherney and Cherney Law Firm — experienced bankruptcy representation in Cobb County, Cherokee County, and Fulton County."
-      />
+      <Seo {...seo} />
 
       <AboutHero
         content={content.hero}

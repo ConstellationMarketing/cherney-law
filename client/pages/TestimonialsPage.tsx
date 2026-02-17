@@ -1,21 +1,26 @@
+import { useLocation } from "react-router-dom";
 import Seo from "@site/components/Seo";
 import Layout from "@site/components/layout/Layout";
 import GoogleReviews from "@site/components/testimonials/GoogleReviews";
 import { useTestimonialsContent } from "@site/hooks/useTestimonialsContent";
-import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
+import { useGlobalPhone, useSiteSettings } from "@site/contexts/SiteSettingsContext";
+import { resolveSeo } from "@site/utils/resolveSeo";
 import { Link } from "react-router-dom";
 import { Phone } from "lucide-react";
 
 export default function TestimonialsPage() {
-  const { content } = useTestimonialsContent();
+  const { content, page } = useTestimonialsContent();
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
+  const siteSettings = useSiteSettings();
+  const { pathname } = useLocation();
+  const siteUrl = import.meta.env.VITE_SITE_URL || '';
+
+  // Centralized SEO resolution
+  const seo = resolveSeo(page, siteSettings, pathname, siteUrl);
 
   return (
     <Layout>
-      <Seo
-        title="Testimonials"
-        description="Read what our clients have to say about their experience with Cherney Law Firm. Real reviews from real clients who found financial freedom through bankruptcy."
-      />
+      <Seo {...seo} />
 
       {/* Hero Section - same structure as About page */}
       <div className="bg-law-accent pt-[30px] md:pt-[54px] pb-[30px] md:pb-[54px]">
