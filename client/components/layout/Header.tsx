@@ -85,7 +85,7 @@ export default function Header() {
                               >
                                 <Link
                                   to={child.href || "#"}
-                                  className="font-outfit text-[18px] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer"
+                                  className="font-outfit text-[19px] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer px-4 py-3"
                                   target={
                                     child.external || child.openInNewTab
                                       ? "_blank"
@@ -129,7 +129,7 @@ export default function Header() {
             </nav>
 
             {/* Contact CTA Button - Desktop */}
-            <div className="hidden md:block w-[280px]">
+            <div className="hidden md:block w-[280px] ml-6">
               <Link to={settings.headerCtaUrl}>
                 <Button className="bg-white text-black font-outfit text-[22px] py-[25px] px-[15.4px] h-auto w-[200px] border-2 border-transparent hover:border-black hover:bg-law-accent hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
                   {settings.headerCtaText}
