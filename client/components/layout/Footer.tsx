@@ -152,7 +152,7 @@ export default function Footer() {
         <div className="lg:w-[75%]">
           <p className="font-playfair text-[clamp(1.1rem,2.8vw,26px)] leading-snug font-light text-white">
             {settings.footerTagline ||
-              "Bankruptcy should be pursued along with the counsel and representation of an experienced bankruptcy attorney with an outstanding attorney profile."}__DEPLOY_MARKER__
+              "Bankruptcy should be pursued along with the counsel and representation of an experienced bankruptcy attorney with an outstanding attorney profile."}
           </p>
         </div>
 
