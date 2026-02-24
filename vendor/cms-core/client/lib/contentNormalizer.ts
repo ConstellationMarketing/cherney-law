@@ -63,6 +63,7 @@ export function normalizeHomePageContent(content: unknown): HomePageContent {
       contactLabel: str(c.about?.contactLabel),
       contactText: str(c.about?.contactText),
       attorneyImage: str(c.about?.attorneyImage),
+      syndicationsLabel: str(c.about?.syndicationsLabel),
       features: ensureArray(c.about?.features, { icon: '', title: '', description: '' }),
       stats: ensureArray(c.about?.stats, { value: '', label: '' }),
     }),

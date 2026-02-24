@@ -102,9 +102,9 @@ export default function Homepage2() {
             {/* Hero Buttons Row */}
             <div className="flex flex-col sm:flex-row gap-4 w-full max-w-[820px]">
               {/* Call Box - always uses global phone */}
-              <div className="bg-law-accent p-[8px] w-full sm:w-1/2 cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-black group">
+              <div className="bg-law-accent p-[8px] w-full sm:w-1/2 cursor-pointer transition-all duration-300 hover:bg-law-accent-dark group">
                 <div className="flex items-start gap-4">
-                  <div className="bg-white p-[15px] mt-1 flex items-center justify-center group-hover:bg-law-accent transition-colors duration-300">
+                  <div className="bg-white p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
                     <Phone
                       className="w-8 h-8 text-black group-hover:text-black transition-colors duration-300"
                       strokeWidth={1.5}
@@ -133,10 +133,10 @@ export default function Homepage2() {
                       to={btn.href || "/about"}
                       className="w-full sm:w-1/2"
                     >
-                      <div className="bg-law-accent p-[8px] h-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-black group">
+                      <div className="bg-law-accent p-[8px] h-full cursor-pointer transition-all duration-300 hover:bg-law-accent-dark group">
                         {IconComponent ? (
                           <div className="flex items-center gap-4">
-                            <div className="bg-white p-[15px] flex items-center justify-center group-hover:bg-law-accent transition-colors duration-300">
+                            <div className="bg-white p-[15px] flex items-center justify-center group-hover:bg-black transition-colors duration-300">
                               <IconComponent className="w-8 h-8 text-black group-hover:text-black transition-colors duration-300" />
                             </div>
                             <span className="font-outfit text-[clamp(1.5rem,4vw,32px)] text-black font-semibold leading-tight tracking-wide group-hover:text-white transition-colors duration-300">
@@ -156,9 +156,9 @@ export default function Homepage2() {
                 })
               ) : (
                 <Link to="/about" className="w-full sm:w-1/2">
-                  <div className="bg-law-accent p-[8px] h-full group hover:bg-black transition-colors duration-300">
+                  <div className="bg-law-accent p-[8px] h-full group hover:bg-law-accent-dark transition-colors duration-300">
                     <div className="flex items-start gap-4">
-                      <div className="bg-white p-[15px] mt-1 flex items-center justify-center group-hover:bg-law-accent transition-colors duration-300">
+                      <div className="bg-white p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
                         <User className="w-8 h-8 text-black group-hover:text-black transition-colors duration-300" />
                       </div>
                       <span className="font-outfit text-[clamp(1.5rem,4vw,32px)] text-black font-semibold leading-tight tracking-wide group-hover:text-white transition-colors duration-300">
