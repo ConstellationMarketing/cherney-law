@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { registerCacheClear } from "@/lib/pageCacheRegistry";
 import type { HomePageContent } from "../lib/cms/homePageTypes";
 import { defaultHomeContent } from "../lib/cms/homePageTypes";
 import type { PageSeoFields } from "../utils/resolveSeo";
@@ -176,6 +175,13 @@ export function clearHomepage2ContentCache() {
   cachedPage2 = null;
 }
 
-// Register with the vendor registry so AdminPageEdit can trigger cache clear
-// without importing client code (which would cause a cross-boundary build error).
-registerCacheClear("homepage-2", clearHomepage2ContentCache);
+// Listen for cache-clear events dispatched by the admin panel.
+// CustomEvent avoids any cross-boundary imports between vendor and client code.
+if (typeof window !== "undefined") {
+  window.addEventListener("cms:cache-clear", (e: Event) => {
+    const detail = (e as CustomEvent<{ key: string }>).detail;
+    if (detail?.key === "homepage-2") {
+      clearHomepage2ContentCache();
+    }
+  });
+}

@@ -29,7 +29,6 @@ import BlockRenderer from "@site/components/BlockRenderer";
 import PageContentEditor from "../../components/admin/PageContentEditor";
 import ImageUploader from "../../components/admin/ImageUploader";
 import { clearPageCache } from "../../hooks/usePageContent";
-import { triggerCacheClear } from "../../lib/pageCacheRegistry";
 import RevisionPanel, { createPageRevision } from "../../components/admin/RevisionPanel";
 import URLChangeRedirectModal from "../../components/admin/URLChangeRedirectModal";
 import type { PageRevision } from "@/lib/database.types";
@@ -126,7 +125,7 @@ export default function AdminPageEdit() {
       if (page.url_path === "/") {
         clearPageCache("home");
       } else if (page.url_path === "/homepage-2") {
-        triggerCacheClear("homepage-2");
+        window.dispatchEvent(new CustomEvent("cms:cache-clear", { detail: { key: "homepage-2" } }));
       } else if (page.url_path === "/about") {
         clearPageCache("about");
       } else if (page.url_path === "/contact") {
