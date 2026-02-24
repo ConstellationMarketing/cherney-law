@@ -33,12 +33,12 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
 
   return (
     <>
-      {/* Green padding that scrolls away — transparent when hero bg covers it */}
-      <div className={`h-[30px] ${transparentTopBar ? '' : 'bg-law-accent'}`}></div>
+      {/* Green padding that scrolls away — hidden when hero bg covers header */}
+      {!transparentTopBar && <div className="bg-law-accent h-[30px]"></div>}
 
       {/* Sticky dark header (only this sticks to top) */}
       <div className="sticky top-0 z-[999] bg-transparent">
-        <div className="max-w-[2560px] w-[95%] mx-auto bg-[#161715] border border-law-border px-[30px] py-[10px] flex items-center justify-between">
+        <div className={`max-w-[2560px] w-[95%] mx-auto px-[30px] py-[10px] flex items-center justify-between ${transparentTopBar ? 'bg-transparent' : 'bg-[#161715] border border-law-border'}`}>
             {/* Logo */}
             <div className="flex items-center w-[300px]">
               <Link to="/" className="mr-[30px]">
