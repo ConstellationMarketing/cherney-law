@@ -48,10 +48,10 @@ export default function Homepage2() {
   };
 
   return (
-    <Layout>
+    <Layout heroBg={(heroContent as any).heroBgImage || DEFAULT_HERO_BG}>
       <Seo {...seo} />
 
-      {/* Hero Section - background image */}
+      {/* Hero Section - background image (also set on Layout wrapper to extend behind header) */}
       <div
         className="relative py-[27px] w-full bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${(heroContent as any).heroBgImage || DEFAULT_HERO_BG})` }}

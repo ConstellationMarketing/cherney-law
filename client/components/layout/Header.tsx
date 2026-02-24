@@ -17,7 +17,13 @@ import {
 } from "@/components/ui/accordion";
 import { useSiteSettings } from "@site/contexts/SiteSettingsContext";
 
-export default function Header() {
+interface HeaderProps {
+  /** When true, the green top bar is made transparent so an underlying
+   *  hero background image shows through (used on Homepage-2). */
+  transparentTopBar?: boolean;
+}
+
+export default function Header({ transparentTopBar = false }: HeaderProps) {
   const { settings } = useSiteSettings();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
@@ -27,8 +33,8 @@ export default function Header() {
 
   return (
     <>
-      {/* Green padding that scrolls away */}
-      <div className="bg-law-accent h-[30px]"></div>
+      {/* Green padding that scrolls away — transparent when hero bg covers it */}
+      <div className={`h-[30px] ${transparentTopBar ? '' : 'bg-law-accent'}`}></div>
 
       {/* Sticky dark header (only this sticks to top) */}
       <div className="sticky top-0 z-[999] bg-transparent">
