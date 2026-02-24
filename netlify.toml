@@ -1,8 +1,6 @@
 [build]
+  command = "pnpm run build:ssg"
   publish = "dist/spa"
-  command = "git submodule sync --recursive && git submodule update --init --recursive && pnpm run build:ssg"
-  functions = "vendor/cms-core/netlify/functions"
-
 
 [functions]
   external_node_modules = ["express"]
