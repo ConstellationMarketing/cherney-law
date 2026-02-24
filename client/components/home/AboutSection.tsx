@@ -140,10 +140,6 @@ export default function AboutSection({ content, syndicationsLabel }: AboutSectio
                 width={462}
                 height={631}
                 loading="lazy"
-                style={{
-                  maskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
-                  WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
-                }}
               />
             </div>
           </div>
