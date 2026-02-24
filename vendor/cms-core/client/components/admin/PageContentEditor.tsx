@@ -7,8 +7,8 @@ import {
   normalizePracticeAreasPageContent,
   normalizeTestimonialsPageContent,
 } from "../../lib/contentNormalizer";
-import HomePageFieldEditor from "./HomePageFieldEditor";
-import Homepage2FieldEditor from "./Homepage2FieldEditor";
+import HomePageFieldEditor from "@site/components/admin/HomePageFieldEditor";
+import Homepage2FieldEditor from "@site/components/admin/Homepage2FieldEditor";
 import AboutPageFieldEditor from "./AboutPageFieldEditor";
 import ContactPageFieldEditor from "./ContactPageFieldEditor";
 import PracticeAreasPageFieldEditor from "./PracticeAreasPageFieldEditor";
