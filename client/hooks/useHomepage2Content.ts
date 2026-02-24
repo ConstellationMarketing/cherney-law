@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { registerCacheClear } from "@/lib/pageCacheRegistry";
 import type { HomePageContent } from "../lib/cms/homePageTypes";
 import { defaultHomeContent } from "../lib/cms/homePageTypes";
 import type { PageSeoFields } from "../utils/resolveSeo";
@@ -174,3 +175,7 @@ export function clearHomepage2ContentCache() {
   cachedContent2 = null;
   cachedPage2 = null;
 }
+
+// Register with the vendor registry so AdminPageEdit can trigger cache clear
+// without importing client code (which would cause a cross-boundary build error).
+registerCacheClear("homepage-2", clearHomepage2ContentCache);
