@@ -167,7 +167,7 @@ export default function Footer() {
                 <span className="m-auto">
                   <span className="inline-block bg-white p-[15px] text-black group-hover:bg-black transition-colors duration-300">
                     <Phone
-                      className="w-[31px] h-[31px] [&>*]:fill-none [&>*]:stroke-black group-hover:[&>*]:stroke-white transition-colors duration-300"
+                      className="w-[31px] h-[31px] text-black group-hover:text-white transition-colors duration-300"
                       strokeWidth={1.5}
                     />
                   </span>
