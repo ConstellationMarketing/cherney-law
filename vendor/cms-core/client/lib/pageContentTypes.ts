@@ -74,6 +74,8 @@ export interface HomePageContent {
     phoneLabel: string;
     featureBoxes: FeatureBox[];
     buttons: Button[];
+    heroImage?: string;
+    heroBgImage?: string;
   };
   about: {
     sectionLabel: string;

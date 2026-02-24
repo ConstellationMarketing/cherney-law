@@ -21,6 +21,8 @@ export interface HeroContent {
   phoneLabel: string;
   featureBoxes: HeroFeatureBox[];
   buttons: HeroButtonLink[];
+  heroImage?: string;
+  heroBgImage?: string;
 }
 
 export interface AboutFeature {

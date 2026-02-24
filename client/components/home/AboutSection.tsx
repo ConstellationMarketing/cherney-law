@@ -5,6 +5,7 @@ import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
 
 interface AboutSectionProps {
   content?: AboutContent;
+  syndicationsLabel?: string;
 }
 
 const defaultContent: AboutContent = {
@@ -46,7 +47,7 @@ const defaultContent: AboutContent = {
   ],
 };
 
-export default function AboutSection({ content }: AboutSectionProps) {
+export default function AboutSection({ content, syndicationsLabel }: AboutSectionProps) {
   const data = content || defaultContent;
   const features = data.features || defaultContent.features;
   const stats = data.stats || defaultContent.stats;
@@ -125,7 +126,12 @@ export default function AboutSection({ content }: AboutSectionProps) {
           </div>
 
           {/* Middle Column - Image */}
-          <div className="md:w-full flex justify-center md:justify-start items-center">
+          <div className="md:w-full flex flex-col justify-center md:justify-start items-center">
+            {syndicationsLabel && (
+              <p className="font-outfit text-[14px] md:text-[16px] text-law-accent text-center mb-4 font-medium">
+                {syndicationsLabel}
+              </p>
+            )}
             <div className="relative">
               <img
                 src={data.attorneyImage}

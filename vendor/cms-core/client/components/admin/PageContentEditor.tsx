@@ -8,6 +8,7 @@ import {
   normalizeTestimonialsPageContent,
 } from "../../lib/contentNormalizer";
 import HomePageFieldEditor from "./HomePageFieldEditor";
+import Homepage2FieldEditor from "./Homepage2FieldEditor";
 import AboutPageFieldEditor from "./AboutPageFieldEditor";
 import ContactPageFieldEditor from "./ContactPageFieldEditor";
 import PracticeAreasPageFieldEditor from "./PracticeAreasPageFieldEditor";
@@ -84,7 +85,10 @@ export default function PageContentEditor({
 
   return (
     <div className="space-y-2">
-      {pageType === "home" && (
+      {pageType === "home" && pageKey === "/homepage-2" && (
+        <Homepage2FieldEditor content={normalized} onChange={handleChange} />
+      )}
+      {pageType === "home" && pageKey !== "/homepage-2" && (
         <HomePageFieldEditor content={normalized} onChange={handleChange} />
       )}
       {pageType === "about" && (

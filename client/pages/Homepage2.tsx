@@ -15,8 +15,10 @@ import { useHomepage2Content } from "@site/hooks/useHomepage2Content";
 import { useGlobalPhone, useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { resolveSeo } from "@site/utils/resolveSeo";
 
-const HERO_BG_IMAGE =
+const DEFAULT_HERO_BG =
   "https://cdn.builder.io/api/v1/image/assets%2F50bd0f2438824f8ea1271cf7dd2c508e%2F1e4bfebf4b62496e9f4b00ad011729ba?format=webp&width=800&height=1200";
+const DEFAULT_HERO_IMAGE =
+  "https://infykuazzjkapuexhpqe.supabase.co/storage/v1/object/public/media/team/1770915510145-wqwnty.png";
 
 export default function Homepage2() {
   const { content, page, isLoading } = useHomepage2Content();
@@ -49,10 +51,10 @@ export default function Homepage2() {
     <Layout>
       <Seo {...seo} />
 
-      {/* Hero Section - background image with light green overlay */}
+      {/* Hero Section - background image */}
       <div
         className="relative py-[27px] w-full bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${HERO_BG_IMAGE})` }}
+        style={{ backgroundImage: `url(${(heroContent as any).heroBgImage || DEFAULT_HERO_BG})` }}
       >
         <div className="relative z-10 max-w-[2560px] mx-auto w-[95%] flex flex-col lg:flex-row lg:items-end gap-8 lg:gap-[3%]">
           {/* Left Side: Headline and Call Box */}
@@ -95,11 +97,6 @@ export default function Homepage2() {
                   })()}
                 </p>
               </div>
-              {heroContent.h1Title && (
-                <h1 className="font-outfit text-[18px] md:text-[20px] font-medium tracking-wider uppercase text-black mt-[20px] md:mt-[30px]">
-                  {heroContent.h1Title}
-                </h1>
-              )}
             </div>
 
             {/* Hero Buttons Row */}
@@ -176,10 +173,10 @@ export default function Homepage2() {
 
           {/* Right Side: Attorney Image */}
           <div className="lg:w-[31.3333%] flex items-end justify-center">
-            {content.about.attorneyImage && (
+            {((heroContent as any).heroImage || DEFAULT_HERO_IMAGE) && (
               <img
-                src={content.about.attorneyImage}
-                alt={content.about.attorneyImageAlt || "Attorney"}
+                src={(heroContent as any).heroImage || DEFAULT_HERO_IMAGE}
+                alt="Attorney"
                 className="max-w-full w-auto h-auto object-contain max-h-[480px]"
                 style={{
                   maskImage:
@@ -229,7 +226,10 @@ export default function Homepage2() {
       )}
 
       {/* About Us Section */}
-      <AboutSection content={content.about} />
+      <AboutSection
+        content={content.about}
+        syndicationsLabel={(content.about as any).syndicationsLabel}
+      />
 
       {/* Firm Description Section */}
       <FirmDescriptionSection content={content.firmDescription} />

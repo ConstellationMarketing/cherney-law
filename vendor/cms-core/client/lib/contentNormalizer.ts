@@ -51,6 +51,8 @@ export function normalizeHomePageContent(content: unknown): HomePageContent {
       phoneLabel: str(c.hero?.phoneLabel),
       featureBoxes: ensureArray(c.hero?.featureBoxes, { icon: '', title: '', description: '' }),
       buttons: ensureArray(c.hero?.buttons, { text: '', href: '' }),
+      heroImage: str(c.hero?.heroImage),
+      heroBgImage: str(c.hero?.heroBgImage),
     }),
     about: ensureObject(c.about, {
       sectionLabel: str(c.about?.sectionLabel),
