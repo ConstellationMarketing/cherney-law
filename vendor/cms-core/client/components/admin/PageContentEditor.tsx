@@ -9,10 +9,10 @@ import {
 } from "../../lib/contentNormalizer";
 import HomePageFieldEditor from "@site/components/admin/HomePageFieldEditor";
 import Homepage2FieldEditor from "@site/components/admin/Homepage2FieldEditor";
-import AboutPageFieldEditor from "./AboutPageFieldEditor";
-import ContactPageFieldEditor from "./ContactPageFieldEditor";
-import PracticeAreasPageFieldEditor from "./PracticeAreasPageFieldEditor";
-import TestimonialsPageFieldEditor from "./TestimonialsPageFieldEditor";
+import AboutPageFieldEditor from "@site/components/admin/AboutPageFieldEditor";
+import ContactPageFieldEditor from "@site/components/admin/ContactPageFieldEditor";
+import PracticeAreasPageFieldEditor from "@site/components/admin/PracticeAreasPageFieldEditor";
+import TestimonialsPageFieldEditor from "@site/components/admin/TestimonialsPageFieldEditor";
 
 interface PageContentEditorProps {
   pageKey: string;
