@@ -38,7 +38,7 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
 
       {/* Sticky dark header (only this sticks to top) */}
       <div className="sticky top-0 z-[999] bg-transparent">
-        <div className={`max-w-[2560px] w-[95%] mx-auto px-[30px] py-[10px] flex items-center justify-between ${transparentTopBar ? 'bg-transparent' : 'bg-[#161715] border border-law-border'}`}>
+        <div className="max-w-[2560px] w-[95%] mx-auto bg-[#161715] border border-law-border px-[30px] py-[10px] flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center w-[300px]">
               <Link to="/" className="mr-[30px]">
