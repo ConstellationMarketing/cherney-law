@@ -51,9 +51,10 @@ export default function Homepage2() {
     <Layout heroBg={(heroContent as any).heroBgImage || DEFAULT_HERO_BG}>
       <Seo {...seo} />
 
-      {/* Hero Section - background image */}
+      {/* Hero Section - negative margin pulls div up behind the transparent header.
+          pt-[129px] = 102px header height + 27px original top padding */}
       <div
-        className="relative py-[27px] w-full bg-cover bg-center bg-no-repeat"
+        className="relative -mt-[102px] pt-[129px] pb-[27px] w-full bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${(heroContent as any).heroBgImage || DEFAULT_HERO_BG})` }}
       >
         <div className="relative z-10 max-w-[2560px] mx-auto w-[95%] flex flex-col lg:flex-row lg:items-end gap-8 lg:gap-[3%]">
