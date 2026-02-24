@@ -122,7 +122,7 @@ export default function AdminPageEdit() {
       alert("Failed to save page: " + error.message);
     } else {
       // Clear the page cache so the frontend fetches fresh content
-      if (page.url_path === "/") {
+      if (page.url_path === "/" || page.url_path === "/homepage-2") {
         clearPageCache("home");
       } else if (page.url_path === "/about") {
         clearPageCache("about");
@@ -183,7 +183,7 @@ export default function AdminPageEdit() {
   // Check if this is a structured page (main site pages)
   const isStructuredPage =
     page?.url_path &&
-    ["/", "/about", "/contact", "/practice-areas"].includes(page.url_path);
+    ["/", "/about", "/contact", "/practice-areas", "/homepage-2"].includes(page.url_path);
 
   const handleStructuredContentChange = (content: unknown) => {
     updatePage({ content: content as ContentBlock[] });
