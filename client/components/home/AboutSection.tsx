@@ -81,7 +81,7 @@ export default function AboutSection({ content, syndicationsLabel }: AboutSectio
               <div className="flex items-start gap-4">
                 <div className="bg-white p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
                   <Phone
-                    className="w-8 h-8 [&>*]:fill-none [&>*]:stroke-black group-hover:[&>*]:stroke-white transition-colors duration-300"
+                    className="w-8 h-8 text-black group-hover:text-white transition-colors duration-300"
                     strokeWidth={1.5}
                   />
                 </div>

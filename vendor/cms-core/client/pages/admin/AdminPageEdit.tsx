@@ -29,6 +29,7 @@ import BlockRenderer from "@site/components/BlockRenderer";
 import PageContentEditor from "../../components/admin/PageContentEditor";
 import ImageUploader from "../../components/admin/ImageUploader";
 import { clearPageCache } from "../../hooks/usePageContent";
+import { clearHomepage2ContentCache } from "@site/hooks/useHomepage2Content";
 import RevisionPanel, { createPageRevision } from "../../components/admin/RevisionPanel";
 import URLChangeRedirectModal from "../../components/admin/URLChangeRedirectModal";
 import type { PageRevision } from "@/lib/database.types";
@@ -122,8 +123,10 @@ export default function AdminPageEdit() {
       alert("Failed to save page: " + error.message);
     } else {
       // Clear the page cache so the frontend fetches fresh content
-      if (page.url_path === "/" || page.url_path === "/homepage-2") {
+      if (page.url_path === "/") {
         clearPageCache("home");
+      } else if (page.url_path === "/homepage-2") {
+        clearHomepage2ContentCache();
       } else if (page.url_path === "/about") {
         clearPageCache("about");
       } else if (page.url_path === "/contact") {
