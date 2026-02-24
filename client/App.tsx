@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { SiteSettingsProvider } from "./contexts/SiteSettingsContext";
 import Index from "./pages/Index";
+import Homepage2 from "./pages/Homepage2";
 import AboutUs from "./pages/AboutUs";
 import PracticeAreas from "./pages/PracticeAreas";
 import ContactPage from "./pages/ContactPage";
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/practice-areas" element={<PracticeAreas />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/testimonials" element={<TestimonialsPage />} />
+              <Route path="/homepage-2" element={<Homepage2 />} />
               <Route path="/admin/*" element={<AdminRoutes />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

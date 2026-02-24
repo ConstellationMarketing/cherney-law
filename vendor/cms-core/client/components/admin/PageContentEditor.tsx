@@ -28,7 +28,7 @@ export default function PageContentEditor({
 
   // Determine page type from URL path
   const getPageType = (path: string): string => {
-    if (path === "/" || path === "") return "home";
+    if (path === "/" || path === "" || path === "/homepage-2") return "home";
     if (path.startsWith("/about")) return "about";
     if (path.startsWith("/contact")) return "contact";
     if (path.startsWith("/practice-areas")) return "practice-areas";
