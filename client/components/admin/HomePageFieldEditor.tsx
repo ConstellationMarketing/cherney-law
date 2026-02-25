@@ -165,7 +165,7 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
                   </Field>
                 </SectionGrid>
                 <Field label="Description">
-                  <Textarea value={box.description} onChange={e => updateFeatureBox(i, "description", e.target.value)} rows={2} />
+                  <RichTextEditor value={box.description} onChange={v => updateFeatureBox(i, "description", v)} />
                 </Field>
               </ArrayCard>
             ))}
@@ -248,7 +248,7 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
                   </Field>
                 </SectionGrid>
                 <Field label="Description">
-                  <Textarea value={f.description} onChange={e => updateFeature(i, "description", e.target.value)} rows={2} />
+                  <RichTextEditor value={f.description} onChange={v => updateFeature(i, "description", v)} />
                 </Field>
               </ArrayCard>
             ))}
@@ -333,6 +333,9 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
               </Field>
               <Field label="Description">
                 <Textarea value={a.description} onChange={e => updateArea(i, "description", e.target.value)} rows={2} />
+              </Field>
+              <Field label="Background Image">
+                <ImageUploader value={a.image || ""} onChange={v => updateArea(i, "image", v)} folder="practice-areas" />
               </Field>
             </ArrayCard>
           ))}

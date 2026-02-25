@@ -170,6 +170,9 @@ export default function PracticeAreasPageFieldEditor({ content, onChange }: Prop
                 <Field label="Description">
                   <Textarea value={area.description} onChange={e => updateArea(i, "description", e.target.value)} rows={2} />
                 </Field>
+                <Field label="Background Image">
+                  <ImageUploader value={area.image || ""} onChange={v => updateArea(i, "image", v)} folder="practice-areas" />
+                </Field>
               </ArrayCard>
             ))}
           </div>

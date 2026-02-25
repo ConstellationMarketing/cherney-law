@@ -358,6 +358,9 @@ export default function Homepage2FieldEditor({ content, onChange }: Props) {
               <Field label="Description">
                 <Textarea value={a.description} onChange={e => updateArea(i, "description", e.target.value)} rows={2} />
               </Field>
+              <Field label="Background Image">
+                <ImageUploader value={a.image || ""} onChange={v => updateArea(i, "image", v)} folder="practice-areas" />
+              </Field>
             </ArrayCard>
           ))}
         </AccordionContent>

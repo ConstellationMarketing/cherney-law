@@ -188,7 +188,24 @@ try {
   )}
 
   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-    ...
+    <Button
+      size="sm"
+      variant="secondary"
+      onClick={handleClick}
+      className="gap-1"
+    >
+      <Upload className="h-4 w-4" />
+      Replace
+    </Button>
+    <Button
+      size="sm"
+      variant="destructive"
+      onClick={handleRemove}
+      className="gap-1"
+    >
+      <X className="h-4 w-4" />
+      Remove
+    </Button>
   </div>
 </div>
           <p className="text-xs text-gray-500 mt-1 truncate">{value}</p>
