@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
+import { optimizeImage } from "@site/lib/imageOptimizer";
 const isPdfUrl = (url?: string) => !!url && url.toLowerCase().includes(".pdf");
 
 interface ImageUploaderProps {
@@ -49,8 +50,14 @@ export default function ImageUploader({
     setUploading(true);
 
     try {
+        // Optimize image if it's an image file (not PDF)
+        let fileToUpload = file;
+        if (isImage) {
+          fileToUpload = await optimizeImage(file);
+        }
+
         // Generate unique filename
-        const ext = file.name.split(".").pop();
+        const ext = fileToUpload.name.split(".").pop();
         const timestamp = Date.now();
         const randomStr = Math.random().toString(36).substring(2, 8);
         const fileName = `${folder}/${timestamp}-${randomStr}.${ext}`;
@@ -58,7 +65,7 @@ export default function ImageUploader({
         // Upload to Supabase Storage
         const { error: uploadError } = await supabase.storage
           .from(bucket)
-          .upload(fileName, file, {
+          .upload(fileName, fileToUpload, {
             cacheControl: "3600",
             upsert: false,
           });
@@ -85,11 +92,11 @@ try {
   const uploadedBy = userData?.user?.id ?? null;
 
   const { error: mediaErr } = await supabase.from("media").insert({
-    file_name: file.name,
+    file_name: fileToUpload.name,
     file_path: fileName,      // storage path like "uploads/123-abc.webp"
     public_url: publicUrl,
-    file_size: file.size ?? null,
-    mime_type: file.type ?? null,
+    file_size: fileToUpload.size ?? null,
+    mime_type: fileToUpload.type ?? null,
     uploaded_by: uploadedBy,
   });
 

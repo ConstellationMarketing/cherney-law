@@ -160,6 +160,7 @@ export default function Footer() {
         <div className="lg:w-[25%]">
           <a
             href={`tel:${settings.phoneNumber || phoneToTel(phoneDisplay)}`}
+            data-dni-phone="footer"
             className="block bg-law-accent p-[8px] w-full ml-auto cursor-pointer transition-all duration-300 hover:bg-law-accent-dark group no-underline"
           >
             <div className="table w-full mx-auto max-w-full flex-row-reverse">

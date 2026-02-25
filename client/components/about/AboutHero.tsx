@@ -24,7 +24,7 @@ export default function AboutHero({ content, phoneDisplay, phoneLabel }: AboutHe
 
           {/* Right — Phone Button */}
           <div className="shrink-0 w-full md:w-auto md:max-w-[380px]">
-            <a href={`tel:${phoneDisplay.replace(/[^0-9]/g, "")}`} className="block">
+            <a href={`tel:${phoneDisplay.replace(/[^0-9]/g, "")}`} data-dni-phone="primary" className="block">
               <div className="bg-white p-[8px] w-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
                 <div className="flex items-start gap-4">
                   <div className="bg-law-accent p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">

@@ -35,6 +35,7 @@ export default function PracticeAreasHero({
           <div className="shrink-0 w-full md:w-auto md:max-w-[380px]">
             <a
               href={`tel:${phoneDisplay.replace(/[^0-9]/g, "")}`}
+              data-dni-phone="primary"
               className="block"
             >
               <div className="bg-white p-[8px] w-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">

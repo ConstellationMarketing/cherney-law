@@ -65,8 +65,8 @@ export const defaultContactContent: ContactPageContent = {
       address: "1744 Roswell Road, Suite 100 Marietta, GA 30062",
       mapEmbedUrl:
         "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3311.5!2d-84.55!3d33.97!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2s1744+Roswell+Road+Marietta+GA!5e0!3m2!1sen!2sus",
-      phone: "770-485-4141",
-      phoneDisplay: "(770) 485-4141",
+      phone: "", // Will be populated from global phone settings
+      phoneDisplay: "", // Will be populated from global phone settings
       directions: "",
     },
     {
@@ -76,8 +76,8 @@ export const defaultContactContent: ContactPageContent = {
         "<p>Contact our Woodstock office for a free consultation about your bankruptcy options.</p>",
       address: "Woodstock, GA",
       mapEmbedUrl: "",
-      phone: "770-485-4141",
-      phoneDisplay: "(770) 485-4141",
+      phone: "", // Will be populated from global phone settings
+      phoneDisplay: "", // Will be populated from global phone settings
       directions: "",
     },
     {
@@ -87,8 +87,8 @@ export const defaultContactContent: ContactPageContent = {
         "<p>Contact our Alpharetta office for a free consultation about your bankruptcy options.</p>",
       address: "Alpharetta, GA",
       mapEmbedUrl: "",
-      phone: "770-485-4141",
-      phoneDisplay: "(770) 485-4141",
+      phone: "", // Will be populated from global phone settings
+      phoneDisplay: "", // Will be populated from global phone settings
       directions: "",
     },
   ],

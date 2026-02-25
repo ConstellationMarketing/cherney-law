@@ -9,6 +9,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
+import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
 import {
   Car,
   Truck,
@@ -146,6 +147,15 @@ function HeroBlock({
   block: Extract<ContentBlock, { type: "hero" }>;
   isPreview: boolean;
 }) {
+  const { phoneNumber, phoneDisplay } = useGlobalPhone();
+
+  // Convert phoneDisplay to tel format if phoneNumber is empty
+  function phoneToTel(str: string): string {
+    return str.replace(/\D/g, "");
+  }
+
+  const telHref = `tel:${phoneNumber || phoneToTel(phoneDisplay)}`;
+
   return (
     <section
       className={`relative py-20 px-6 text-center ${isPreview ? "bg-slate-800" : "bg-[#183658]"}`}
@@ -172,10 +182,11 @@ function HeroBlock({
         )}
         {block.showCTA && (
           <a
-            href="tel:4049057742"
+            href={telHref}
+            data-dni-phone="primary"
             className="inline-block bg-white text-[#183658] px-8 py-4 rounded-2xl text-xl font-semibold hover:bg-gray-100 transition-colors"
           >
-            Call 404-905-7742
+            Call {phoneDisplay}
           </a>
         )}
       </div>

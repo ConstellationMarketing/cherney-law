@@ -43,6 +43,12 @@ export interface SiteSettings {
   footerBottomLinks: { label: string; href?: string }[];
   copyrightText: string;
   siteNoindex: boolean;
+  // Analytics & Scripts
+  ga4MeasurementId: string;
+  googleAdsId: string;
+  googleAdsConversionLabel: string;
+  headScripts: string;
+  footerScripts: string;
 }
 
 // Default values
@@ -72,6 +78,12 @@ const DEFAULT_SETTINGS: SiteSettings = {
   ],
   copyrightText: `Copyright © ${new Date().getFullYear()} | All Rights Reserved`,
   siteNoindex: false,
+  // Analytics & Scripts defaults
+  ga4MeasurementId: "",
+  googleAdsId: "",
+  googleAdsConversionLabel: "",
+  headScripts: "",
+  footerScripts: "",
 };
 
 interface SiteSettingsContextValue {
@@ -163,6 +175,13 @@ export function SiteSettingsProvider({ children }: SiteSettingsProviderProps) {
               : DEFAULT_SETTINGS.footerBottomLinks,
             copyrightText: row.copyright_text || DEFAULT_SETTINGS.copyrightText,
             siteNoindex: row.site_noindex ?? DEFAULT_SETTINGS.siteNoindex,
+            // Analytics & Scripts
+            ga4MeasurementId: row.ga4_measurement_id || DEFAULT_SETTINGS.ga4MeasurementId,
+            googleAdsId: row.google_ads_id || DEFAULT_SETTINGS.googleAdsId,
+            googleAdsConversionLabel:
+              row.google_ads_conversion_label || DEFAULT_SETTINGS.googleAdsConversionLabel,
+            headScripts: row.head_scripts || DEFAULT_SETTINGS.headScripts,
+            footerScripts: row.footer_scripts || DEFAULT_SETTINGS.footerScripts,
           };
 
           settingsCache = loadedSettings;
