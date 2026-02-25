@@ -80,6 +80,7 @@ export interface HomePageContent {
   about: {
     sectionLabel: string;
     heading: string;
+    headingLevel?: 1 | 2 | 3 | 4;
     description: string;
     phone: string;
     phoneLabel: string;
@@ -92,42 +93,50 @@ export interface HomePageContent {
   practiceAreasIntro: {
     sectionLabel: string;
     heading: string;
+    headingLevel?: 1 | 2 | 3 | 4;
     description: string;
   };
   practiceAreas: PracticeAreaItem[];
   testimonials: {
     sectionLabel: string;
     heading: string;
+    headingLevel?: 1 | 2 | 3 | 4;
     backgroundImage: string;
     items: TestimonialItem[];
   };
   contact: {
     sectionLabel: string;
     heading: string;
+    headingLevel?: 1 | 2 | 3 | 4;
     description: string;
     phone: string;
     phoneLabel: string;
     address: string;
     formHeading: string;
+    formHeadingLevel?: 1 | 2 | 3 | 4;
     attorneyImage: string;
   };
   firmDescription: {
     heading: string;
+    headingLevel?: 1 | 2 | 3 | 4;
     body: string;
   };
   awardsCTA: {
     sectionLabel: string;
     heading: string;
+    headingLevel?: 1 | 2 | 3 | 4;
     description: string;
     ctaText: string;
     ctaLink: string;
   };
   attorneyInfo: {
     heading: string;
+    headingLevel?: 1 | 2 | 3 | 4;
     image: string;
     imageAlt: string;
     body: string;
     stayInformedHeading: string;
+    stayInformedHeadingLevel?: 1 | 2 | 3 | 4;
     stayInformedText: string;
     stayInformedImage: string;
     stayInformedImageAlt: string;

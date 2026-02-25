@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Phone } from "lucide-react";
 import type { HomePageContent } from "@/lib/pageContentTypes";
 import ImageUploader from "@/components/admin/ImageUploader";
@@ -32,6 +33,43 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 function SectionGrid({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{children}</div>;
+}
+
+function HeadingField({
+  label,
+  value,
+  level = "2",
+  onTextChange,
+  onLevelChange,
+  hint
+}: {
+  label: string
+  value: string
+  level?: string
+  onTextChange: (v: string) => void
+  onLevelChange: (v: string) => void
+  hint?: string
+}) {
+  return (
+    <div className="space-y-2">
+      <Field label={label} hint={hint}>
+        <Input value={value} onChange={e => onTextChange(e.target.value)} placeholder="Enter heading text" />
+      </Field>
+      <Field label="Heading Level">
+        <Select value={level} onValueChange={onLevelChange}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">H1 - Main Title</SelectItem>
+            <SelectItem value="2">H2 - Section Title</SelectItem>
+            <SelectItem value="3">H3 - Subsection</SelectItem>
+            <SelectItem value="4">H4 - Minor Heading</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
+    </div>
+  );
 }
 
 function ArrayCard({ children, onRemove }: { children: React.ReactNode; onRemove: () => void }) {

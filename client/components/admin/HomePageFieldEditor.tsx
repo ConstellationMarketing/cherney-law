@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Phone } from "lucide-react";
 import type { HomePageContent } from "@/lib/pageContentTypes";
 import ImageUploader from "@/components/admin/ImageUploader";
@@ -26,6 +27,43 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 function SectionGrid({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{children}</div>;
+}
+
+function HeadingField({
+  label,
+  value,
+  level = "2",
+  onTextChange,
+  onLevelChange,
+  hint
+}: {
+  label: string
+  value: string
+  level?: string
+  onTextChange: (v: string) => void
+  onLevelChange: (v: string) => void
+  hint?: string
+}) {
+  return (
+    <div className="space-y-2">
+      <Field label={label} hint={hint}>
+        <Input value={value} onChange={e => onTextChange(e.target.value)} placeholder="Enter heading text" />
+      </Field>
+      <Field label="Heading Level">
+        <Select value={level} onValueChange={onLevelChange}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">H1 - Main Title</SelectItem>
+            <SelectItem value="2">H2 - Section Title</SelectItem>
+            <SelectItem value="3">H3 - Subsection</SelectItem>
+            <SelectItem value="4">H4 - Minor Heading</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
+    </div>
+  );
 }
 
 function GlobalPhoneNote() {
@@ -202,14 +240,16 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
       <AccordionItem value="about" className="border rounded-lg px-4">
         <AccordionTrigger className="text-sm font-semibold">About Section</AccordionTrigger>
         <AccordionContent className="space-y-4 pb-4">
-          <SectionGrid>
-            <Field label="Section Label">
-              <Input value={about.sectionLabel} onChange={e => setAbout("sectionLabel", e.target.value)} placeholder="ABOUT US" />
-            </Field>
-            <Field label="Heading">
-              <Input value={about.heading} onChange={e => setAbout("heading", e.target.value)} />
-            </Field>
-          </SectionGrid>
+          <Field label="Section Label">
+            <Input value={about.sectionLabel} onChange={e => setAbout("sectionLabel", e.target.value)} placeholder="ABOUT US" />
+          </Field>
+          <HeadingField
+            label="Heading"
+            value={about.heading}
+            level={String(about.headingLevel || 2)}
+            onTextChange={v => setAbout("heading", v)}
+            onLevelChange={v => setAbout("headingLevel", Number(v) as 1 | 2 | 3 | 4)}
+          />
           <Field label="Description">
             <RichTextEditor value={about.description} onChange={v => setAbout("description", v)} />
           </Field>
@@ -282,9 +322,13 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
       <AccordionItem value="firmDescription" className="border rounded-lg px-4">
         <AccordionTrigger className="text-sm font-semibold">Firm Description</AccordionTrigger>
         <AccordionContent className="space-y-4 pb-4">
-          <Field label="Heading">
-            <Input value={content.firmDescription.heading} onChange={e => set("firmDescription", { heading: e.target.value })} />
-          </Field>
+          <HeadingField
+            label="Heading"
+            value={content.firmDescription.heading}
+            level={String(content.firmDescription.headingLevel || 2)}
+            onTextChange={v => set("firmDescription", { heading: v })}
+            onLevelChange={v => set("firmDescription", { headingLevel: Number(v) as 1 | 2 | 3 | 4 })}
+          />
           <Field label="Body">
             <RichTextEditor value={content.firmDescription.body} onChange={v => set("firmDescription", { body: v })} />
           </Field>
@@ -295,14 +339,16 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
       <AccordionItem value="practiceAreasIntro" className="border rounded-lg px-4">
         <AccordionTrigger className="text-sm font-semibold">Practice Areas Intro</AccordionTrigger>
         <AccordionContent className="space-y-4 pb-4">
-          <SectionGrid>
-            <Field label="Section Label">
-              <Input value={content.practiceAreasIntro.sectionLabel} onChange={e => set("practiceAreasIntro", { sectionLabel: e.target.value })} />
-            </Field>
-            <Field label="Heading">
-              <Input value={content.practiceAreasIntro.heading} onChange={e => set("practiceAreasIntro", { heading: e.target.value })} />
-            </Field>
-          </SectionGrid>
+          <Field label="Section Label">
+            <Input value={content.practiceAreasIntro.sectionLabel} onChange={e => set("practiceAreasIntro", { sectionLabel: e.target.value })} />
+          </Field>
+          <HeadingField
+            label="Heading"
+            value={content.practiceAreasIntro.heading}
+            level={String(content.practiceAreasIntro.headingLevel || 2)}
+            onTextChange={v => set("practiceAreasIntro", { heading: v })}
+            onLevelChange={v => set("practiceAreasIntro", { headingLevel: Number(v) as 1 | 2 | 3 | 4 })}
+          />
           <Field label="Description">
             <RichTextEditor value={content.practiceAreasIntro.description} onChange={v => set("practiceAreasIntro", { description: v })} />
           </Field>
@@ -346,14 +392,16 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
       <AccordionItem value="awardsCTA" className="border rounded-lg px-4">
         <AccordionTrigger className="text-sm font-semibold">Awards / CTA Section</AccordionTrigger>
         <AccordionContent className="space-y-4 pb-4">
-          <SectionGrid>
-            <Field label="Section Label">
-              <Input value={content.awardsCTA.sectionLabel} onChange={e => set("awardsCTA", { sectionLabel: e.target.value })} />
-            </Field>
-            <Field label="Heading">
-              <Input value={content.awardsCTA.heading} onChange={e => set("awardsCTA", { heading: e.target.value })} />
-            </Field>
-          </SectionGrid>
+          <Field label="Section Label">
+            <Input value={content.awardsCTA.sectionLabel} onChange={e => set("awardsCTA", { sectionLabel: e.target.value })} />
+          </Field>
+          <HeadingField
+            label="Heading"
+            value={content.awardsCTA.heading}
+            level={String(content.awardsCTA.headingLevel || 2)}
+            onTextChange={v => set("awardsCTA", { heading: v })}
+            onLevelChange={v => set("awardsCTA", { headingLevel: Number(v) as 1 | 2 | 3 | 4 })}
+          />
           <Field label="Description">
             <RichTextEditor value={content.awardsCTA.description} onChange={v => set("awardsCTA", { description: v })} />
           </Field>
@@ -372,14 +420,19 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
       <AccordionItem value="testimonials" className="border rounded-lg px-4">
         <AccordionTrigger className="text-sm font-semibold">Testimonials</AccordionTrigger>
         <AccordionContent className="space-y-4 pb-4">
-          <SectionGrid>
-            <Field label="Section Label">
-              <Input value={content.testimonials.sectionLabel} onChange={e => set("testimonials", { sectionLabel: e.target.value })} />
-            </Field>
-            <Field label="Heading">
-              <Input value={content.testimonials.heading} onChange={e => set("testimonials", { heading: e.target.value })} />
-            </Field>
-          </SectionGrid>
+          <Field label="Section Label">
+            <Input value={content.testimonials.sectionLabel} onChange={e => set("testimonials", { sectionLabel: e.target.value })} />
+          </Field>
+          <HeadingField
+            label="Heading"
+            value={content.testimonials.heading}
+            level={String(content.testimonials.headingLevel || 2)}
+            onTextChange={v => set("testimonials", { heading: v })}
+            onLevelChange={v => set("testimonials", { headingLevel: Number(v) as 1 | 2 | 3 | 4 })}
+          />
+          <Field label="Background Image">
+            <ImageUploader value={content.testimonials.backgroundImage} onChange={v => set("testimonials", { backgroundImage: v })} folder="backgrounds" />
+          </Field>
           <Field label="Background Image">
             <ImageUploader value={content.testimonials.backgroundImage} onChange={v => set("testimonials", { backgroundImage: v })} folder="backgrounds" />
           </Field>
