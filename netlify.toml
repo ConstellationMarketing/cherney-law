@@ -1,19 +1,18 @@
 [build]
+  command = "pnpm run build:ssg"
   publish = "dist/spa"
-  command = "git submodule sync --recursive && git submodule update --init --recursive && pnpm run build:ssg"
-  functions = "vendor/cms-core/netlify/functions"
-
 
 [functions]
+  directory = "vendor/cms-core/netlify/functions"
   external_node_modules = ["express"]
   node_bundler = "esbuild"
-  
+
 [[redirects]]
   force = true
   from = "/api/*"
   status = 200
   to = "/.netlify/functions/api/:splat"
-  
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
