@@ -126,7 +126,7 @@ export default function AboutSection({ content, syndicationsLabel }: AboutSectio
           </div>
 
           {/* Middle Column - Image */}
-          <div className="md:w-full flex flex-col justify-center md:justify-start items-center">
+          <div className="md:w-full flex flex-col justify-center items-center">
             {syndicationsLabel && (
               <p className="font-outfit text-[14px] md:text-[16px] text-law-accent text-center mb-4 font-medium">
                 {syndicationsLabel}
@@ -141,6 +141,8 @@ export default function AboutSection({ content, syndicationsLabel }: AboutSectio
                 height={631}
                 loading="lazy"
               />
+              {/* Bottom fade-out overlay */}
+              <div className="absolute bottom-0 left-0 right-0 h-[30%] bg-gradient-to-t from-white to-transparent pointer-events-none" />
             </div>
           </div>
 
