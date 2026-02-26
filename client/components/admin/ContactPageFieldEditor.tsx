@@ -53,7 +53,7 @@ export default function ContactPageFieldEditor({ content, onChange }: Props) {
   const addOffice = () =>
     onChange({
       ...content,
-      offices: [...content.offices, { tabLabel: "", addressLine1: "", addressLine2: "", phone: "", email: "", hours: "", mapEmbedUrl: "" }],
+      offices: [...content.offices, { name: "", heading: "", content: "", address: "", phone: "", phoneDisplay: "", mapEmbedUrl: "", directions: "" }],
     });
   const removeOffice = (i: number) =>
     onChange({ ...content, offices: content.offices.filter((_, idx) => idx !== i) });
@@ -103,29 +103,32 @@ export default function ContactPageFieldEditor({ content, onChange }: Props) {
             </Button>
           </div>
           {content.offices.map((office, i) => (
-            <ArrayCard key={i} onRemove={() => removeOffice(i)} title={office.tabLabel || `Office ${i + 1}`}>
+            <ArrayCard key={i} onRemove={() => removeOffice(i)} title={(office as any).name || `Office ${i + 1}`}>
               <Field label="Tab Label">
-                <Input value={office.tabLabel} onChange={e => updateOffice(i, "tabLabel", e.target.value)} placeholder="Atlanta" />
+                <Input value={(office as any).name || ""} onChange={e => updateOffice(i, "name", e.target.value)} placeholder="Atlanta" />
+              </Field>
+              <Field label="Heading (displayed in office tab)">
+                <Input value={(office as any).heading || ""} onChange={e => updateOffice(i, "heading", e.target.value)} placeholder="Contact an Atlanta Bankruptcy Attorney" />
+              </Field>
+              <Field label="Body Text (rich text)">
+                <RichTextEditor value={(office as any).content || ""} onChange={v => updateOffice(i, "content", v)} />
+              </Field>
+              <Field label="Address">
+                <Textarea value={(office as any).address || ""} onChange={e => updateOffice(i, "address", e.target.value)} rows={2} placeholder="123 Main St, Suite 100, City, State 12345" />
               </Field>
               <SectionGrid>
-                <Field label="Address Line 1">
-                  <Input value={office.addressLine1} onChange={e => updateOffice(i, "addressLine1", e.target.value)} />
+                <Field label="Phone (tel: value)">
+                  <Input value={(office as any).phone || ""} onChange={e => updateOffice(i, "phone", e.target.value)} placeholder="770-485-4141" hint="Phone number for tel: links" />
                 </Field>
-                <Field label="Address Line 2">
-                  <Input value={office.addressLine2 || ""} onChange={e => updateOffice(i, "addressLine2", e.target.value)} />
-                </Field>
-                <Field label="Phone">
-                  <Input value={office.phone} onChange={e => updateOffice(i, "phone", e.target.value)} />
-                </Field>
-                <Field label="Email">
-                  <Input value={office.email || ""} onChange={e => updateOffice(i, "email", e.target.value)} />
+                <Field label="Phone Display (formatted for display)">
+                  <Input value={(office as any).phoneDisplay || ""} onChange={e => updateOffice(i, "phoneDisplay", e.target.value)} placeholder="(770) 485-4141" hint="Formatted phone shown to users" />
                 </Field>
               </SectionGrid>
-              <Field label="Hours">
-                <Textarea value={office.hours || ""} onChange={e => updateOffice(i, "hours", e.target.value)} rows={2} placeholder="Mon–Fri: 9am–6pm" />
-              </Field>
               <Field label="Google Maps Embed URL" hint="Paste the src URL from Google Maps embed code">
-                <Input value={office.mapEmbedUrl || ""} onChange={e => updateOffice(i, "mapEmbedUrl", e.target.value)} placeholder="https://www.google.com/maps/embed?..." />
+                <Input value={(office as any).mapEmbedUrl || ""} onChange={e => updateOffice(i, "mapEmbedUrl", e.target.value)} placeholder="https://www.google.com/maps/embed?..." />
+              </Field>
+              <Field label="Driving Directions (rich text)">
+                <RichTextEditor value={(office as any).directions || ""} onChange={v => updateOffice(i, "directions", v)} />
               </Field>
             </ArrayCard>
           ))}

@@ -433,9 +433,6 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
           <Field label="Background Image">
             <ImageUploader value={content.testimonials.backgroundImage} onChange={v => set("testimonials", { backgroundImage: v })} folder="backgrounds" />
           </Field>
-          <Field label="Background Image">
-            <ImageUploader value={content.testimonials.backgroundImage} onChange={v => set("testimonials", { backgroundImage: v })} folder="backgrounds" />
-          </Field>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Testimonial Items</Label>
