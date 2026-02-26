@@ -7,6 +7,19 @@ import { resolveSeo } from "@site/utils/resolveSeo";
 import AboutHero from "@site/components/about/AboutHero";
 import LocationsGrid from "@site/components/areas-we-serve/LocationsGrid";
 
+function HeadingRenderer({ text, level }: { text: string; level: 1 | 2 | 3 | 4 }) {
+  if (level === 1) {
+    return <h1 className="font-playfair text-[36px] md:text-[54px] lg:text-[64px] leading-tight md:leading-[64px] text-black pb-[20px] md:pb-[30px]">{text}</h1>;
+  }
+  if (level === 2) {
+    return <h2 className="font-playfair text-[32px] md:text-[42px] lg:text-[48px] leading-tight md:leading-[48px] text-black pb-[20px] md:pb-[30px]">{text}</h2>;
+  }
+  if (level === 3) {
+    return <h3 className="font-playfair text-[28px] md:text-[36px] lg:text-[42px] leading-tight md:leading-[42px] text-black pb-[20px] md:pb-[30px]">{text}</h3>;
+  }
+  return <h4 className="font-playfair text-[24px] md:text-[32px] lg:text-[36px] leading-tight md:leading-[36px] text-black pb-[20px] md:pb-[30px]">{text}</h4>;
+}
+
 export default function AreasWeServePage() {
   const { content, page } = useAreasWeServeContent();
   const { phoneDisplay } = useGlobalPhone();
@@ -32,9 +45,7 @@ export default function AreasWeServePage() {
             <div className="lg:col-span-3 space-y-8">
               {/* Intro Section */}
               <div>
-                <h2 className="font-playfair text-[32px] md:text-[48px] lg:text-[54px] leading-tight md:leading-[54px] text-black pb-[20px] md:pb-[30px]">
-                  {content.introSection.heading}
-                </h2>
+                <HeadingRenderer text={content.introSection.heading} level={content.introSection.headingLevel} />
                 <div
                   className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black prose prose-sm max-w-none [&_a]:text-law-accent [&_a]:underline pb-[30px]"
                   dangerouslySetInnerHTML={{ __html: content.introSection.body }}
@@ -43,12 +54,19 @@ export default function AreasWeServePage() {
 
               {/* Why Section */}
               <div className="pt-[20px]">
-                <h2 className="font-playfair text-[32px] md:text-[42px] lg:text-[48px] leading-tight md:leading-[48px] text-black pb-[20px] md:pb-[30px]">
-                  {content.whySection.heading}
-                </h2>
+                <HeadingRenderer text={content.whySection.heading} level={content.whySection.headingLevel} />
                 <div
                   className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black prose prose-sm max-w-none [&_a]:text-law-accent [&_a]:underline pb-[30px]"
                   dangerouslySetInnerHTML={{ __html: content.whySection.body }}
+                />
+              </div>
+
+              {/* Closing Section */}
+              <div className="pt-[20px]">
+                <HeadingRenderer text={content.closingSection.heading} level={content.closingSection.headingLevel} />
+                <div
+                  className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black prose prose-sm max-w-none [&_a]:text-law-accent [&_a]:underline pb-[30px]"
+                  dangerouslySetInnerHTML={{ __html: content.closingSection.body }}
                 />
               </div>
 

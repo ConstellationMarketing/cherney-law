@@ -2,6 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Plus, Trash2 } from "lucide-react";
 import type { AreasWeServePageContent, LocationItem } from "@/lib/cms/areasWeServePageTypes";
@@ -19,6 +20,41 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
       <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">{label}</Label>
       {hint && <p className="text-xs text-gray-400">{hint}</p>}
       {children}
+    </div>
+  );
+}
+
+function HeadingField({
+  label,
+  value,
+  level = "2",
+  onTextChange,
+  onLevelChange,
+}: {
+  label: string
+  value: string
+  level?: string
+  onTextChange: (v: string) => void
+  onLevelChange: (v: string) => void
+}) {
+  return (
+    <div className="space-y-2">
+      <Field label={label}>
+        <Input value={value} onChange={e => onTextChange(e.target.value)} placeholder="Enter heading text" />
+      </Field>
+      <Field label="Heading Level">
+        <Select value={level} onValueChange={onLevelChange}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">H1 - Main Title</SelectItem>
+            <SelectItem value="2">H2 - Section Title</SelectItem>
+            <SelectItem value="3">H3 - Subsection</SelectItem>
+            <SelectItem value="4">H4 - Minor Heading</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
     </div>
   );
 }
@@ -93,15 +129,13 @@ export default function AreasWeServePageFieldEditor({ content, onChange }: Props
       <AccordionItem value="introSection" className="border rounded-lg px-4">
         <AccordionTrigger className="text-sm font-semibold">Intro Section</AccordionTrigger>
         <AccordionContent className="space-y-4 pb-4">
-          <Field label="Heading">
-            <Input
-              value={content.introSection.heading}
-              onChange={(e) =>
-                set("introSection", { heading: e.target.value })
-              }
-              placeholder="Areas We Serve"
-            />
-          </Field>
+          <HeadingField
+            label="Heading"
+            value={content.introSection.heading}
+            level={String(content.introSection.headingLevel || 2)}
+            onTextChange={(v) => set("introSection", { heading: v })}
+            onLevelChange={(v) => set("introSection", { headingLevel: Number(v) as 1 | 2 | 3 | 4 })}
+          />
           <Field label="Body Content (Rich Text)">
             <RichTextEditor
               value={content.introSection.body}
@@ -116,15 +150,13 @@ export default function AreasWeServePageFieldEditor({ content, onChange }: Props
       <AccordionItem value="whySection" className="border rounded-lg px-4">
         <AccordionTrigger className="text-sm font-semibold">Why Section</AccordionTrigger>
         <AccordionContent className="space-y-4 pb-4">
-          <Field label="Heading (H2)">
-            <Input
-              value={content.whySection.heading}
-              onChange={(e) =>
-                set("whySection", { heading: e.target.value })
-              }
-              placeholder="Advantageous Atlanta Bankruptcy Representation"
-            />
-          </Field>
+          <HeadingField
+            label="Heading"
+            value={content.whySection.heading}
+            level={String(content.whySection.headingLevel || 2)}
+            onTextChange={(v) => set("whySection", { heading: v })}
+            onLevelChange={(v) => set("whySection", { headingLevel: Number(v) as 1 | 2 | 3 | 4 })}
+          />
           <Field label="Body Content (Rich Text)">
             <RichTextEditor
               value={content.whySection.body}
@@ -198,6 +230,27 @@ export default function AreasWeServePageFieldEditor({ content, onChange }: Props
               ))}
             </div>
           </div>
+        </AccordionContent>
+      </AccordionItem>
+
+      {/* CLOSING SECTION */}
+      <AccordionItem value="closingSection" className="border rounded-lg px-4">
+        <AccordionTrigger className="text-sm font-semibold">Closing Section</AccordionTrigger>
+        <AccordionContent className="space-y-4 pb-4">
+          <HeadingField
+            label="Heading"
+            value={content.closingSection.heading}
+            level={String(content.closingSection.headingLevel || 2)}
+            onTextChange={(v) => set("closingSection", { heading: v })}
+            onLevelChange={(v) => set("closingSection", { headingLevel: Number(v) as 1 | 2 | 3 | 4 })}
+          />
+          <Field label="Body Content (Rich Text)">
+            <RichTextEditor
+              value={content.closingSection.body}
+              onChange={(v) => set("closingSection", { body: v })}
+              minHeight="200px"
+            />
+          </Field>
         </AccordionContent>
       </AccordionItem>
 
