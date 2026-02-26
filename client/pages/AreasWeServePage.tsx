@@ -61,15 +61,6 @@ export default function AreasWeServePage() {
                 />
               </div>
 
-              {/* Closing Section */}
-              <div className="pt-[20px]">
-                <HeadingRenderer text={content.closingSection.heading} level={content.closingSection.headingLevel} />
-                <div
-                  className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black prose prose-sm max-w-none [&_a]:text-law-accent [&_a]:underline pb-[30px]"
-                  dangerouslySetInnerHTML={{ __html: content.closingSection.body }}
-                />
-              </div>
-
               {/* Locations Section */}
               <div className="pt-[20px]">
                 <h3 className="font-playfair text-[24px] md:text-[32px] lg:text-[36px] leading-tight md:leading-[36px] text-black pb-[20px]">
@@ -79,6 +70,15 @@ export default function AreasWeServePage() {
                   {content.locationsSection.introText}
                 </p>
                 <LocationsGrid items={content.locationsSection.items} />
+              </div>
+
+              {/* Closing Section */}
+              <div className="pt-[20px]">
+                <HeadingRenderer text={content.closingSection.heading} level={content.closingSection.headingLevel} />
+                <div
+                  className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black prose prose-sm max-w-none [&_a]:text-law-accent [&_a]:underline pb-[30px]"
+                  dangerouslySetInnerHTML={{ __html: content.closingSection.body }}
+                />
               </div>
             </div>
 
