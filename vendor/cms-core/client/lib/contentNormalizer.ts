@@ -291,26 +291,26 @@ export function normalizeAreasWeServePageContent(content: unknown): AreasWeServe
       sectionLabel: str(c.hero?.sectionLabel),
       tagline: str(c.hero?.tagline),
     }),
-    introSection: ensureObject(c.introSection, {
+    introSection: {
       heading: str(c.introSection?.heading),
-      headingLevel: [1, 2, 3, 4].includes(Number(c.introSection?.headingLevel)) ? Number(c.introSection?.headingLevel) : 2,
+      headingLevel: ([1, 2, 3, 4].includes(Number(c.introSection?.headingLevel)) ? Number(c.introSection?.headingLevel) : 2) as 1 | 2 | 3 | 4,
       body: str(c.introSection?.body),
-    }) as any,
-    whySection: ensureObject(c.whySection, {
+    },
+    whySection: {
       heading: str(c.whySection?.heading),
-      headingLevel: [1, 2, 3, 4].includes(Number(c.whySection?.headingLevel)) ? Number(c.whySection?.headingLevel) : 2,
+      headingLevel: ([1, 2, 3, 4].includes(Number(c.whySection?.headingLevel)) ? Number(c.whySection?.headingLevel) : 2) as 1 | 2 | 3 | 4,
       body: str(c.whySection?.body),
-    }) as any,
+    },
     locationsSection: ensureObject(c.locationsSection, {
       heading: str(c.locationsSection?.heading),
       introText: str(c.locationsSection?.introText),
       items: ensureArray(c.locationsSection?.items, { name: '', description: '', href: '' }),
     }),
-    closingSection: ensureObject(c.closingSection, {
+    closingSection: {
       heading: str(c.closingSection?.heading),
-      headingLevel: [1, 2, 3, 4].includes(Number(c.closingSection?.headingLevel)) ? Number(c.closingSection?.headingLevel) : 2,
+      headingLevel: ([1, 2, 3, 4].includes(Number(c.closingSection?.headingLevel)) ? Number(c.closingSection?.headingLevel) : 2) as 1 | 2 | 3 | 4,
       body: str(c.closingSection?.body),
-    }) as any,
+    },
     cta: ensureObject(c.cta, {
       heading: str(c.cta?.heading),
       description: str(c.cta?.description),

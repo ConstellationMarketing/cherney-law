@@ -164,6 +164,10 @@ function mergeWithDefaults(
         ? cmsContent.locationsSection.items
         : defaults.locationsSection.items,
     },
+    closingSection: {
+      ...defaults.closingSection,
+      ...cmsContent.closingSection,
+    },
     cta: {
       ...defaults.cta,
       ...cmsContent.cta,

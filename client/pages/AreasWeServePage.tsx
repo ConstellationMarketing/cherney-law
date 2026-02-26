@@ -7,7 +7,7 @@ import { resolveSeo } from "@site/utils/resolveSeo";
 import AboutHero from "@site/components/about/AboutHero";
 import LocationsGrid from "@site/components/areas-we-serve/LocationsGrid";
 
-function HeadingRenderer({ text, level }: { text: string; level: 1 | 2 | 3 | 4 }) {
+function HeadingRenderer({ text, level }: { text: string; level: 1 | 2 | 3 | 4 }): React.ReactNode {
   if (level === 1) {
     return <h1 className="font-playfair text-[36px] md:text-[54px] lg:text-[64px] leading-tight md:leading-[64px] text-black pb-[20px] md:pb-[30px]">{text}</h1>;
   }
