@@ -6,6 +6,7 @@ import {
   normalizeContactPageContent,
   normalizePracticeAreasPageContent,
   normalizeTestimonialsPageContent,
+  normalizeCommonQuestionsPageContent,
 } from "../../lib/contentNormalizer";
 import HomePageFieldEditor from "@site/components/admin/HomePageFieldEditor";
 import Homepage2FieldEditor from "@site/components/admin/Homepage2FieldEditor";
@@ -13,6 +14,7 @@ import AboutPageFieldEditor from "@site/components/admin/AboutPageFieldEditor";
 import ContactPageFieldEditor from "@site/components/admin/ContactPageFieldEditor";
 import PracticeAreasPageFieldEditor from "@site/components/admin/PracticeAreasPageFieldEditor";
 import TestimonialsPageFieldEditor from "@site/components/admin/TestimonialsPageFieldEditor";
+import CommonQuestionsPageFieldEditor from "@site/components/admin/CommonQuestionsPageFieldEditor";
 
 interface PageContentEditorProps {
   pageKey: string;
@@ -34,6 +36,7 @@ export default function PageContentEditor({
     if (path.startsWith("/contact")) return "contact";
     if (path.startsWith("/practice-areas")) return "practice-areas";
     if (path.startsWith("/testimonials")) return "testimonials";
+    if (path.startsWith("/common-questions")) return "common-questions";
     return "unknown";
   };
 
@@ -49,6 +52,7 @@ export default function PageContentEditor({
         case "contact": n = normalizeContactPageContent(content); break;
         case "practice-areas": n = normalizePracticeAreasPageContent(content); break;
         case "testimonials": n = normalizeTestimonialsPageContent(content); break;
+        case "common-questions": n = normalizeCommonQuestionsPageContent(content); break;
         default: n = content || {};
       }
       setNormalized(n);
@@ -102,6 +106,9 @@ export default function PageContentEditor({
       )}
       {pageType === "testimonials" && (
         <TestimonialsPageFieldEditor content={normalized} onChange={handleChange} />
+      )}
+      {pageType === "common-questions" && (
+        <CommonQuestionsPageFieldEditor content={normalized} onChange={handleChange} />
       )}
     </div>
   );

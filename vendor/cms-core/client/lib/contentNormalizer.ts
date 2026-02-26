@@ -250,3 +250,32 @@ export function normalizeTestimonialsPageContent(content: unknown): Testimonials
     }),
   };
 }
+
+// Import type from client-specific types
+import type { CommonQuestionsPageContent } from '../../client/lib/cms/commonQuestionsPageTypes';
+
+export function normalizeCommonQuestionsPageContent(content: unknown): CommonQuestionsPageContent {
+  const c = ensureObject(content, {});
+
+  return {
+    hero: ensureObject(c.hero, {
+      sectionLabel: str(c.hero?.sectionLabel),
+      tagline: str(c.hero?.tagline),
+    }),
+    faqSection: ensureObject(c.faqSection, {
+      sectionLabel: str(c.faqSection?.sectionLabel),
+      heading: str(c.faqSection?.heading),
+      description: str(c.faqSection?.description),
+      items: ensureArray(c.faqSection?.items, { question: '', answer: '' }),
+    }),
+    closingSection: ensureObject(c.closingSection, {
+      heading: str(c.closingSection?.heading),
+      body: str(c.closingSection?.body),
+    }),
+    cta: ensureObject(c.cta, {
+      heading: str(c.cta?.heading),
+      description: str(c.cta?.description),
+      secondaryButton: ensureObject(c.cta?.secondaryButton, { label: '', sublabel: '', href: '' }),
+    }),
+  };
+}
