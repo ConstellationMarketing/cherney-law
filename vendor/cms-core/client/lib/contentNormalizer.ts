@@ -253,6 +253,7 @@ export function normalizeTestimonialsPageContent(content: unknown): Testimonials
 
 // Import type from client-specific types
 import type { CommonQuestionsPageContent } from '../../client/lib/cms/commonQuestionsPageTypes';
+import type { AreasWeServePageContent } from '../../client/lib/cms/areasWeServePageTypes';
 
 export function normalizeCommonQuestionsPageContent(content: unknown): CommonQuestionsPageContent {
   const c = ensureObject(content, {});
@@ -271,6 +272,37 @@ export function normalizeCommonQuestionsPageContent(content: unknown): CommonQue
     closingSection: ensureObject(c.closingSection, {
       heading: str(c.closingSection?.heading),
       body: str(c.closingSection?.body),
+    }),
+    cta: ensureObject(c.cta, {
+      heading: str(c.cta?.heading),
+      description: str(c.cta?.description),
+      image: str(c.cta?.image),
+      imageAlt: str(c.cta?.imageAlt),
+      secondaryButton: ensureObject(c.cta?.secondaryButton, { label: '', sublabel: '', href: '' }),
+    }),
+  };
+}
+
+export function normalizeAreasWeServePageContent(content: unknown): AreasWeServePageContent {
+  const c = ensureObject(content, {});
+
+  return {
+    hero: ensureObject(c.hero, {
+      sectionLabel: str(c.hero?.sectionLabel),
+      tagline: str(c.hero?.tagline),
+    }),
+    introSection: ensureObject(c.introSection, {
+      heading: str(c.introSection?.heading),
+      body: str(c.introSection?.body),
+    }),
+    whySection: ensureObject(c.whySection, {
+      heading: str(c.whySection?.heading),
+      body: str(c.whySection?.body),
+    }),
+    locationsSection: ensureObject(c.locationsSection, {
+      heading: str(c.locationsSection?.heading),
+      introText: str(c.locationsSection?.introText),
+      items: ensureArray(c.locationsSection?.items, { name: '', description: '', href: '' }),
     }),
     cta: ensureObject(c.cta, {
       heading: str(c.cta?.heading),

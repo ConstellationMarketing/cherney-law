@@ -16,6 +16,7 @@ import PracticeAreas from "./pages/PracticeAreas";
 import ContactPage from "./pages/ContactPage";
 import TestimonialsPage from "./pages/TestimonialsPage";
 import CommonQuestionsPage from "./pages/CommonQuestionsPage";
+import AreasWeServePage from "./pages/AreasWeServePage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import DisclaimerPage from "./pages/DisclaimerPage";
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/testimonials" element={<TestimonialsPage />} />
               <Route path="/common-questions" element={<CommonQuestionsPage />} />
+              <Route path="/areas-we-serve" element={<AreasWeServePage />} />
               <Route path="/homepage-2" element={<Homepage2 />} />
               <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
               <Route path="/terms-of-service" element={<TermsOfServicePage />} />

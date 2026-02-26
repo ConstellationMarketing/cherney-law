@@ -133,6 +133,8 @@ export default function AdminPageEdit() {
         clearPageCache("practice-areas");
       } else if (page.url_path === "/common-questions") {
         window.dispatchEvent(new CustomEvent("cms:cache-clear", { detail: { key: "common-questions" } }));
+      } else if (page.url_path === "/areas-we-serve") {
+        window.dispatchEvent(new CustomEvent("cms:cache-clear", { detail: { key: "areas-we-serve" } }));
       }
       // Update tracking state after successful save
       setOriginalUrlPath(page.url_path);
@@ -186,7 +188,7 @@ export default function AdminPageEdit() {
   // Check if this is a structured page (main site pages)
   const isStructuredPage =
     page?.url_path &&
-    ["/", "/about", "/contact", "/practice-areas", "/homepage-2", "/common-questions"].includes(page.url_path);
+    ["/", "/about", "/contact", "/practice-areas", "/homepage-2", "/common-questions", "/areas-we-serve"].includes(page.url_path);
 
   const handleStructuredContentChange = (content: unknown) => {
     updatePage({ content: content as ContentBlock[] });

@@ -7,6 +7,7 @@ import {
   normalizePracticeAreasPageContent,
   normalizeTestimonialsPageContent,
   normalizeCommonQuestionsPageContent,
+  normalizeAreasWeServePageContent,
 } from "../../lib/contentNormalizer";
 import HomePageFieldEditor from "@site/components/admin/HomePageFieldEditor";
 import Homepage2FieldEditor from "@site/components/admin/Homepage2FieldEditor";
@@ -15,6 +16,7 @@ import ContactPageFieldEditor from "@site/components/admin/ContactPageFieldEdito
 import PracticeAreasPageFieldEditor from "@site/components/admin/PracticeAreasPageFieldEditor";
 import TestimonialsPageFieldEditor from "@site/components/admin/TestimonialsPageFieldEditor";
 import CommonQuestionsPageFieldEditor from "@site/components/admin/CommonQuestionsPageFieldEditor";
+import AreasWeServePageFieldEditor from "@site/components/admin/AreasWeServePageFieldEditor";
 
 interface PageContentEditorProps {
   pageKey: string;
@@ -37,6 +39,7 @@ export default function PageContentEditor({
     if (path.startsWith("/practice-areas")) return "practice-areas";
     if (path.startsWith("/testimonials")) return "testimonials";
     if (path.startsWith("/common-questions")) return "common-questions";
+    if (path.startsWith("/areas-we-serve")) return "areas-we-serve";
     return "unknown";
   };
 
@@ -53,6 +56,7 @@ export default function PageContentEditor({
         case "practice-areas": n = normalizePracticeAreasPageContent(content); break;
         case "testimonials": n = normalizeTestimonialsPageContent(content); break;
         case "common-questions": n = normalizeCommonQuestionsPageContent(content); break;
+        case "areas-we-serve": n = normalizeAreasWeServePageContent(content); break;
         default: n = content || {};
       }
       setNormalized(n);
@@ -109,6 +113,9 @@ export default function PageContentEditor({
       )}
       {pageType === "common-questions" && (
         <CommonQuestionsPageFieldEditor content={normalized} onChange={handleChange} />
+      )}
+      {pageType === "areas-we-serve" && (
+        <AreasWeServePageFieldEditor content={normalized} onChange={handleChange} />
       )}
     </div>
   );
