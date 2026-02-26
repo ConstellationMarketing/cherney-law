@@ -25,6 +25,8 @@ export interface ClosingSection {
 export interface CTAContent {
   heading: string; // "Ready to Talk?"
   description: string; // CTA description text
+  image: string; // CTA image URL
+  imageAlt: string; // CTA image alt text
   secondaryButton: {
     label: string; // "Schedule Now"
     sublabel: string; // "Free Consultation"
@@ -112,6 +114,8 @@ export const defaultCommonQuestionsContent: CommonQuestionsPageContent = {
     heading: "Ready to Get Started?",
     description:
       "Contact us today for a free consultation and take the first step toward financial freedom.",
+    image: "",
+    imageAlt: "",
     secondaryButton: {
       label: "Schedule Now",
       sublabel: "Free Consultation",

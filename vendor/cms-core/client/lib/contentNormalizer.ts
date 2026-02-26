@@ -275,6 +275,8 @@ export function normalizeCommonQuestionsPageContent(content: unknown): CommonQue
     cta: ensureObject(c.cta, {
       heading: str(c.cta?.heading),
       description: str(c.cta?.description),
+      image: str(c.cta?.image),
+      imageAlt: str(c.cta?.imageAlt),
       secondaryButton: ensureObject(c.cta?.secondaryButton, { label: '', sublabel: '', href: '' }),
     }),
   };

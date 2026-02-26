@@ -6,6 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Plus, Trash2 } from "lucide-react";
 import type { CommonQuestionsPageContent, FaqItem } from "@/lib/cms/commonQuestionsPageTypes";
 import RichTextEditor from "@/components/admin/RichTextEditor";
+import ImageUploader from "@/components/admin/ImageUploader";
 
 interface Props {
   content: CommonQuestionsPageContent;
@@ -185,6 +186,19 @@ export default function CommonQuestionsPageFieldEditor({ content, onChange }: Pr
             <RichTextEditor
               value={content.cta.description}
               onChange={(v) => set("cta", { description: v })}
+            />
+          </Field>
+          <Field label="CTA Image">
+            <ImageUploader
+              value={content.cta.image}
+              onChange={(v) => set("cta", { image: v })}
+              folder="common-questions"
+            />
+          </Field>
+          <Field label="Image Alt Text">
+            <Input
+              value={content.cta.imageAlt}
+              onChange={(e) => set("cta", { imageAlt: e.target.value })}
             />
           </Field>
           <SectionGrid>

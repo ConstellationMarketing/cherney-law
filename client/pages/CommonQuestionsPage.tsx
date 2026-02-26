@@ -62,6 +62,18 @@ export default function CommonQuestionsPage() {
             {/* Right Column — Sticky CTA Card */}
             <div className="lg:col-span-2">
               <div className="lg:sticky lg:top-[100px]">
+                {/* CTA Image */}
+                {content.cta.image && (
+                  <div className="relative overflow-hidden mb-0">
+                    <img
+                      src={content.cta.image}
+                      alt={content.cta.imageAlt}
+                      className="w-full h-auto object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 h-[60px] bg-gradient-to-t from-[#1a1a2e] to-transparent pointer-events-none" />
+                  </div>
+                )}
                 {/* CTA card */}
                 <div className="bg-[#1a1a2e] p-6 text-center space-y-4">
                   <h3 className="font-playfair text-[22px] md:text-[26px] text-white leading-tight">
