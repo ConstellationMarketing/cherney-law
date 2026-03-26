@@ -45,7 +45,7 @@ export default function Index() {
 
       {/* Hero Section */}
       <div
-        className="relative -mt-[114px] pt-[141px] pb-[27px] w-full bg-law-accent bg-cover bg-center bg-no-repeat"
+        className="relative -mt-[144px] pt-[171px] pb-[27px] w-full bg-law-accent bg-cover bg-center bg-no-repeat"
         style={(heroContent as any).heroBgImage ? { backgroundImage: `url(${(heroContent as any).heroBgImage})` } : {}}
       >
         <div className="relative z-10 max-w-[2560px] mx-auto w-[95%] flex flex-col lg:flex-row lg:items-end gap-8 lg:gap-[3%]">
