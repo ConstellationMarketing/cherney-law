@@ -90,10 +90,21 @@ export default function AdminSiteSettings() {
 
     const rowData = siteSettingsToRow(settings);
 
-    // Use RPC function to bypass PostgREST schema cache issues
-    const { error } = await supabase.rpc("update_site_settings", {
-      settings_data: rowData,
-    });
+    let error;
+    if (settingsId) {
+      // Update existing
+      const result = await supabase
+        .from("site_settings")
+        .update(rowData)
+        .eq("id", settingsId);
+      error = result.error;
+    } else {
+      // Insert new
+      const result = await supabase
+        .from("site_settings")
+        .insert({ ...rowData, settings_key: "global" });
+      error = result.error;
+    }
 
     if (error) {
       console.error("Error saving settings:", error);
