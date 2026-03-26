@@ -21,6 +21,8 @@ export function createServer() {
       path.endsWith('/') ||
       path.startsWith('/api/') ||
       path.startsWith('/admin') ||
+      path.startsWith('/@') ||
+      path.startsWith('/__') ||
       path.includes('.')
     ) {
       return next();
