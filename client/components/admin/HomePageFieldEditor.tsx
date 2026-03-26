@@ -167,21 +167,30 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
       <AccordionItem value="hero" className="border rounded-lg px-4">
         <AccordionTrigger className="text-sm font-semibold">Hero Section</AccordionTrigger>
         <AccordionContent className="space-y-4 pb-4">
-          <SectionGrid>
-            <Field label="H1 Title" hint="Small uppercase label shown below headline">
-              <Input value={hero.h1Title} onChange={e => setHero("h1Title", e.target.value)} placeholder="ATLANTA PERSONAL INJURY ATTORNEY" />
-            </Field>
-            <Field label="Highlighted Text" hint="Part of headline shown in white">
-              <Input value={hero.highlightedText} onChange={e => setHero("highlightedText", e.target.value)} placeholder="Fighting for Justice" />
-            </Field>
-          </SectionGrid>
+          <Field label="Highlighted Text" hint="Part of headline shown in green">
+            <Input value={hero.highlightedText} onChange={e => setHero("highlightedText", e.target.value)} placeholder="Solutions" />
+          </Field>
           <Field label="Headline">
             <Textarea value={hero.headline} onChange={e => setHero("headline", e.target.value)} rows={2} placeholder="Full headline text" />
           </Field>
           <GlobalPhoneNote />
 
-          <Field label="Syndications Label" hint="Text shown above the attorney image in the About section (Homepage 2 only)">
-            <Input value={(hero as any).syndicationsLabel || ""} onChange={e => setHero("syndicationsLabel", e.target.value)} placeholder="Featured in the following syndications:" />
+          {/* Hero Background Image */}
+          <Field label="Hero Background Image" hint="Full-width background photo behind the hero section">
+            <ImageUploader
+              value={(hero as any).heroBgImage || ""}
+              onChange={v => setHero("heroBgImage", v)}
+              folder="hero-backgrounds"
+            />
+          </Field>
+
+          {/* Hero Attorney Image */}
+          <Field label="Attorney Image (right side of hero)" hint="Displayed on the right side of the hero section">
+            <ImageUploader
+              value={(hero as any).heroImage || ""}
+              onChange={v => setHero("heroImage", v)}
+              folder="attorney"
+            />
           </Field>
 
           {/* Feature Boxes */}
@@ -203,7 +212,7 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
                   </Field>
                 </SectionGrid>
                 <Field label="Description">
-                  <RichTextEditor value={box.description} onChange={v => updateFeatureBox(i, "description", v)} />
+                  <Textarea value={box.description} onChange={e => updateFeatureBox(i, "description", e.target.value)} rows={2} />
                 </Field>
               </ArrayCard>
             ))}

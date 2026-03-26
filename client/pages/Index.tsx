@@ -45,7 +45,10 @@ export default function Index() {
       <Seo {...seo} />
 
       {/* Hero and Contact Form Section */}
-      <div className="bg-law-accent py-[27px] w-full">
+      <div
+        className="bg-law-accent py-[27px] w-full bg-cover bg-center bg-no-repeat"
+        style={(heroContent as any).heroBgImage ? { backgroundImage: `url(${(heroContent as any).heroBgImage})` } : {}}
+      >
         <div className="max-w-[2560px] mx-auto w-[95%] flex flex-col lg:flex-row lg:items-center gap-8 lg:gap-[3%]">
           {/* Left Side: Headline and Call Box */}
           <div className="lg:w-[65.667%]">
@@ -146,9 +149,22 @@ export default function Index() {
             </div>
           </div>
 
-          {/* Right Side: Contact Form */}
-          <div className="lg:w-[31.3333%]">
-            <ContactForm />
+          {/* Right Side: Attorney Image (if set) + Contact Form */}
+          <div className="lg:w-[31.3333%] flex flex-col items-center gap-4">
+            {(heroContent as any).heroImage && (
+              <img
+                src={(heroContent as any).heroImage}
+                alt="Attorney"
+                className="max-w-full w-auto h-auto object-contain max-h-[300px]"
+                style={{
+                  maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
+                  WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
+                }}
+              />
+            )}
+            <div className="w-full">
+              <ContactForm />
+            </div>
           </div>
         </div>
       </div>
