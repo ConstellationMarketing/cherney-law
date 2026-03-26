@@ -15,9 +15,11 @@ import {
 } from '@/components/ui/select';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useSiteSettings } from '@site/contexts/SiteSettingsContext';
 
 export default function AdminPageNew() {
   const navigate = useNavigate();
+  const siteSettings = useSiteSettings();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -73,7 +75,7 @@ export default function AdminPageNew() {
       url_path: urlPath,
       page_type: pageType,
       content: selectedTemplate?.default_content || [],
-      meta_title: selectedTemplate?.default_meta_title?.replace('[Page Title]', title) || `${title} | Silva Trial Lawyers`,
+      meta_title: selectedTemplate?.default_meta_title?.replace('[Page Title]', title) || `${title} | ${siteSettings.settings.siteName || 'Our Firm'}`,
       meta_description: selectedTemplate?.default_meta_description || '',
       status: 'draft' as const,
       noindex: false,

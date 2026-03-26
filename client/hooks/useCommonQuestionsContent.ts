@@ -18,7 +18,7 @@ interface UseCommonQuestionsContentResult {
 let cachedContent: CommonQuestionsPageContent | null = null;
 let cachedPage: PageSeoFields | null = null;
 
-export function useCommonQuestionsContent(): UseCommonQuestionsContentResult {
+export function useCommonQuestionsContent(urlPath: string = '/common-questions/'): UseCommonQuestionsContentResult {
   const [content, setContent] = useState<CommonQuestionsPageContent>(defaultCommonQuestionsContent);
   const [page, setPage] = useState<PageSeoFields | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,7 +57,7 @@ export function useCommonQuestionsContent(): UseCommonQuestionsContentResult {
 
         // Fetch common-questions page from pages table with SEO fields
         const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/pages?url_path=eq./common-questions/&status=eq.published&select=content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,url_path,title`,
+          `${SUPABASE_URL}/rest/v1/pages?url_path=eq.${urlPath}&status=eq.published&select=content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,url_path,title`,
           {
             headers: {
               apikey: SUPABASE_ANON_KEY,
@@ -132,7 +132,7 @@ export function useCommonQuestionsContent(): UseCommonQuestionsContentResult {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [urlPath]);
 
   return { content, page, isLoading, error };
 }

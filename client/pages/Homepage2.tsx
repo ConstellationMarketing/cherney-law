@@ -21,10 +21,10 @@ const DEFAULT_HERO_IMAGE =
   "https://infykuazzjkapuexhpqe.supabase.co/storage/v1/object/public/media/team/1770915510145-wqwnty.png";
 
 export default function Homepage2() {
-  const { content, page, isLoading } = useHomepage2Content();
+  const { pathname } = useLocation();
+  const { content, page, isLoading } = useHomepage2Content(pathname);
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
   const siteSettings = useSiteSettings();
-  const { pathname } = useLocation();
   const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || "";
 
   // Centralized SEO resolution

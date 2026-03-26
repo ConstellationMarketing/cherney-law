@@ -18,7 +18,7 @@ interface UseHomeContentResult {
 let cachedContent: HomePageContent | null = null;
 let cachedPage: PageSeoFields | null = null;
 
-export function useHomeContent(): UseHomeContentResult {
+export function useHomeContent(urlPath: string = '/'): UseHomeContentResult {
   const [content, setContent] = useState<HomePageContent>(defaultHomeContent);
   const [page, setPage] = useState<PageSeoFields | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,7 +41,7 @@ export function useHomeContent(): UseHomeContentResult {
 
         // Fetch homepage from pages table with SEO fields
         const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/pages?url_path=eq./&status=eq.published&select=content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,url_path,title`,
+          `${SUPABASE_URL}/rest/v1/pages?url_path=eq.${urlPath}&status=eq.published&select=content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,url_path,title`,
           {
             headers: {
               apikey: SUPABASE_ANON_KEY,
@@ -113,7 +113,7 @@ export function useHomeContent(): UseHomeContentResult {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [urlPath]);
 
   return { content, page, isLoading, error };
 }

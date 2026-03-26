@@ -18,7 +18,7 @@ interface UseHomepage2ContentResult {
 let cachedContent2: HomePageContent | null = null;
 let cachedPage2: PageSeoFields | null = null;
 
-export function useHomepage2Content(): UseHomepage2ContentResult {
+export function useHomepage2Content(urlPath: string = '/homepage-2/'): UseHomepage2ContentResult {
   const [content, setContent] = useState<HomePageContent>(defaultHomeContent);
   const [page, setPage] = useState<PageSeoFields | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,9 +39,9 @@ export function useHomepage2Content(): UseHomepage2ContentResult {
           return;
         }
 
-        // Fetch /homepage-2 from pages table with SEO fields
+        // Fetch homepage-2 from pages table with SEO fields
         const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/pages?url_path=eq./homepage-2&status=eq.published&select=content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,url_path,title`,
+          `${SUPABASE_URL}/rest/v1/pages?url_path=eq.${urlPath}&status=eq.published&select=content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,url_path,title`,
           {
             headers: {
               apikey: SUPABASE_ANON_KEY,
@@ -112,7 +112,7 @@ export function useHomepage2Content(): UseHomepage2ContentResult {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [urlPath]);
 
   return { content, page, isLoading, error };
 }

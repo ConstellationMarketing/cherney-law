@@ -18,7 +18,7 @@ interface UseAreasWeServeContentResult {
 let cachedContent: AreasWeServePageContent | null = null;
 let cachedPage: PageSeoFields | null = null;
 
-export function useAreasWeServeContent(): UseAreasWeServeContentResult {
+export function useAreasWeServeContent(urlPath: string = '/areas-we-serve/'): UseAreasWeServeContentResult {
   const [content, setContent] = useState<AreasWeServePageContent>(defaultAreasWeServeContent);
   const [page, setPage] = useState<PageSeoFields | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,7 +57,7 @@ export function useAreasWeServeContent(): UseAreasWeServeContentResult {
 
         // Fetch areas-we-serve page from pages table with SEO fields
         const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/pages?url_path=eq./areas-we-serve/&status=eq.published&select=content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,url_path,title`,
+          `${SUPABASE_URL}/rest/v1/pages?url_path=eq.${urlPath}&status=eq.published&select=content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,url_path,title`,
           {
             headers: {
               apikey: SUPABASE_ANON_KEY,
@@ -132,7 +132,7 @@ export function useAreasWeServeContent(): UseAreasWeServeContentResult {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [urlPath]);
 
   return { content, page, isLoading, error };
 }

@@ -21,10 +21,10 @@ function HeadingRenderer({ text, level }: { text: string; level: 1 | 2 | 3 | 4 }
 }
 
 export default function AreasWeServePage() {
-  const { content, page } = useAreasWeServeContent();
+  const { pathname } = useLocation();
+  const { content, page } = useAreasWeServeContent(pathname);
   const { phoneDisplay } = useGlobalPhone();
   const siteSettings = useSiteSettings();
-  const { pathname } = useLocation();
   const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || "";
 
   // Centralized SEO resolution

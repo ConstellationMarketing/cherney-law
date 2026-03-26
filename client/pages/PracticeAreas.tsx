@@ -33,11 +33,11 @@ const iconMap: Record<string, LucideIcon> = {
 };
 
 export default function PracticeAreas() {
-  const { content, page } = usePracticeAreasContent();
+  const { pathname } = useLocation();
+  const { content, page } = usePracticeAreasContent(pathname);
   const { content: aboutContent } = useAboutContent();
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
   const siteSettings = useSiteSettings();
-  const { pathname } = useLocation();
   const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || '';
 
   // Centralized SEO resolution

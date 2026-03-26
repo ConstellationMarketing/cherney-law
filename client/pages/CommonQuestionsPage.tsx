@@ -8,10 +8,10 @@ import AboutHero from "@site/components/about/AboutHero";
 import FaqAccordion from "@site/components/common-questions/FaqAccordion";
 
 export default function CommonQuestionsPage() {
-  const { content, page } = useCommonQuestionsContent();
+  const { pathname } = useLocation();
+  const { content, page } = useCommonQuestionsContent(pathname);
   const { phoneDisplay } = useGlobalPhone();
   const siteSettings = useSiteSettings();
-  const { pathname } = useLocation();
   const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || "";
 
   // Centralized SEO resolution

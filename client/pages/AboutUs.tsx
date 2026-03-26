@@ -14,11 +14,11 @@ import AboutWhyChooseUs from "@site/components/about/AboutWhyChooseUs";
 import AboutCTA from "@site/components/about/AboutCTA";
 
 export default function AboutUs() {
-  const { content, page } = useAboutContent();
+  const { pathname } = useLocation();
+  const { content, page } = useAboutContent(pathname);
   const { content: homeContent } = useHomeContent();
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
   const siteSettings = useSiteSettings();
-  const { pathname } = useLocation();
   const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || '';
 
   // Centralized SEO resolution

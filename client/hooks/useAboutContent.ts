@@ -18,7 +18,7 @@ interface UseAboutContentResult {
 let cachedContent: AboutPageContent | null = null;
 let cachedPage: PageSeoFields | null = null;
 
-export function useAboutContent(): UseAboutContentResult {
+export function useAboutContent(urlPath: string = '/about/'): UseAboutContentResult {
   const [content, setContent] = useState<AboutPageContent>(defaultAboutContent);
   const [page, setPage] = useState<PageSeoFields | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,7 +41,7 @@ export function useAboutContent(): UseAboutContentResult {
 
         // Fetch about page from pages table with SEO fields
         const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/pages?url_path=eq./about/&status=eq.published&select=content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,url_path,title`,
+          `${SUPABASE_URL}/rest/v1/pages?url_path=eq.${urlPath}&status=eq.published&select=content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,url_path,title`,
           {
             headers: {
               apikey: SUPABASE_ANON_KEY,
@@ -116,7 +116,7 @@ export function useAboutContent(): UseAboutContentResult {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [urlPath]);
 
   return { content, page, isLoading, error };
 }

@@ -16,10 +16,10 @@ import { useGlobalPhone, useSiteSettings } from "@site/contexts/SiteSettingsCont
 import { resolveSeo } from "@site/utils/resolveSeo";
 
 export default function Index() {
-  const { content, page, isLoading } = useHomeContent();
+  const { pathname } = useLocation();
+  const { content, page, isLoading } = useHomeContent(pathname);
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
   const siteSettings = useSiteSettings();
-  const { pathname } = useLocation();
   const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || '';
 
   // Centralized SEO resolution

@@ -9,10 +9,10 @@ import { Link } from "react-router-dom";
 import { Phone } from "lucide-react";
 
 export default function TestimonialsPage() {
-  const { content, page } = useTestimonialsContent();
+  const { pathname } = useLocation();
+  const { content, page } = useTestimonialsContent(pathname);
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
   const siteSettings = useSiteSettings();
-  const { pathname } = useLocation();
   const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || '';
 
   // Centralized SEO resolution

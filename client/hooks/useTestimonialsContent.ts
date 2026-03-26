@@ -18,7 +18,7 @@ interface UseTestimonialsContentResult {
 let cachedContent: TestimonialsPageContent | null = null;
 let cachedPage: PageSeoFields | null = null;
 
-export function useTestimonialsContent(): UseTestimonialsContentResult {
+export function useTestimonialsContent(urlPath: string = '/testimonials/'): UseTestimonialsContentResult {
   const [content, setContent] = useState<TestimonialsPageContent>(
     defaultTestimonialsContent,
   );
@@ -43,7 +43,7 @@ export function useTestimonialsContent(): UseTestimonialsContentResult {
 
         // Fetch testimonials page from pages table with SEO fields
         const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/pages?url_path=eq./testimonials/&status=eq.published&select=content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,url_path,title`,
+          `${SUPABASE_URL}/rest/v1/pages?url_path=eq.${urlPath}&status=eq.published&select=content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,url_path,title`,
           {
             headers: {
               apikey: SUPABASE_ANON_KEY,
@@ -116,7 +116,7 @@ export function useTestimonialsContent(): UseTestimonialsContentResult {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [urlPath]);
 
   return { content, page, isLoading, error };
 }
