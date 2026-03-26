@@ -3,8 +3,9 @@ import { supabase } from "../../lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
+import { Upload, X, Loader2, Image as ImageIcon, Library } from "lucide-react";
 import { optimizeImage } from "@site/lib/imageOptimizer";
+import MediaPickerDialog from "./MediaPickerDialog";
 const isPdfUrl = (url?: string) => !!url && url.toLowerCase().includes(".pdf");
 
 interface ImageUploaderProps {
@@ -29,6 +30,7 @@ export default function ImageUploader({
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = useCallback(
@@ -246,6 +248,18 @@ try {
 
       {error && <p className="text-sm text-red-500">{error}</p>}
 
+      {/* Pick from library */}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="w-full gap-2 text-xs"
+        onClick={() => setPickerOpen(true)}
+      >
+        <Library className="h-4 w-4" />
+        Pick from library
+      </Button>
+
       {/* Manual URL input as fallback */}
       <div className="flex items-center gap-2">
         <span className="text-xs text-gray-400">or paste URL:</span>
@@ -257,6 +271,12 @@ try {
           className="text-xs h-8"
         />
       </div>
+
+      <MediaPickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        onSelect={(url) => onChange(url)}
+      />
     </div>
   );
 }
