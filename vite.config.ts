@@ -8,6 +8,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    hmr: false,
     fs: {
       allow: ["./client", "./shared", "./vendor"],
       deny: [".env", ".env.*", "*.{crt,pem}", "**/.git/**", "server/**"],
