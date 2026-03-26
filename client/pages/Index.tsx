@@ -3,7 +3,6 @@ import { useLocation } from "react-router-dom";
 import Seo from "@site/components/Seo";
 import Layout from "@site/components/layout/Layout";
 import { Phone, User, Scale, Calendar, Briefcase, FileText } from "lucide-react";
-import ContactForm from "@site/components/home/ContactForm";
 import AboutSection from "@site/components/home/AboutSection";
 import FirmDescriptionSection from "@site/components/home/FirmDescriptionSection";
 import PracticeAreasSection from "@site/components/home/PracticeAreasSection";
@@ -41,15 +40,15 @@ export default function Index() {
   };
 
   return (
-    <Layout>
+    <Layout heroBg={(heroContent as any).heroBgImage || undefined}>
       <Seo {...seo} />
 
-      {/* Hero and Contact Form Section */}
+      {/* Hero Section */}
       <div
-        className="bg-law-accent py-[27px] w-full bg-cover bg-center bg-no-repeat"
+        className="relative -mt-[114px] pt-[141px] pb-[27px] w-full bg-law-accent bg-cover bg-center bg-no-repeat"
         style={(heroContent as any).heroBgImage ? { backgroundImage: `url(${(heroContent as any).heroBgImage})` } : {}}
       >
-        <div className="max-w-[2560px] mx-auto w-[95%] flex flex-col lg:flex-row lg:items-center gap-8 lg:gap-[3%]">
+        <div className="relative z-10 max-w-[2560px] mx-auto w-[95%] flex flex-col lg:flex-row lg:items-end gap-8 lg:gap-[3%]">
           {/* Left Side: Headline and Call Box */}
           <div className="lg:w-[65.667%]">
             <div className="mb-[30px] md:mb-[40px]">
@@ -61,7 +60,7 @@ export default function Index() {
                     if (!highlight || !headline.toLowerCase().includes(highlight.toLowerCase())) {
                       return (
                         <>
-                          {highlight && <><span className="text-white">{highlight}</span><br /></>}
+                          {highlight && <><span className="text-law-accent">{highlight}</span><br /></>}
                           {headline}
                         </>
                       );
@@ -72,7 +71,7 @@ export default function Index() {
                     const after = headline.slice(idx + highlight.length);
                     return (
                       <>
-                        {before}<span className="text-white">{match}</span>{after}
+                        {before}<span className="text-law-accent">{match}</span>{after}
                       </>
                     );
                   })()}
@@ -149,22 +148,19 @@ export default function Index() {
             </div>
           </div>
 
-          {/* Right Side: Attorney Image (if set) + Contact Form */}
-          <div className="lg:w-[31.3333%] flex flex-col items-center gap-4">
+          {/* Right Side: Attorney Image */}
+          <div className="lg:w-[31.3333%] flex items-end justify-center">
             {(heroContent as any).heroImage && (
               <img
                 src={(heroContent as any).heroImage}
                 alt="Attorney"
-                className="max-w-full w-auto h-auto object-contain max-h-[300px]"
+                className="max-w-full w-auto h-auto object-contain max-h-[480px]"
                 style={{
                   maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
                   WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
                 }}
               />
             )}
-            <div className="w-full">
-              <ContactForm />
-            </div>
           </div>
         </div>
       </div>
