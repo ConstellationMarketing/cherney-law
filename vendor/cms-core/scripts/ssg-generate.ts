@@ -104,7 +104,7 @@ async function generateSSG() {
 
   // 3. For each page, generate static HTML with SEO meta tags
   for (const page of pages || []) {
-    const html = generatePageHTML(template, page, siteSettings);
+    const html = generatePageHTML(template, page, siteSettings, siteUrl);
     
     let outputPath: string;
     if (page.url_path === '/') {
@@ -188,7 +188,7 @@ Sitemap: ${siteUrl}/sitemap.xml`;
   console.log('SSG generation complete!');
 }
 
-function generatePageHTML(template: string, page: Page, siteSettings: SiteSettings): string {
+function generatePageHTML(template: string, page: Page, siteSettings: SiteSettings, siteUrl: string): string {
   const title = page.meta_title || page.title;
   const description = page.meta_description || '';
   const normalizedPath = page.url_path === '/' ? '/' : page.url_path.replace(/\/?$/, '/');
