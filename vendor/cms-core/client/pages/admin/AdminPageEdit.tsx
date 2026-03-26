@@ -54,12 +54,24 @@ export default function AdminPageEdit() {
   const [previousStatus, setPreviousStatus] = useState<string>("");
   const [showRedirectModal, setShowRedirectModal] = useState(false);
   const [pendingSave, setPendingSave] = useState(false);
+  const [siteUrl, setSiteUrl] = useState<string>("");
 
   useEffect(() => {
     if (id) {
       fetchPage();
     }
   }, [id]);
+
+  useEffect(() => {
+    supabase
+      .from("site_settings_public")
+      .select("site_url")
+      .eq("settings_key", "global")
+      .single()
+      .then(({ data }) => {
+        if (data?.site_url) setSiteUrl(data.site_url.replace(/\/$/, ""));
+      });
+  }, []);
 
   const fetchPage = async () => {
     const { data, error } = await supabase
@@ -356,8 +368,11 @@ export default function AdminPageEdit() {
                   onChange={(e) =>
                     updatePage({ canonical_url: e.target.value })
                   }
-                  placeholder="https://your-domain.com/page"
+                  placeholder={siteUrl && page.url_path ? `${siteUrl}${page.url_path.endsWith('/') ? page.url_path : page.url_path + '/'}` : "https://your-domain.com/page"}
                 />
+                <p className="text-sm text-gray-500">
+                  Leave blank to auto-generate from Site URL + page path{siteUrl && page.url_path ? ` (${siteUrl}${page.url_path.endsWith('/') ? page.url_path : page.url_path + '/'})` : ''}
+                </p>
               </div>
 
               <hr />
