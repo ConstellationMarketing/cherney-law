@@ -1,4 +1,5 @@
 import { Scale } from "lucide-react";
+import { Link } from "react-router-dom";
 import type { PracticeAreasIntroContent } from "@site/lib/cms/homePageTypes";
 
 interface PracticeAreasSectionProps {
@@ -31,7 +32,7 @@ export default function PracticeAreasSection({
 
           {/* Right Column - Discover CTA */}
           <div className="md:w-full flex items-center">
-            <div className="bg-law-accent p-[8px] w-full max-w-[400px] mx-auto md:mx-auto cursor-pointer transition-all duration-300 hover:bg-law-accent-dark group">
+            <Link to="/practice-areas/" className="bg-law-accent p-[8px] w-full max-w-[400px] mx-auto md:mx-auto cursor-pointer transition-all duration-300 hover:bg-law-accent-dark group block">
               <div className="flex items-start gap-4">
                 <div className="bg-white p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
                   <Scale className="w-8 h-8 text-black group-hover:text-white transition-colors duration-300" />
@@ -45,7 +46,7 @@ export default function PracticeAreasSection({
                   </p>
                 </div>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </div>
