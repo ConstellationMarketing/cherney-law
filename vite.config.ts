@@ -31,9 +31,29 @@ function expressPlugin(): Plugin {
     name: "express-plugin",
     apply: "serve", // Only apply during development (serve mode)
     configureServer(server) {
-      const app = createServer();
+      // Fix cached-redirect pollution: the Builder preview proxy (or the
+      // browser) may have permanently-cached a stale 301 that appended a
+      // trailing slash to Vite-internal paths like /@vite/client or
+      // /@react-refresh.  Strip that slash via an internal URL rewrite at
+      // the raw Connect level — before any other middleware runs — so Vite
+      // can open the file without the ENOTDIR error.
+      server.middlewares.use((req, _res, next) => {
+        if (req.url) {
+          const qsIdx = req.url.indexOf("?");
+          const pathname = qsIdx >= 0 ? req.url.slice(0, qsIdx) : req.url;
+          if (
+            (pathname.startsWith("/@") || pathname.startsWith("/__")) &&
+            pathname.endsWith("/") &&
+            pathname.length > 2
+          ) {
+            req.url =
+              pathname.slice(0, -1) + (qsIdx >= 0 ? req.url.slice(qsIdx) : "");
+          }
+        }
+        next();
+      });
 
-      // Add Express app as middleware to Vite dev server
+      const app = createServer();
       server.middlewares.use(app);
     },
   };
