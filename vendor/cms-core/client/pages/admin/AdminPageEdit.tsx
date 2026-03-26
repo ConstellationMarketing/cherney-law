@@ -347,7 +347,7 @@ export default function AdminPageEdit() {
                   onChange={(e) =>
                     updatePage({ canonical_url: e.target.value })
                   }
-                  placeholder="https://silvatriallawyers.com/page"
+                  placeholder="https://your-domain.com/page"
                 />
               </div>
 
