@@ -167,6 +167,9 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
       <AccordionItem value="hero" className="border rounded-lg px-4">
         <AccordionTrigger className="text-sm font-semibold">Hero Section</AccordionTrigger>
         <AccordionContent className="space-y-4 pb-4">
+          <Field label="H1 Title" hint="SEO page title rendered as an H1 below the headline (e.g. Experienced Bankruptcy Attorney in Marietta GA)">
+            <Input value={hero.h1Title || ""} onChange={e => setHero("h1Title", e.target.value)} placeholder="Experienced Bankruptcy Attorney in Marietta GA" />
+          </Field>
           <Field label="Highlighted Text" hint="Part of headline shown in green">
             <Input value={hero.highlightedText} onChange={e => setHero("highlightedText", e.target.value)} placeholder="Solutions" />
           </Field>
