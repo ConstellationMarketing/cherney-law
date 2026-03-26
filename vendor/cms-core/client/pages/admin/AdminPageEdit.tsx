@@ -32,6 +32,17 @@ import RevisionPanel, { createPageRevision } from "../../components/admin/Revisi
 import URLChangeRedirectModal from "../../components/admin/URLChangeRedirectModal";
 import type { PageRevision } from "@/lib/database.types";
 
+// Stable page IDs for structured pages (won't break when URL paths change)
+const STRUCTURED_PAGE_IDS = new Set([
+  "9422cf5e-b52f-4f88-b7e0-ac2f90fba501", // Home
+  "74ea7c23-8d54-4e19-bc54-28763cc76023", // About Us
+  "1ec9d2c9-093e-4c61-9815-ac7e1833e1de", // Areas We Serve
+  "727a9faa-3741-450b-a372-e54a75610c8f", // Common Questions
+  "f8002912-cfa0-4960-a6f9-1ce197fdaac5", // Contact Us
+  "91678baf-bf47-430a-b303-5094f10a8971", // Practice Areas
+  "9db8a16d-bbca-4308-8b42-00f8142921f2", // Testimonials
+]);
+
 export default function AdminPageEdit() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -185,10 +196,8 @@ export default function AdminPageEdit() {
     await performSave();
   };
 
-  // Check if this is a structured page (main site pages)
-  const isStructuredPage =
-    page?.url_path &&
-    ["/", "/about", "/contact", "/practice-areas", "/homepage-2", "/common-questions", "/areas-we-serve"].includes(page.url_path);
+  // Check if this is a structured page using stable page IDs
+  const isStructuredPage = page?.id ? STRUCTURED_PAGE_IDS.has(page.id) : false;
 
   const handleStructuredContentChange = (content: unknown) => {
     updatePage({ content: content as ContentBlock[] });
@@ -291,7 +300,7 @@ export default function AdminPageEdit() {
                 </CardHeader>
                 <CardContent>
                   <BlockEditor
-                    content={page.content}
+                    content={Array.isArray(page.content) ? page.content : []}
                     onChange={handleContentChange}
                   />
                 </CardContent>
