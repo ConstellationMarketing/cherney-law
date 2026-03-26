@@ -42,7 +42,7 @@ export function createServer() {
     }
 
     const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
-    return res.redirect(301, `${path}/${qs}`);
+    return res.redirect(302, `${path}/${qs}`);
   });
 
   // Example API routes
