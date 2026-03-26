@@ -251,14 +251,17 @@ export default function Homepage2FieldEditor({ content, onChange }: Props) {
       <AccordionItem value="about" className="border rounded-lg px-4">
         <AccordionTrigger className="text-sm font-semibold">About Section</AccordionTrigger>
         <AccordionContent className="space-y-4 pb-4">
-          <SectionGrid>
-            <Field label="Section Label">
-              <Input value={about.sectionLabel} onChange={e => setAbout("sectionLabel", e.target.value)} placeholder="ABOUT US" />
-            </Field>
-            <Field label="Heading">
-              <Input value={about.heading} onChange={e => setAbout("heading", e.target.value)} />
-            </Field>
-          </SectionGrid>
+          <HeadingField
+            label="Section Heading"
+            hint="This is the heading tag (e.g. H2) for the section"
+            value={about.sectionLabel}
+            level={String((about as any).headingLevel || 2)}
+            onTextChange={v => setAbout("sectionLabel", v)}
+            onLevelChange={v => setAbout("headingLevel", Number(v) as 1 | 2 | 3 | 4)}
+          />
+          <Field label="Section Text" hint="Displayed as paragraph text below the heading">
+            <Input value={about.heading} onChange={e => setAbout("heading", e.target.value)} />
+          </Field>
           <Field label="Description">
             <RichTextEditor value={about.description} onChange={v => setAbout("description", v)} />
           </Field>
@@ -357,14 +360,17 @@ export default function Homepage2FieldEditor({ content, onChange }: Props) {
       <AccordionItem value="practiceAreasIntro" className="border rounded-lg px-4">
         <AccordionTrigger className="text-sm font-semibold">Practice Areas Intro</AccordionTrigger>
         <AccordionContent className="space-y-4 pb-4">
-          <SectionGrid>
-            <Field label="Section Label">
-              <Input value={content.practiceAreasIntro.sectionLabel} onChange={e => set("practiceAreasIntro", { sectionLabel: e.target.value })} />
-            </Field>
-            <Field label="Heading">
-              <Input value={content.practiceAreasIntro.heading} onChange={e => set("practiceAreasIntro", { heading: e.target.value })} />
-            </Field>
-          </SectionGrid>
+          <HeadingField
+            label="Section Heading"
+            hint="This is the heading tag (e.g. H2) for the section"
+            value={content.practiceAreasIntro.sectionLabel}
+            level={String((content.practiceAreasIntro as any).headingLevel || 2)}
+            onTextChange={v => set("practiceAreasIntro", { sectionLabel: v })}
+            onLevelChange={v => set("practiceAreasIntro", { headingLevel: Number(v) as 1 | 2 | 3 | 4 })}
+          />
+          <Field label="Section Text" hint="Displayed as paragraph text below the heading">
+            <Input value={content.practiceAreasIntro.heading} onChange={e => set("practiceAreasIntro", { heading: e.target.value })} />
+          </Field>
           <Field label="Description">
             <RichTextEditor value={content.practiceAreasIntro.description} onChange={v => set("practiceAreasIntro", { description: v })} />
           </Field>
@@ -408,14 +414,17 @@ export default function Homepage2FieldEditor({ content, onChange }: Props) {
       <AccordionItem value="awardsCTA" className="border rounded-lg px-4">
         <AccordionTrigger className="text-sm font-semibold">Awards / CTA Section</AccordionTrigger>
         <AccordionContent className="space-y-4 pb-4">
-          <SectionGrid>
-            <Field label="Section Label">
-              <Input value={content.awardsCTA.sectionLabel} onChange={e => set("awardsCTA", { sectionLabel: e.target.value })} />
-            </Field>
-            <Field label="Heading">
-              <Input value={content.awardsCTA.heading} onChange={e => set("awardsCTA", { heading: e.target.value })} />
-            </Field>
-          </SectionGrid>
+          <HeadingField
+            label="Section Heading"
+            hint="This is the heading tag (e.g. H2) for the section"
+            value={content.awardsCTA.sectionLabel}
+            level={String((content.awardsCTA as any).headingLevel || 2)}
+            onTextChange={v => set("awardsCTA", { sectionLabel: v })}
+            onLevelChange={v => set("awardsCTA", { headingLevel: Number(v) as 1 | 2 | 3 | 4 })}
+          />
+          <Field label="Section Text" hint="Displayed as paragraph text below the heading">
+            <Input value={content.awardsCTA.heading} onChange={e => set("awardsCTA", { heading: e.target.value })} />
+          </Field>
           <Field label="Description">
             <RichTextEditor value={content.awardsCTA.description} onChange={v => set("awardsCTA", { description: v })} />
           </Field>
@@ -434,14 +443,17 @@ export default function Homepage2FieldEditor({ content, onChange }: Props) {
       <AccordionItem value="testimonials" className="border rounded-lg px-4">
         <AccordionTrigger className="text-sm font-semibold">Testimonials</AccordionTrigger>
         <AccordionContent className="space-y-4 pb-4">
-          <SectionGrid>
-            <Field label="Section Label">
-              <Input value={content.testimonials.sectionLabel} onChange={e => set("testimonials", { sectionLabel: e.target.value })} />
-            </Field>
-            <Field label="Heading">
-              <Input value={content.testimonials.heading} onChange={e => set("testimonials", { heading: e.target.value })} />
-            </Field>
-          </SectionGrid>
+          <HeadingField
+            label="Section Heading"
+            hint="This is the heading tag (e.g. H2) for the section"
+            value={content.testimonials.sectionLabel}
+            level={String((content.testimonials as any).headingLevel || 2)}
+            onTextChange={v => set("testimonials", { sectionLabel: v })}
+            onLevelChange={v => set("testimonials", { headingLevel: Number(v) as 1 | 2 | 3 | 4 })}
+          />
+          <Field label="Section Text" hint="Displayed as paragraph text below the heading">
+            <Input value={content.testimonials.heading} onChange={e => set("testimonials", { heading: e.target.value })} />
+          </Field>
           <Field label="Background Image">
             <ImageUploader value={content.testimonials.backgroundImage} onChange={v => set("testimonials", { backgroundImage: v })} folder="backgrounds" />
           </Field>
@@ -513,14 +525,17 @@ export default function Homepage2FieldEditor({ content, onChange }: Props) {
       <AccordionItem value="contact" className="border rounded-lg px-4">
         <AccordionTrigger className="text-sm font-semibold">Contact Section</AccordionTrigger>
         <AccordionContent className="space-y-4 pb-4">
-          <SectionGrid>
-            <Field label="Section Label">
-              <Input value={content.contact.sectionLabel} onChange={e => set("contact", { sectionLabel: e.target.value })} />
-            </Field>
-            <Field label="Heading">
-              <Input value={content.contact.heading} onChange={e => set("contact", { heading: e.target.value })} />
-            </Field>
-          </SectionGrid>
+          <HeadingField
+            label="Section Heading"
+            hint="This is the heading tag (e.g. H2) for the section"
+            value={content.contact.sectionLabel}
+            level={String((content.contact as any).headingLevel || 2)}
+            onTextChange={v => set("contact", { sectionLabel: v })}
+            onLevelChange={v => set("contact", { headingLevel: Number(v) as 1 | 2 | 3 | 4 })}
+          />
+          <Field label="Section Text" hint="Displayed as paragraph text below the heading">
+            <Input value={content.contact.heading} onChange={e => set("contact", { heading: e.target.value })} />
+          </Field>
           <Field label="Description">
             <RichTextEditor value={content.contact.description} onChange={v => set("contact", { description: v })} />
           </Field>

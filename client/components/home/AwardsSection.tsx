@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import type { AwardsCTAContent } from "@site/lib/cms/homePageTypes";
 
 interface AwardsSectionProps {
-  content?: AwardsCTAContent;
+  content?: AwardsCTAContent & { headingLevel?: 1 | 2 | 3 | 4 };
 }
 
 export default function AwardsSection({ content }: AwardsSectionProps) {
@@ -20,16 +20,19 @@ export default function AwardsSection({ content }: AwardsSectionProps) {
       {/* Centered gray box overlapping both backgrounds */}
       <div className="relative z-10 max-w-[2560px] mx-auto w-[95%] md:w-[90%] py-[40px] md:py-[60px]">
         <div className="bg-[#f0f0f0] py-[50px] md:py-[70px] px-[30px] md:px-[60px] lg:px-[100px] text-center">
-          {content.sectionLabel && (
-            <p className="font-outfit text-[16px] md:text-[18px] text-law-accent mb-[15px]">
-              {content.sectionLabel}
-            </p>
-          )}
+          {content.sectionLabel && (() => {
+            const HeadingTag = `h${content.headingLevel || 2}` as keyof JSX.IntrinsicElements;
+            return (
+              <HeadingTag className="font-outfit text-[16px] md:text-[18px] text-law-accent mb-[15px]">
+                {content.sectionLabel}
+              </HeadingTag>
+            );
+          })()}
 
           {content.heading && (
-            <h2 className="font-playfair text-[32px] md:text-[42px] lg:text-[48px] leading-[1.2] text-black mb-[20px]">
+            <p className="font-playfair text-[32px] md:text-[42px] lg:text-[48px] leading-[1.2] text-black mb-[20px]">
               {content.heading}
-            </h2>
+            </p>
           )}
 
           {content.description && (

@@ -4,7 +4,7 @@ import type { AboutContent } from "@site/lib/cms/homePageTypes";
 import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
 
 interface AboutSectionProps {
-  content?: AboutContent;
+  content?: AboutContent & { headingLevel?: 1 | 2 | 3 | 4 };
   syndicationsLabel?: string;
 }
 
@@ -60,16 +60,21 @@ export default function AboutSection({ content, syndicationsLabel }: AboutSectio
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-[5.5%]">
           {/* Left Column - About Text and CTAs */}
           <div className="md:w-full">
-            {/* About Us Label */}
-            <div className="text-law-accent font-outfit text-[18px] md:text-[24px] leading-tight md:leading-[36px] mb-[10px]">
-              {data.sectionLabel}
-            </div>
+            {/* Section Heading */}
+            {(() => {
+              const HeadingTag = `h${(content as any)?.headingLevel || 2}` as keyof JSX.IntrinsicElements;
+              return (
+                <HeadingTag className="text-law-accent font-outfit text-[18px] md:text-[24px] leading-tight md:leading-[36px] mb-[10px]">
+                  {data.sectionLabel}
+                </HeadingTag>
+              );
+            })()}
 
-            {/* Heading */}
+            {/* Section Text */}
             <div className="mb-[20px] md:mb-[9.27%]">
-              <h2 className="font-playfair text-[32px] md:text-[48px] lg:text-[54px] leading-tight md:leading-[54px] text-black pb-[10px]">
+              <p className="font-playfair text-[32px] md:text-[48px] lg:text-[54px] leading-tight md:leading-[54px] text-black pb-[10px]">
                 {data.heading}
-              </h2>
+              </p>
               <div
                 className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
                 dangerouslySetInnerHTML={{ __html: data.description }}

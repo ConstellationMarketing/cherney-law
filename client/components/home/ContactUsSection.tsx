@@ -27,7 +27,7 @@ const contactFormSchema = z.object({
 type ContactFormData = z.infer<typeof contactFormSchema>;
 
 interface ContactUsSectionProps {
-  content?: ContactContent;
+  content?: ContactContent & { headingLevel?: 1 | 2 | 3 | 4 };
 }
 
 const defaultContent: ContactContent = {
@@ -87,14 +87,19 @@ export default function ContactUsSection({ content }: ContactUsSectionProps) {
           <div className="py-[4.2415%] relative w-full">
             <div className="relative w-full">
               <div className="mb-[10px]">
-                <p className="font-outfit text-[18px] md:text-[24px] leading-tight md:leading-[36px] text-law-accent">
-                  {data.sectionLabel}
-                </p>
+                {(() => {
+                  const HeadingTag = `h${(content as any)?.headingLevel || 2}` as keyof JSX.IntrinsicElements;
+                  return (
+                    <HeadingTag className="font-outfit text-[18px] md:text-[24px] leading-tight md:leading-[36px] text-law-accent">
+                      {data.sectionLabel}
+                    </HeadingTag>
+                  );
+                })()}
               </div>
               <div>
-                <h2 className="font-playfair text-[32px] md:text-[48px] lg:text-[54px] leading-tight md:leading-[54px] text-black pb-[10px]">
+                <p className="font-playfair text-[32px] md:text-[48px] lg:text-[54px] leading-tight md:leading-[54px] text-black pb-[10px]">
                   {data.heading}
-                </h2>
+                </p>
                 <div
                   className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
                   dangerouslySetInnerHTML={{ __html: data.description }}

@@ -179,6 +179,18 @@
   cursor: pointer;
 }
 
+.tiptap-editor .ProseMirror [style*="text-align: center"] {
+  text-align: center;
+}
+
+.tiptap-editor .ProseMirror [style*="text-align: right"] {
+  text-align: right;
+}
+
+.tiptap-editor .ProseMirror [style*="text-align: left"] {
+  text-align: left;
+}
+
 .tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   color: #9ca3af;

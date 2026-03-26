@@ -2,7 +2,7 @@ import { Scale } from "lucide-react";
 import type { PracticeAreasIntroContent } from "@site/lib/cms/homePageTypes";
 
 interface PracticeAreasSectionProps {
-  content?: PracticeAreasIntroContent;
+  content?: PracticeAreasIntroContent & { headingLevel?: 1 | 2 | 3 | 4 };
 }
 
 export default function PracticeAreasSection({
@@ -16,9 +16,17 @@ export default function PracticeAreasSection({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 md:gap-[5.5%]">
           {/* Left Column - Practice Areas Heading */}
           <div className="md:w-full">
-            <h2 className="font-playfair text-[32px] md:text-[48px] lg:text-[54px] leading-tight md:leading-[54px] text-white pb-[10px]">
+            {content?.sectionLabel && (() => {
+              const HeadingTag = `h${content?.headingLevel || 2}` as keyof JSX.IntrinsicElements;
+              return (
+                <HeadingTag className="font-outfit text-[18px] md:text-[24px] leading-tight md:leading-[36px] text-law-accent mb-[10px]">
+                  {content.sectionLabel}
+                </HeadingTag>
+              );
+            })()}
+            <p className="font-playfair text-[32px] md:text-[48px] lg:text-[54px] leading-tight md:leading-[54px] text-white pb-[10px]">
               {heading}
-            </h2>
+            </p>
           </div>
 
           {/* Right Column - Discover CTA */}

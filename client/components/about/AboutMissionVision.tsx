@@ -14,9 +14,10 @@ export default function AboutMissionVision({ content }: AboutMissionVisionProps)
             <h2 className="font-playfair text-[32px] md:text-[40px] leading-tight text-white pb-[15px] md:pb-[20px]">
               {content.mission.heading}
             </h2>
-            <p className="font-outfit text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] text-white/80">
-              {content.mission.text}
-            </p>
+            <div
+              className="font-outfit text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] text-white/80 prose prose-sm prose-invert max-w-none"
+              dangerouslySetInnerHTML={{ __html: content.mission.text }}
+            />
           </div>
 
           {/* Vision */}
@@ -24,9 +25,10 @@ export default function AboutMissionVision({ content }: AboutMissionVisionProps)
             <h2 className="font-playfair text-[32px] md:text-[40px] leading-tight text-white pb-[15px] md:pb-[20px]">
               {content.vision.heading}
             </h2>
-            <p className="font-outfit text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] text-white/80">
-              {content.vision.text}
-            </p>
+            <div
+              className="font-outfit text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] text-white/80 prose prose-sm prose-invert max-w-none"
+              dangerouslySetInnerHTML={{ __html: content.vision.text }}
+            />
           </div>
         </div>
       </div>

@@ -8,6 +8,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Link from "@tiptap/extension-link";
+import TextAlign from "@tiptap/extension-text-align";
 import {
   Bold,
   Italic,
@@ -19,6 +20,9 @@ import {
   Undo2,
   Redo2,
   Unlink,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +53,9 @@ export default function RichTextEditor({
         HTMLAttributes: {
           rel: "noopener noreferrer",
         },
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
       }),
     ],
     content: value,
@@ -105,6 +112,10 @@ export default function RichTextEditor({
     editor.chain().focus().unsetLink().run();
   };
 
+  const handleAlignLeft = () => editor.chain().focus().setTextAlign('left').run();
+  const handleAlignCenter = () => editor.chain().focus().setTextAlign('center').run();
+  const handleAlignRight = () => editor.chain().focus().setTextAlign('right').run();
+
   const handleUndo = () => editor.chain().focus().undo().run();
   const handleRedo = () => editor.chain().focus().redo().run();
 
@@ -115,6 +126,9 @@ export default function RichTextEditor({
   const isH3Active = editor.isActive("heading", { level: 3 });
   const isBulletListActive = editor.isActive("bulletList");
   const isOrderedListActive = editor.isActive("orderedList");
+  const isAlignLeftActive = editor.isActive({ textAlign: 'left' });
+  const isAlignCenterActive = editor.isActive({ textAlign: 'center' });
+  const isAlignRightActive = editor.isActive({ textAlign: 'right' });
 
   return (
     <div className="tiptap-editor border border-gray-300 rounded-lg overflow-hidden">
@@ -178,6 +192,27 @@ export default function RichTextEditor({
             title="Remove Link"
           />
         )}
+
+        <div className="w-px bg-gray-300 mx-1" />
+
+        <ToolbarButton
+          icon={AlignLeft}
+          onClick={handleAlignLeft}
+          active={isAlignLeftActive}
+          title="Align Left"
+        />
+        <ToolbarButton
+          icon={AlignCenter}
+          onClick={handleAlignCenter}
+          active={isAlignCenterActive}
+          title="Align Center"
+        />
+        <ToolbarButton
+          icon={AlignRight}
+          onClick={handleAlignRight}
+          active={isAlignRightActive}
+          title="Align Right"
+        />
 
         <div className="w-px bg-gray-300 mx-1" />
 
