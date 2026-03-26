@@ -23,6 +23,20 @@
   </head>
 
   <body>
+    <!-- Debug: catch ALL errors and show them on screen -->
+    <script>
+      window.addEventListener('error', function(e) {
+        var d = document.getElementById('__debug_errors');
+        if (!d) { d = document.createElement('pre'); d.id = '__debug_errors'; d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#fff;color:red;padding:1rem;font-size:12px;max-height:50vh;overflow:auto;border-bottom:3px solid red'; document.body.prepend(d); }
+        d.textContent += '[ERROR] ' + e.message + '\n' + (e.filename || '') + ':' + (e.lineno || '') + '\n\n';
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        var d = document.getElementById('__debug_errors');
+        if (!d) { d = document.createElement('pre'); d.id = '__debug_errors'; d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#fff;color:red;padding:1rem;font-size:12px;max-height:50vh;overflow:auto;border-bottom:3px solid red'; document.body.prepend(d); }
+        d.textContent += '[PROMISE] ' + (e.reason && e.reason.message ? e.reason.message : e.reason) + '\n' + (e.reason && e.reason.stack ? e.reason.stack : '') + '\n\n';
+      });
+    </script>
+
     <div id="root"></div>
 
     <script type="module" src="/client/App.tsx"></script>
