@@ -15,6 +15,19 @@ export function createServer() {
   // Enforce trailing slashes: 301-redirect non-trailing-slash URLs
   app.use((req, res, next) => {
     const { path } = req;
+
+    // Reverse-redirect: strip trailing slash from Vite-internal paths
+    // (browser may have cached an old 301 that added a trailing slash)
+    if (
+      (path.startsWith('/@') || path.startsWith('/__')) &&
+      path.endsWith('/') &&
+      path.length > 2
+    ) {
+      const stripped = path.slice(0, -1);
+      const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+      return res.redirect(302, `${stripped}${qs}`);
+    }
+
     // Skip: root, already has trailing slash, API routes, admin, or static files (contain a dot)
     if (
       path === '/' ||
@@ -27,6 +40,7 @@ export function createServer() {
     ) {
       return next();
     }
+
     const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
     return res.redirect(301, `${path}/${qs}`);
   });
