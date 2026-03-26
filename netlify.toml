@@ -7,12 +7,33 @@
   external_node_modules = ["express"]
   node_bundler = "esbuild"
 
+# API routes → Netlify Functions (must be first)
 [[redirects]]
   force = true
   from = "/api/*"
   status = 200
   to = "/.netlify/functions/api/:splat"
 
+# Trailing-slash enforcement: redirect non-slash URLs to their slash versions.
+# Rules are matched top-to-bottom; first match wins.
+# Static files (e.g. /favicon.png) are served directly and never reach these rules.
+
+[[redirects]]
+  from = "/:seg"
+  to = "/:seg/"
+  status = 301
+
+[[redirects]]
+  from = "/:seg1/:seg2"
+  to = "/:seg1/:seg2/"
+  status = 301
+
+[[redirects]]
+  from = "/:seg1/:seg2/:seg3"
+  to = "/:seg1/:seg2/:seg3/"
+  status = 301
+
+# SPA catch-all — must be last
 [[redirects]]
   from = "/*"
   to = "/index.html"

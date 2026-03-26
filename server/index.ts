@@ -12,40 +12,26 @@ export function createServer() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  // Enforce trailing slashes: 301-redirect non-trailing-slash URLs
+  // Fix cached-redirect pollution: the browser may have a permanently-cached
+  // 301 that adds a trailing slash to Vite-internal paths (/@vite/client,
+  // /@react-refresh, /__vite_hmr, etc.).  Strip the trailing slash via an
+  // internal URL rewrite so Vite can serve those files correctly.
+  // This does NOT redirect public pages – that is handled by Netlify in prod.
   app.use((req, res, next) => {
     const { path } = req;
-
-    // Internal rewrite: strip trailing slash from Vite-internal paths
-    // Use a rewrite (not a redirect) so the browser's cached 301 doesn't
-    // cause an infinite redirect loop.
     if (
-      (path.startsWith('/@') || path.startsWith('/__')) &&
-      path.endsWith('/') &&
+      (path.startsWith("/@") || path.startsWith("/__")) &&
+      path.endsWith("/") &&
       path.length > 2
     ) {
-      req.url = req.url.replace(/\/(\?|$)/, '$1');
-      return next();
+      // Rewrite in-place – no redirect sent to the browser, so the cached 301
+      // stays harmless and the module loads correctly.
+      req.url = req.url.slice(0, -1); // strip the trailing slash
     }
-
-    // Skip: root, already has trailing slash, API routes, admin, or static files (contain a dot)
-    if (
-      path === '/' ||
-      path.endsWith('/') ||
-      path.startsWith('/api/') ||
-      path.startsWith('/admin') ||
-      path.startsWith('/@') ||
-      path.startsWith('/__') ||
-      path.includes('.')
-    ) {
-      return next();
-    }
-
-    const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
-    return res.redirect(302, `${path}/${qs}`);
+    return next();
   });
 
-  // Example API routes
+  // API routes
   app.get("/api/ping", (_req, res) => {
     const ping = process.env.PING_MESSAGE ?? "ping";
     res.json({ message: ping });
