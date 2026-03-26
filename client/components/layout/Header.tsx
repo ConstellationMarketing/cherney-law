@@ -74,7 +74,7 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                           onOpenChange={(open) => setOpenDropdown(open ? (item.id || item.href || item.label) : null)}
                         >
                           <DropdownMenuTrigger asChild>
-                            <button type="button" className={`${navItemClass} bg-transparent border-0 cursor-pointer`}>
+                            <button type="button" className={`${navItemClass} bg-transparent border-0 cursor-pointer outline-none focus:outline-none`}>
                               {item.label}
                               <ChevronDown className="h-4 w-4" />
                             </button>
