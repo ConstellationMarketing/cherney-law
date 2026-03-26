@@ -207,14 +207,14 @@ export default function ContactForm() {
         {/* Privacy / Terms links */}
         <p className="font-outfit text-[13px] text-white/50">
           <a
-            href="/privacy-policy"
+            href="/privacy-policy/"
             className="underline hover:text-white/80 transition-colors"
           >
             Privacy Policy
           </a>
           {' – '}
           <a
-            href="/terms-of-service"
+            href="/terms-of-service/"
             className="underline hover:text-white/80 transition-colors"
           >
             Terms of Service

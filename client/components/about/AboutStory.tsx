@@ -81,7 +81,7 @@ export default function AboutStory({ content, phoneDisplay, phoneLabel }: AboutS
                   Ready to Talk?
                 </h3>
                 <Link
-                  to="/contact"
+                  to="/contact/"
                   className="block w-full bg-law-accent text-black font-outfit text-[16px] md:text-[18px] font-semibold py-3 px-6 hover:bg-[#7a9e10] transition-colors duration-300 text-center"
                 >
                   Contact Us

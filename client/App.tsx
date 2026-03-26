@@ -39,16 +39,16 @@ const App = () => (
             <ScrollToTop />
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/about" element={<AboutUs />} />
-              <Route path="/practice-areas" element={<PracticeAreas />} />
-              <Route path="/contact" element={<ContactPage />} />
-              <Route path="/testimonials" element={<TestimonialsPage />} />
-              <Route path="/common-questions" element={<CommonQuestionsPage />} />
-              <Route path="/areas-we-serve" element={<AreasWeServePage />} />
-              <Route path="/homepage-2" element={<Homepage2 />} />
-              <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-              <Route path="/terms-of-service" element={<TermsOfServicePage />} />
-              <Route path="/disclaimer" element={<DisclaimerPage />} />
+              <Route path="/about/" element={<AboutUs />} />
+              <Route path="/practice-areas/" element={<PracticeAreas />} />
+              <Route path="/contact/" element={<ContactPage />} />
+              <Route path="/testimonials/" element={<TestimonialsPage />} />
+              <Route path="/common-questions/" element={<CommonQuestionsPage />} />
+              <Route path="/areas-we-serve/" element={<AreasWeServePage />} />
+              <Route path="/homepage-2/" element={<Homepage2 />} />
+              <Route path="/privacy-policy/" element={<PrivacyPolicyPage />} />
+              <Route path="/terms-of-service/" element={<TermsOfServicePage />} />
+              <Route path="/disclaimer/" element={<DisclaimerPage />} />
               <Route path="/admin/*" element={<AdminRoutes />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

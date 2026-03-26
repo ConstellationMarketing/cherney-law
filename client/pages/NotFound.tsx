@@ -10,7 +10,7 @@ const NotFound = () => {
   const location = useLocation();
   const siteSettings = useSiteSettings();
   const { pathname } = location;
-  const siteUrl = import.meta.env.VITE_SITE_URL || '';
+  const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || '';
 
   // Create a synthetic page object for 404
   const notFoundPage = {

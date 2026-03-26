@@ -81,6 +81,7 @@ export interface SiteSettings {
   footerTaglineHtml: string;
 
   // SEO
+  siteUrl: string;
   siteNoindex: boolean;
 
   // Analytics & Scripts
@@ -115,6 +116,7 @@ export interface SiteSettingsRow {
   social_links: SocialLink[];
   copyright_text: string | null;
   footer_tagline_html: string | null;
+  site_url: string | null;
   site_noindex: boolean;
   ga4_measurement_id: string | null;
   google_ads_id: string | null;
@@ -149,6 +151,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   socialLinks: [],
   copyrightText: "",
   footerTaglineHtml: "",
+  siteUrl: '',
   siteNoindex: false,
   ga4MeasurementId: "",
   googleAdsId: "",
@@ -263,6 +266,7 @@ export function rowToSiteSettings(row: SiteSettingsRow): SiteSettings {
       : DEFAULT_SITE_SETTINGS.socialLinks,
     copyrightText: row.copyright_text || DEFAULT_SITE_SETTINGS.copyrightText,
     footerTaglineHtml: row.footer_tagline_html || DEFAULT_SITE_SETTINGS.footerTaglineHtml,
+    siteUrl: row.site_url || DEFAULT_SITE_SETTINGS.siteUrl,
     siteNoindex: row.site_noindex ?? DEFAULT_SITE_SETTINGS.siteNoindex,
     ga4MeasurementId: row.ga4_measurement_id || "",
     googleAdsId: row.google_ads_id || "",
@@ -331,6 +335,7 @@ export function siteSettingsToRow(
     social_links: settings.socialLinks,
     copyright_text: settings.copyrightText,
     footer_tagline_html: settings.footerTaglineHtml || null,
+    site_url: settings.siteUrl || null,
     site_noindex: settings.siteNoindex,
     ga4_measurement_id: settings.ga4MeasurementId || null,
     google_ads_id: settings.googleAdsId || null,

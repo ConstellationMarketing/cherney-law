@@ -12,7 +12,7 @@ export default function CommonQuestionsPage() {
   const { phoneDisplay } = useGlobalPhone();
   const siteSettings = useSiteSettings();
   const { pathname } = useLocation();
-  const siteUrl = import.meta.env.VITE_SITE_URL || "";
+  const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || "";
 
   // Centralized SEO resolution
   const seo = resolveSeo(page, siteSettings, pathname, siteUrl);

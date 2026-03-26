@@ -77,6 +77,22 @@ export function resolveSeo(
     canonical = `${siteUrl}${pathname}`;
   }
 
+  // Normalize canonical: ensure trailing slash (except bare domain with no path)
+  if (canonical) {
+    try {
+      const url = new URL(canonical);
+      if (url.pathname && !url.pathname.endsWith('/')) {
+        url.pathname = url.pathname + '/';
+        canonical = url.toString();
+      }
+    } catch {
+      // If not a valid URL, just append slash if missing
+      if (!canonical.endsWith('/')) {
+        canonical = canonical + '/';
+      }
+    }
+  }
+
   // OG Image: og_image → hardcoded
   const image = page?.og_image || FALLBACK_OG_IMAGE;
 

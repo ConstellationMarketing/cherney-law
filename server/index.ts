@@ -12,6 +12,23 @@ export function createServer() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
+  // Enforce trailing slashes: 301-redirect non-trailing-slash URLs
+  app.use((req, res, next) => {
+    const { path } = req;
+    // Skip: root, already has trailing slash, API routes, admin, or static files (contain a dot)
+    if (
+      path === '/' ||
+      path.endsWith('/') ||
+      path.startsWith('/api/') ||
+      path.startsWith('/admin') ||
+      path.includes('.')
+    ) {
+      return next();
+    }
+    const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+    return res.redirect(301, `${path}/${qs}`);
+  });
+
   // Example API routes
   app.get("/api/ping", (_req, res) => {
     const ping = process.env.PING_MESSAGE ?? "ping";

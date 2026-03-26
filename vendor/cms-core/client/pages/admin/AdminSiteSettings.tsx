@@ -972,6 +972,19 @@ export default function AdminSiteSettings() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="siteUrl">Site URL</Label>
+                <p className="text-sm text-gray-500">
+                  Your production domain (e.g. https://example.com). Used for canonical URLs and sitemap.
+                </p>
+                <Input
+                  id="siteUrl"
+                  value={settings.siteUrl}
+                  onChange={(e) => updateSettings({ siteUrl: e.target.value })}
+                  placeholder="https://your-domain.com"
+                />
+              </div>
+
               <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
                 <p className="text-sm text-amber-800">
                   <strong>Warning:</strong> Enabling site-wide noindex will prevent search engines from indexing any page on your site. This is useful during development or for private sites.

@@ -6,7 +6,7 @@ import type { Database } from '../client/lib/database.types';
 // Load environment variables
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const siteUrl = process.env.SITE_URL || 'https://silvatriallawyers.com';
+// siteUrl resolved after fetching DB settings below
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   console.log('Supabase credentials not configured. Skipping SSG generation.');
@@ -37,6 +37,7 @@ interface Redirect {
 }
 
 interface SiteSettings {
+  site_url: string | null;
   site_noindex: boolean;
   ga4_measurement_id: string | null;
   google_ads_id: string | null;
@@ -51,11 +52,12 @@ async function generateSSG() {
   // 0. Fetch site settings for analytics and scripts
   const { data: siteSettingsData } = await supabase
     .from('site_settings')
-    .select('site_noindex, ga4_measurement_id, google_ads_id, google_ads_conversion_label, head_scripts, footer_scripts')
+    .select('site_url, site_noindex, ga4_measurement_id, google_ads_id, google_ads_conversion_label, head_scripts, footer_scripts')
     .eq('settings_key', 'global')
     .single();
 
   const siteSettings: SiteSettings = siteSettingsData || {
+    site_url: null,
     site_noindex: false,
     ga4_measurement_id: null,
     google_ads_id: null,
@@ -63,6 +65,12 @@ async function generateSSG() {
     head_scripts: null,
     footer_scripts: null,
   };
+
+  // Resolve site URL: env var takes priority, then CMS setting, then warn
+  const siteUrl = process.env.SITE_URL || siteSettings.site_url || '';
+  if (!siteUrl) {
+    console.warn('[SSG] No SITE_URL configured — canonical URLs and sitemap will be incomplete.');
+  }
 
   console.log('Site settings loaded:', {
     siteNoindex: siteSettings.site_noindex,
@@ -117,21 +125,33 @@ async function generateSSG() {
     .select('from_path, to_path, status_code')
     .eq('enabled', true);
 
+  // Build per-page trailing-slash redirects (e.g. /about -> /about/ 301)
+  const trailingSlashRules = (pages || [])
+    .filter(p => p.url_path !== '/')
+    .map(p => {
+      // Ensure the stored path has a trailing slash; derive non-slash version
+      const withSlash = p.url_path.endsWith('/') ? p.url_path : `${p.url_path}/`;
+      const withoutSlash = withSlash.slice(0, -1);
+      return `${withoutSlash} ${withSlash} 301`;
+    })
+    .join('\n');
+
+  const userRedirects = (redirects && !redirectsError)
+    ? redirects.map((r: Redirect) => `${r.from_path} ${r.to_path} ${r.status_code}`).join('\n')
+    : '';
+
+  const fullRedirectsContent = [
+    '# Trailing-slash enforcement',
+    trailingSlashRules,
+    userRedirects ? `\n# Custom redirects\n${userRedirects}` : '',
+    '\n/* /index.html 200',
+  ].filter(Boolean).join('\n');
+
+  fs.writeFileSync(path.join(process.cwd(), 'dist/spa/_redirects'), fullRedirectsContent);
+  console.log(`Generated _redirects with ${(pages || []).length} trailing-slash rules + ${(redirects || []).length} custom redirects`);
+
   if (redirectsError) {
-    console.error('Error fetching redirects:', redirectsError);
-  } else if (redirects && redirects.length > 0) {
-    const redirectsContent = redirects
-      .map((r: Redirect) => `${r.from_path} ${r.to_path} ${r.status_code}`)
-      .join('\n');
-    
-    // Append SPA fallback to redirects
-    const fullRedirectsContent = redirectsContent + '\n/* /index.html 200';
-    fs.writeFileSync(path.join(process.cwd(), 'dist/spa/_redirects'), fullRedirectsContent);
-    console.log(`Generated _redirects with ${redirects.length} redirects`);
-  } else {
-    // Just create SPA fallback
-    fs.writeFileSync(path.join(process.cwd(), 'dist/spa/_redirects'), '/* /index.html 200');
-    console.log('Generated _redirects with SPA fallback');
+    console.error('Error fetching redirects (custom rules skipped):', redirectsError);
   }
 
   // 5. Generate sitemap.xml (only if site is indexable)
@@ -259,12 +279,15 @@ function escapeHtml(text: string): string {
 function generateSitemap(pages: Page[], siteUrl: string): string {
   const urls = pages
     .filter(p => !p.noindex)
-    .map(p => `  <url>
-    <loc>${siteUrl}${p.url_path}</loc>
+    .map(p => {
+      const normalizedPath = p.url_path === '/' ? '/' : p.url_path.replace(/\/?$/, '/');
+      return `  <url>
+    <loc>${siteUrl}${normalizedPath}</loc>
     <lastmod>${new Date(p.updated_at).toISOString().split('T')[0]}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>${p.url_path === '/' ? '1.0' : '0.8'}</priority>
-  </url>`)
+  </url>`;
+    })
     .join('\n');
 
   return `<?xml version="1.0" encoding="UTF-8"?>

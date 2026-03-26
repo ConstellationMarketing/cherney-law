@@ -31,15 +31,16 @@ export default function PageContentEditor({
 }: PageContentEditorProps) {
   const [normalized, setNormalized] = useState<any>(null);
 
-  // Determine page type from URL path
+  // Determine page type from URL path (handles both with and without trailing slash)
   const getPageType = (path: string): string => {
-    if (path === "/" || path === "" || path === "/homepage-2") return "home";
-    if (path.startsWith("/about")) return "about";
-    if (path.startsWith("/contact")) return "contact";
-    if (path.startsWith("/practice-areas")) return "practice-areas";
-    if (path.startsWith("/testimonials")) return "testimonials";
-    if (path.startsWith("/common-questions")) return "common-questions";
-    if (path.startsWith("/areas-we-serve")) return "areas-we-serve";
+    const p = path.replace(/\/$/, ''); // strip trailing slash for comparison
+    if (p === "/" || p === "" || p === "/homepage-2") return "home";
+    if (p.startsWith("/about")) return "about";
+    if (p.startsWith("/contact")) return "contact";
+    if (p.startsWith("/practice-areas")) return "practice-areas";
+    if (p.startsWith("/testimonials")) return "testimonials";
+    if (p.startsWith("/common-questions")) return "common-questions";
+    if (p.startsWith("/areas-we-serve")) return "areas-we-serve";
     return "unknown";
   };
 
@@ -93,10 +94,10 @@ export default function PageContentEditor({
 
   return (
     <div className="space-y-2">
-      {pageType === "home" && pageKey === "/homepage-2" && (
+      {pageType === "home" && (pageKey === "/homepage-2" || pageKey === "/homepage-2/") && (
         <Homepage2FieldEditor content={normalized} onChange={handleChange} />
       )}
-      {pageType === "home" && pageKey !== "/homepage-2" && (
+      {pageType === "home" && pageKey !== "/homepage-2" && pageKey !== "/homepage-2/" && (
         <HomePageFieldEditor content={normalized} onChange={handleChange} />
       )}
       {pageType === "about" && (

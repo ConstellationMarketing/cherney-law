@@ -326,14 +326,14 @@ export default function ContactUsSection({ content }: ContactUsSectionProps) {
                 {/* Privacy / Terms links */}
                 <p className="font-outfit text-[12px] text-[#999]">
                   <a
-                    href="/privacy-policy"
+                    href="/privacy-policy/"
                     className="underline hover:text-[#6b6b6b] transition-colors"
                   >
                     Privacy Policy
                   </a>
                   {" – "}
                   <a
-                    href="/terms-of-service"
+                    href="/terms-of-service/"
                     className="underline hover:text-[#6b6b6b] transition-colors"
                   >
                     Terms of Service

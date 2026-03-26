@@ -566,14 +566,14 @@ function ContactFormBlock({
         {/* Privacy / Terms links */}
         <p className="text-xs text-gray-500">
           <a
-            href="/privacy-policy"
+            href="/privacy-policy/"
             className="underline hover:text-gray-700 transition-colors"
           >
             Privacy Policy
           </a>
           {" – "}
           <a
-            href="/terms-of-service"
+            href="/terms-of-service/"
             className="underline hover:text-gray-700 transition-colors"
           >
             Terms of Service
