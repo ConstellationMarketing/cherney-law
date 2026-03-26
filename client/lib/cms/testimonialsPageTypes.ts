@@ -47,7 +47,7 @@ export const defaultTestimonialsContent: TestimonialsPageContent = {
     secondaryButton: {
       label: "Schedule Now",
       sublabel: "Free Consultation",
-      href: "/contact",
+      href: "/contact/",
     },
   },
 };

@@ -191,7 +191,12 @@ Sitemap: ${siteUrl}/sitemap.xml`;
 function generatePageHTML(template: string, page: Page, siteSettings: SiteSettings): string {
   const title = page.meta_title || page.title;
   const description = page.meta_description || '';
-  const canonical = page.canonical_url || `${siteUrl}${page.url_path}`;
+  const normalizedPath = page.url_path === '/' ? '/' : page.url_path.replace(/\/?$/, '/');
+  let canonical = page.canonical_url || `${siteUrl}${normalizedPath}`;
+  // Ensure trailing slash on canonical URL
+  if (canonical && !canonical.endsWith('/')) {
+    canonical = canonical + '/';
+  }
   const ogTitle = page.og_title || title;
   const ogDescription = page.og_description || description;
   

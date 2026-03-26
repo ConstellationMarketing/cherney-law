@@ -106,7 +106,7 @@ export const defaultAreasWeServeContent: AreasWeServePageContent = {
     secondaryButton: {
       label: "Schedule Now",
       sublabel: "Free Consultation",
-      href: "/contact",
+      href: "/contact/",
     },
   },
 };

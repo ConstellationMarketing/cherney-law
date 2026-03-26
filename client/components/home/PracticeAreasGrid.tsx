@@ -9,22 +9,22 @@ const defaultAreas: PracticeAreaItem[] = [
   {
     title: "Practice Area",
     image: "/images/practice-areas/personal-injury.jpg",
-    link: "/practice-areas",
+    link: "/practice-areas/",
   },
   {
     title: "Practice Area",
     image: "/images/practice-areas/medical-malpractice.jpg",
-    link: "/practice-areas",
+    link: "/practice-areas/",
   },
   {
     title: "Practice Area",
     image: "/images/practice-areas/workers-compensation.jpg",
-    link: "/practice-areas",
+    link: "/practice-areas/",
   },
   {
     title: "Practice Area",
     image: "/images/practice-areas/wrongful-death.jpg",
-    link: "/practice-areas",
+    link: "/practice-areas/",
   },
 ];
 

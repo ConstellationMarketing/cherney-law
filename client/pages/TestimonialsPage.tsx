@@ -104,7 +104,7 @@ export default function TestimonialsPage() {
 
             {/* Schedule Button */}
             <Link
-              to={content.cta.secondaryButton.href || "/contact"}
+              to={content.cta.secondaryButton.href || "/contact/"}
               className="w-full md:w-1/2"
             >
               <div className="bg-white p-[8px] w-full h-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">

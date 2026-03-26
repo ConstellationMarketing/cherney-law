@@ -661,7 +661,7 @@ function PracticeAreasGridBlock({
         {block.areas.map((area, index) => (
           <a
             key={index}
-            href="/practice-areas"
+            href="/practice-areas/"
             className="relative min-h-[400px] lg:min-h-[500px] overflow-hidden group"
             style={{
               backgroundImage: area.image ? `url(${area.image})` : undefined,

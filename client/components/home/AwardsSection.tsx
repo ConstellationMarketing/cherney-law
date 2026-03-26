@@ -40,7 +40,7 @@ export default function AwardsSection({ content }: AwardsSectionProps) {
           )}
 
           {content.ctaText && (
-            <Link to={content.ctaLink || "/contact"}>
+            <Link to={content.ctaLink || "/contact/"}>
               <Button className="bg-law-accent text-black font-outfit text-[18px] md:text-[20px] py-[22px] px-[35px] h-auto hover:bg-law-accent-dark hover:text-white transition-all duration-300">
                 {content.ctaText}
               </Button>

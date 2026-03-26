@@ -98,8 +98,8 @@ export const defaultContactContent: ContactPageContent = {
     submitButtonText: "SUBMIT",
     consentText:
       "I agree to receive marketing messaging from Cherney Law Firm at the phone number provided above. Data rates may apply. Reply STOP to opt out.",
-    privacyPolicyUrl: "/privacy-policy",
-    termsOfServiceUrl: "/terms-of-service",
+    privacyPolicyUrl: "/privacy-policy/",
+    termsOfServiceUrl: "/terms-of-service/",
   },
   process: {
     sectionLabel: "– The Process",

@@ -119,7 +119,7 @@ export const defaultCommonQuestionsContent: CommonQuestionsPageContent = {
     secondaryButton: {
       label: "Schedule Now",
       sublabel: "Free Consultation",
-      href: "/contact",
+      href: "/contact/",
     },
   },
 };

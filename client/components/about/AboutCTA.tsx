@@ -48,7 +48,7 @@ export default function AboutCTA({ content, phoneDisplay, phoneLabel }: AboutCTA
           </a>
 
           {/* Schedule Button */}
-          <Link to={content.secondaryButton.href || "/contact"} className="w-full md:w-1/2">
+          <Link to={content.secondaryButton.href || "/contact/"} className="w-full md:w-1/2">
             <div className="bg-white p-[8px] w-full h-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
               <div className="flex items-start gap-4">
                 <div className="bg-law-accent p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">

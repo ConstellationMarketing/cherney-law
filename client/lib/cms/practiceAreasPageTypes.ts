@@ -135,7 +135,7 @@ export const defaultPracticeAreasContent: PracticeAreasPageContent = {
     content:
       "<p>Are you scared of losing your home? A bankruptcy attorney could defend you from foreclosure and help you save your home. Filing for bankruptcy could halt a foreclosure.</p><p>Filing for bankruptcy is often one of the best decisions a person can make. Such an action could end harassing calls from creditors, eliminate financial stress, and allow debtors to get a fresh start in life.</p><p>As an educated attorney with years of experience, I can help you understand bankruptcy by providing the qualified advice, caring guidance, and aggressive representation that you need when pursuing it. Such a decision is not easy to make and requires the guidance of a qualified bankruptcy lawyer. If you are considering filing for bankruptcy, make sure you are fully informed.</p>",
     buttonLabel: "Get Help Today!",
-    buttonLink: "/contact",
+    buttonLink: "/contact/",
   },
   faq: {
     heading: "Frequently Asked Questions",
