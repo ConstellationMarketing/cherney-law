@@ -235,7 +235,7 @@ function ParagraphBlock({
   block: Extract<ContentBlock, { type: "paragraph" }>;
 }) {
   return (
-    <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%] lg:w-[80%]">
+    <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%] lg:w-[80%] py-[30px] md:py-[50px]">
       <div
         className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black prose prose-sm max-w-none
           [&_h2]:font-playfair [&_h2]:text-[32px] md:[&_h2]:text-[40px] [&_h2]:leading-tight [&_h2]:text-black [&_h2]:pb-[15px] [&_h2]:mt-[30px]
