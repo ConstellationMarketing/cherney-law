@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import RichTextEditor from './RichTextEditor';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
@@ -266,11 +267,11 @@ function BlockFields({ block, onUpdate }: { block: ContentBlock; onUpdate: (upda
     case 'paragraph':
       return (
         <div>
-          <Label>Content (HTML supported)</Label>
-          <Textarea
+          <Label>Content</Label>
+          <RichTextEditor
             value={block.content}
-            onChange={(e) => onUpdate({ content: e.target.value })}
-            rows={4}
+            onChange={(html) => onUpdate({ content: html })}
+            placeholder="Enter your content here..."
           />
         </div>
       );

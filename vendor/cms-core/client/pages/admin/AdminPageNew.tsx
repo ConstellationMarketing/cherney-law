@@ -75,8 +75,14 @@ export default function AdminPageNew() {
       url_path: urlPath,
       page_type: pageType,
       content: selectedTemplate?.default_content || [],
-      meta_title: selectedTemplate?.default_meta_title?.replace('[Page Title]', title) || `${title} | ${siteSettings.settings.siteName || 'Our Firm'}`,
-      meta_description: selectedTemplate?.default_meta_description || '',
+      meta_title: selectedTemplate?.default_meta_title
+        ?.replace('[Page Title]', title)
+        .replace('[Campaign]', title)
+        .replace('[Practice Area]', title)
+        .replace('[Site Name]', siteSettings.settings.siteName || 'Our Firm')
+        || `${title} | ${siteSettings.settings.siteName || 'Our Firm'}`,
+      meta_description: (selectedTemplate?.default_meta_description || '')
+        .replace('[Site Name]', siteSettings.settings.siteName || 'Our Firm'),
       status: 'draft' as const,
       noindex: false,
       canonical_url: null,

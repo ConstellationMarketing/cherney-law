@@ -336,7 +336,7 @@ export default function AdminPageEdit() {
                   id="metaTitle"
                   value={page.meta_title || ""}
                   onChange={(e) => updatePage({ meta_title: e.target.value })}
-                  placeholder="Page Title | Silva Trial Lawyers"
+                  placeholder="Page Title | Your Site Name"
                 />
                 <p className="text-sm text-gray-500">
                   {(page.meta_title || "").length}/60 characters recommended
@@ -480,7 +480,7 @@ export default function AdminPageEdit() {
                         // Allow typing invalid JSON temporarily
                       }
                     }}
-                    placeholder='{"name": "Silva Trial Lawyers", "telephone": "404-905-7742"}'
+                    placeholder='{"name": "Your Business Name", "telephone": "123-456-7890"}'
                     rows={6}
                     className="font-mono text-sm"
                   />
