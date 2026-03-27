@@ -122,24 +122,7 @@ export default function DynamicCmsPage() {
   return (
     <Layout>
       <Seo {...seo} />
-
-      {/* Hero header */}
-      <section className="bg-law-accent py-12 md:py-16">
-        <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%]">
-          <h1 className="font-playfair text-[clamp(2.5rem,7vw,68.8px)] font-light leading-[1.2] text-black">
-            {page.title}
-          </h1>
-        </div>
-      </section>
-
-      {/* Block content */}
-      <section className="py-12 md:py-16">
-        <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%]">
-          <div className="max-w-[900px]">
-            <BlockRenderer content={page.content} />
-          </div>
-        </div>
-      </section>
+      <BlockRenderer content={page.content} />
     </Layout>
   );
 }

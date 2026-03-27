@@ -149,7 +149,6 @@ function HeroBlock({
 }) {
   const { phoneNumber, phoneDisplay } = useGlobalPhone();
 
-  // Convert phoneDisplay to tel format if phoneNumber is empty
   function phoneToTel(str: string): string {
     return str.replace(/\D/g, "");
   }
@@ -157,8 +156,8 @@ function HeroBlock({
   const telHref = `tel:${phoneNumber || phoneToTel(phoneDisplay)}`;
 
   return (
-    <section
-      className={`relative py-20 px-6 text-center ${isPreview ? "bg-slate-800" : "bg-[#183658]"}`}
+    <div
+      className="bg-law-accent pt-[30px] md:pt-[54px] pb-[30px] md:pb-[54px]"
       style={
         block.backgroundImage
           ? {
@@ -168,29 +167,43 @@ function HeroBlock({
           : undefined
       }
     >
-      <div className="max-w-4xl mx-auto text-white">
-        <h1
-          className="text-4xl md:text-5xl font-bold mb-4"
-          style={{ fontFamily: "Archivo, sans-serif" }}
-        >
-          {block.title}
-        </h1>
-        {block.subtitle && (
-          <p className="text-xl md:text-2xl opacity-90 mb-8">
-            {block.subtitle}
-          </p>
-        )}
-        {block.showCTA && (
-          <a
-            href={telHref}
-            data-dni-phone="primary"
-            className="inline-block bg-white text-[#183658] px-8 py-4 rounded-2xl text-xl font-semibold hover:bg-gray-100 transition-colors"
-          >
-            Call {phoneDisplay}
-          </a>
-        )}
+      <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%]">
+        <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-8">
+          <div className="flex-1">
+            {block.subtitle && (
+              <h1 className="font-outfit text-[18px] md:text-[24px] leading-tight md:leading-[36px] text-white mb-[10px]">
+                {block.subtitle}
+              </h1>
+            )}
+            <p className="font-playfair text-[clamp(2.5rem,7vw,68.8px)] font-light leading-[1.2] text-black max-w-[900px]">
+              {block.title}
+            </p>
+          </div>
+
+          {block.showCTA && (
+            <div className="shrink-0 w-full md:w-auto md:max-w-[380px]">
+              <a href={telHref} data-dni-phone="primary" className="block">
+                <div className="bg-white p-[8px] w-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-law-accent p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
+                      <Phone className="w-8 h-8 text-black group-hover:text-white transition-colors duration-300" strokeWidth={1.5} />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] font-normal group-hover:text-white transition-colors duration-300">
+                        Call Us Now
+                      </h4>
+                      <p className="font-outfit text-[clamp(1.75rem,5vw,40px)] text-black leading-tight group-hover:text-white transition-colors duration-300">
+                        {phoneDisplay}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </a>
+            </div>
+          )}
+        </div>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -201,17 +214,18 @@ function HeadingBlock({
 }) {
   const Tag = `h${block.level}` as "h1" | "h2" | "h3";
   const sizes = {
-    1: "text-4xl",
-    2: "text-3xl",
-    3: "text-2xl",
+    1: "text-[clamp(2.5rem,7vw,68.8px)] font-light",
+    2: "text-[36px] md:text-[48px] font-light",
+    3: "text-[24px] md:text-[32px] font-normal",
   };
   return (
-    <Tag
-      className={`${sizes[block.level]} font-bold text-gray-900 mb-4`}
-      style={{ fontFamily: "Archivo, sans-serif" }}
-    >
-      {block.text}
-    </Tag>
+    <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%]">
+      <Tag
+        className={`font-playfair ${sizes[block.level]} leading-tight text-black mb-6`}
+      >
+        {block.text}
+      </Tag>
+    </div>
   );
 }
 
@@ -221,10 +235,18 @@ function ParagraphBlock({
   block: Extract<ContentBlock, { type: "paragraph" }>;
 }) {
   return (
-    <div
-      className="prose prose-lg max-w-none text-gray-600 mb-4"
-      dangerouslySetInnerHTML={{ __html: block.content }}
-    />
+    <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%]">
+      <div
+        className="prose prose-lg max-w-[900px] font-outfit text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] text-black/80 mb-8
+          prose-headings:font-playfair prose-headings:text-black prose-headings:font-light
+          prose-h2:text-[30px] prose-h2:md:text-[40px] prose-h2:leading-tight prose-h2:mb-4
+          prose-h3:text-[22px] prose-h3:md:text-[28px] prose-h3:leading-tight prose-h3:mb-3
+          prose-p:mb-4 prose-ul:mb-4 prose-ol:mb-4
+          prose-a:text-law-accent prose-a:underline hover:prose-a:text-black
+          prose-strong:text-black"
+        dangerouslySetInnerHTML={{ __html: block.content }}
+      />
+    </div>
   );
 }
 
@@ -234,38 +256,57 @@ function BulletsBlock({
   block: Extract<ContentBlock, { type: "bullets" }>;
 }) {
   return (
-    <ul className="list-disc list-inside space-y-2 text-gray-600 mb-4">
-      {block.items.map((item, index) => (
-        <li key={index} className="text-lg">
-          {item}
-        </li>
-      ))}
-    </ul>
+    <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%]">
+      <ul className="list-disc list-inside space-y-2 max-w-[900px] font-outfit text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] text-black/80 mb-8">
+        {block.items.map((item, index) => (
+          <li key={index}>{item}</li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
 function CTABlock({
   block,
-  isPreview,
 }: {
   block: Extract<ContentBlock, { type: "cta" }>;
   isPreview: boolean;
 }) {
   return (
-    <div
-      className={`py-12 text-center ${isPreview ? "bg-slate-100" : "bg-[#f2f2da]"}`}
-    >
-      <a
-        href={`tel:${block.phone.replace(/\D/g, "")}`}
-        className={`inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-xl font-semibold transition-colors ${
-          block.variant === "outline"
-            ? "border-2 border-[#183658] text-[#183658] hover:bg-[#183658] hover:text-white"
-            : "bg-[#183658] text-white hover:bg-[#0f2742]"
-        }`}
-      >
-        <Phone className="h-5 w-5" />
-        {block.text} - {block.phone}
-      </a>
+    <div className="bg-law-accent py-[40px] md:py-[60px]">
+      <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%]">
+        <div className="text-center mb-[30px]">
+          <h2 className="font-playfair text-[36px] md:text-[48px] lg:text-[60px] leading-tight text-black pb-[15px]">
+            {block.text}
+          </h2>
+        </div>
+        <div className="flex justify-center max-w-[420px] mx-auto">
+          <a
+            href={`tel:${block.phone.replace(/\D/g, "")}`}
+            data-dni-phone="primary"
+            className="block w-full"
+          >
+            <div className="bg-white p-[8px] w-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
+              <div className="flex items-start gap-4">
+                <div className="bg-law-accent p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
+                  <Phone
+                    className="w-8 h-8 text-black group-hover:text-white transition-colors duration-300"
+                    strokeWidth={1.5}
+                  />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] font-normal group-hover:text-white transition-colors duration-300">
+                    Call Us Now
+                  </h4>
+                  <p className="font-outfit text-[clamp(1.75rem,5vw,40px)] text-black leading-tight group-hover:text-white transition-colors duration-300">
+                    {block.phone}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
