@@ -219,9 +219,9 @@ function HeadingBlock({
     3: "text-[24px] md:text-[32px] font-normal",
   };
   return (
-    <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%]">
+    <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%] lg:w-[80%]">
       <Tag
-        className={`font-playfair ${sizes[block.level]} leading-tight text-black mb-6`}
+        className={`font-playfair ${sizes[block.level]} leading-tight text-black mb-[15px] md:mb-[20px]`}
       >
         {block.text}
       </Tag>
@@ -235,15 +235,17 @@ function ParagraphBlock({
   block: Extract<ContentBlock, { type: "paragraph" }>;
 }) {
   return (
-    <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%]">
+    <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%] lg:w-[80%]">
       <div
-        className="prose prose-lg max-w-[900px] font-outfit text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] text-black/80 mb-8
-          prose-headings:font-playfair prose-headings:text-black prose-headings:font-light
-          prose-h2:text-[30px] prose-h2:md:text-[40px] prose-h2:leading-tight prose-h2:mb-4
-          prose-h3:text-[22px] prose-h3:md:text-[28px] prose-h3:leading-tight prose-h3:mb-3
-          prose-p:mb-4 prose-ul:mb-4 prose-ol:mb-4
-          prose-a:text-law-accent prose-a:underline hover:prose-a:text-black
-          prose-strong:text-black"
+        className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black prose prose-sm max-w-none
+          [&_h2]:font-playfair [&_h2]:text-[32px] md:[&_h2]:text-[40px] [&_h2]:leading-tight [&_h2]:text-black [&_h2]:pb-[15px] [&_h2]:mt-[30px]
+          [&_h3]:font-playfair [&_h3]:text-[24px] md:[&_h3]:text-[28px] [&_h3]:leading-tight [&_h3]:text-black [&_h3]:pb-[10px] [&_h3]:mt-[24px]
+          [&_p]:mb-[16px]
+          [&_ul]:mb-[16px] [&_ul]:list-disc [&_ul]:pl-6
+          [&_ol]:mb-[16px] [&_ol]:list-decimal [&_ol]:pl-6
+          [&_li]:mb-[6px]
+          [&_a]:text-law-accent [&_a]:underline hover:[&_a]:text-black
+          [&_strong]:text-black [&_strong]:font-semibold"
         dangerouslySetInnerHTML={{ __html: block.content }}
       />
     </div>
@@ -256,8 +258,8 @@ function BulletsBlock({
   block: Extract<ContentBlock, { type: "bullets" }>;
 }) {
   return (
-    <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%]">
-      <ul className="list-disc list-inside space-y-2 max-w-[900px] font-outfit text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] text-black/80 mb-8">
+    <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%] lg:w-[80%]">
+      <ul className="list-disc list-inside space-y-2 font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black mb-[16px]">
         {block.items.map((item, index) => (
           <li key={index}>{item}</li>
         ))}
