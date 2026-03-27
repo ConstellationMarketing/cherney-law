@@ -80,14 +80,22 @@ export default function AdminTemplates() {
               </CardDescription>
               
               <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-700">Default Content Blocks:</p>
+                <p className="text-sm font-medium text-gray-700">Default Content Sections:</p>
                 <ul className="text-sm text-gray-500 space-y-1">
-                  {template.default_content.map((block, index) => (
-                    <li key={index} className="flex items-center gap-2">
-                      <span className="w-2 h-2 bg-slate-300 rounded-full" />
-                      <span className="capitalize">{block.type.replace('-', ' ')}</span>
-                    </li>
-                  ))}
+                  {Array.isArray(template.default_content)
+                    ? (template.default_content as any[]).map((block, index) => (
+                        <li key={index} className="flex items-center gap-2">
+                          <span className="w-2 h-2 bg-slate-300 rounded-full" />
+                          <span className="capitalize">{(block.type || 'block').replace('-', ' ')}</span>
+                        </li>
+                      ))
+                    : Object.keys(template.default_content as Record<string, unknown>).map((key) => (
+                        <li key={key} className="flex items-center gap-2">
+                          <span className="w-2 h-2 bg-slate-300 rounded-full" />
+                          <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').replace(/Section$/i, ' Section').trim()}</span>
+                        </li>
+                      ))
+                  }
                 </ul>
               </div>
 
