@@ -254,6 +254,7 @@ export function normalizeTestimonialsPageContent(content: unknown): Testimonials
 // Import type from client-specific types
 import type { CommonQuestionsPageContent } from '../../client/lib/cms/commonQuestionsPageTypes';
 import type { AreasWeServePageContent } from '../../client/lib/cms/areasWeServePageTypes';
+import type { AreaPageContent } from '../../client/lib/cms/areaPageTypes';
 
 export function normalizeCommonQuestionsPageContent(content: unknown): CommonQuestionsPageContent {
   const c = ensureObject(content, {});
@@ -317,6 +318,58 @@ export function normalizeAreasWeServePageContent(content: unknown): AreasWeServe
       image: str(c.cta?.image),
       imageAlt: str(c.cta?.imageAlt),
       secondaryButton: ensureObject(c.cta?.secondaryButton, { label: '', sublabel: '', href: '' }),
+    }),
+  };
+}
+
+function normalizeHeadingLevel(val: unknown): 1 | 2 | 3 | 4 {
+  return ([1, 2, 3, 4].includes(Number(val)) ? Number(val) : 2) as 1 | 2 | 3 | 4;
+}
+
+export function normalizeAreaPageContent(content: unknown): AreaPageContent {
+  const c = ensureObject(content, {});
+
+  return {
+    hero: ensureObject(c.hero, {
+      sectionLabel: str(c.hero?.sectionLabel),
+      tagline: str(c.hero?.tagline),
+    }),
+    introSection: {
+      heading: str(c.introSection?.heading),
+      headingLevel: normalizeHeadingLevel(c.introSection?.headingLevel),
+      body: str(c.introSection?.body),
+      image: str(c.introSection?.image),
+      imageAlt: str(c.introSection?.imageAlt),
+    },
+    whySection: {
+      heading: str(c.whySection?.heading),
+      headingLevel: normalizeHeadingLevel(c.whySection?.headingLevel),
+      body: str(c.whySection?.body),
+      image: str(c.whySection?.image),
+      imageAlt: str(c.whySection?.imageAlt),
+    },
+    closingSection: {
+      heading: str(c.closingSection?.heading),
+      headingLevel: normalizeHeadingLevel(c.closingSection?.headingLevel),
+      body: str(c.closingSection?.body),
+      image: str(c.closingSection?.image),
+      imageAlt: str(c.closingSection?.imageAlt),
+    },
+    cta: ensureObject(c.cta, {
+      heading: str(c.cta?.heading),
+      description: str(c.cta?.description),
+      image: str(c.cta?.image),
+      imageAlt: str(c.cta?.imageAlt),
+      secondaryButton: ensureObject(c.cta?.secondaryButton, { label: '', sublabel: '', href: '' }),
+    }),
+    locationsSection: ensureObject(c.locationsSection, {
+      heading: str(c.locationsSection?.heading),
+      introText: str(c.locationsSection?.introText),
+      items: ensureArray(c.locationsSection?.items, { name: '', description: '', href: '' }),
+    }),
+    mapSection: ensureObject(c.mapSection, {
+      heading: str(c.mapSection?.heading),
+      embedUrl: str(c.mapSection?.embedUrl),
     }),
   };
 }

@@ -8,6 +8,7 @@ import {
   normalizeTestimonialsPageContent,
   normalizeCommonQuestionsPageContent,
   normalizeAreasWeServePageContent,
+  normalizeAreaPageContent,
 } from "../../lib/contentNormalizer";
 import HomePageFieldEditor from "@site/components/admin/HomePageFieldEditor";
 import Homepage2FieldEditor from "@site/components/admin/Homepage2FieldEditor";
@@ -17,17 +18,20 @@ import PracticeAreasPageFieldEditor from "@site/components/admin/PracticeAreasPa
 import TestimonialsPageFieldEditor from "@site/components/admin/TestimonialsPageFieldEditor";
 import CommonQuestionsPageFieldEditor from "@site/components/admin/CommonQuestionsPageFieldEditor";
 import AreasWeServePageFieldEditor from "@site/components/admin/AreasWeServePageFieldEditor";
+import AreaPageFieldEditor from "@site/components/admin/AreaPageFieldEditor";
 
 interface PageContentEditorProps {
   pageKey: string;
   content: any;
   onChange: (content: any) => void;
+  pageType?: string;
 }
 
 export default function PageContentEditor({
   pageKey,
   content,
   onChange,
+  pageType: explicitPageType,
 }: PageContentEditorProps) {
   const [normalized, setNormalized] = useState<any>(null);
 
@@ -44,7 +48,7 @@ export default function PageContentEditor({
     return "unknown";
   };
 
-  const pageType = getPageType(pageKey);
+  const pageType = explicitPageType === 'area' ? 'area' : getPageType(pageKey);
 
   // Normalize on mount / when content changes from outside
   useEffect(() => {
@@ -58,6 +62,7 @@ export default function PageContentEditor({
         case "testimonials": n = normalizeTestimonialsPageContent(content); break;
         case "common-questions": n = normalizeCommonQuestionsPageContent(content); break;
         case "areas-we-serve": n = normalizeAreasWeServePageContent(content); break;
+        case "area": n = normalizeAreaPageContent(content); break;
         default: n = content || {};
       }
       setNormalized(n);
@@ -117,6 +122,9 @@ export default function PageContentEditor({
       )}
       {pageType === "areas-we-serve" && (
         <AreasWeServePageFieldEditor content={normalized} onChange={handleChange} />
+      )}
+      {pageType === "area" && (
+        <AreaPageFieldEditor content={normalized} onChange={handleChange} />
       )}
     </div>
   );

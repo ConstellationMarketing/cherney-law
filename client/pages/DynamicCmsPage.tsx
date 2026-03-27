@@ -9,6 +9,8 @@ import { useLocation } from "react-router-dom";
 import Layout from "@site/components/layout/Layout";
 import Seo from "@site/components/Seo";
 import BlockRenderer from "@site/components/BlockRenderer";
+import AreaPageRenderer from "@site/components/area-page/AreaPageRenderer";
+import type { AreaPageContent } from "@site/lib/cms/areaPageTypes";
 import { useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { resolveSeo } from "@site/utils/resolveSeo";
 import type { ContentBlock } from "@site/lib/blocks";
@@ -21,7 +23,8 @@ interface CmsPage {
   id: string;
   title: string;
   url_path: string;
-  content: ContentBlock[];
+  page_type: string;
+  content: ContentBlock[] | AreaPageContent;
   meta_title: string | null;
   meta_description: string | null;
   canonical_url: string | null;
@@ -67,7 +70,7 @@ export default function DynamicCmsPage() {
           .join(",");
 
         const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/pages?or=(${encodeURIComponent(orFilter)})&status=eq.published&select=id,title,url_path,content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,status&limit=1`,
+          `${SUPABASE_URL}/rest/v1/pages?or=(${encodeURIComponent(orFilter)})&status=eq.published&select=id,title,url_path,page_type,content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,status&limit=1`,
           {
             headers: {
               apikey: SUPABASE_ANON_KEY,
@@ -122,7 +125,11 @@ export default function DynamicCmsPage() {
   return (
     <Layout>
       <Seo {...seo} />
-      <BlockRenderer content={page.content} />
+      {page.page_type === 'area' ? (
+        <AreaPageRenderer content={page.content as AreaPageContent} />
+      ) : (
+        <BlockRenderer content={page.content as ContentBlock[]} />
+      )}
     </Layout>
   );
 }

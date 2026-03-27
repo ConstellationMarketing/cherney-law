@@ -173,6 +173,7 @@ export default function AdminPageNew() {
                   <SelectItem value="standard">Standard Page</SelectItem>
                   <SelectItem value="practice">Practice Area Page</SelectItem>
                   <SelectItem value="landing">Landing Page</SelectItem>
+                  <SelectItem value="area">Area Page</SelectItem>
                 </SelectContent>
               </Select>
             </div>
