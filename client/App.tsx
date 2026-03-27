@@ -18,10 +18,7 @@ import ContactPage from "./pages/ContactPage";
 import TestimonialsPage from "./pages/TestimonialsPage";
 import CommonQuestionsPage from "./pages/CommonQuestionsPage";
 import AreasWeServePage from "./pages/AreasWeServePage";
-import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
-import TermsOfServicePage from "./pages/TermsOfServicePage";
-import DisclaimerPage from "./pages/DisclaimerPage";
-import NotFound from "./pages/NotFound";
+import DynamicCmsPage from "./pages/DynamicCmsPage";
 import AdminRoutes from "./pages/AdminRoutes";
 import ScrollToTop from "./components/ScrollToTop";
 
@@ -118,12 +115,9 @@ const App = () => (
               <Route path="/common-questions/" element={<CommonQuestionsPage />} />
               <Route path="/areas-we-serve/" element={<AreasWeServePage />} />
               <Route path="/homepage-2/" element={<Homepage2 />} />
-              <Route path="/privacy-policy/" element={<PrivacyPolicyPage />} />
-              <Route path="/terms-of-service/" element={<TermsOfServicePage />} />
-              <Route path="/disclaimer/" element={<DisclaimerPage />} />
               <Route path="/admin/*" element={<AdminRoutes />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
+              {/* Dynamic CMS pages — catches any URL not matched above */}
+              <Route path="*" element={<DynamicCmsPage />} />
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
