@@ -71,7 +71,7 @@ function getDefaultBlock(type: string): ContentBlock {
     case 'bullets':
       return { type: 'bullets', items: ['Item 1', 'Item 2', 'Item 3'] };
     case 'cta':
-      return { type: 'cta', text: 'Call Us Today', phone: '404-905-7742', variant: 'primary' };
+      return { type: 'cta', text: 'Call Us Today', phone: '', variant: 'primary' };
     case 'image':
       return { type: 'image', src: '/placeholder.svg', alt: 'Image description' };
     case 'attorney-bio':
@@ -292,13 +292,12 @@ function BlockFields({ block, onUpdate }: { block: ContentBlock; onUpdate: (upda
       return (
         <div className="space-y-4">
           <div>
-            <Label>Button Text</Label>
+            <Label>Heading Text</Label>
             <Input value={block.text} onChange={(e) => onUpdate({ text: e.target.value })} />
           </div>
-          <div>
-            <Label>Phone Number</Label>
-            <Input value={block.phone} onChange={(e) => onUpdate({ phone: e.target.value })} />
-          </div>
+          <p className="text-sm text-gray-500 bg-gray-50 p-3 rounded">
+            Phone number is automatically pulled from the global phone number in Site Settings.
+          </p>
           <div>
             <Label>Style</Label>
             <Select value={block.variant || 'primary'} onValueChange={(v) => onUpdate({ variant: v as 'primary' | 'outline' })}>

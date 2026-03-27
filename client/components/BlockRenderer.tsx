@@ -274,6 +274,8 @@ function CTABlock({
   block: Extract<ContentBlock, { type: "cta" }>;
   isPreview: boolean;
 }) {
+  const { phoneDisplay } = useGlobalPhone();
+
   return (
     <div className="bg-law-accent py-[40px] md:py-[60px]">
       <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%]">
@@ -284,7 +286,7 @@ function CTABlock({
         </div>
         <div className="flex justify-center max-w-[420px] mx-auto">
           <a
-            href={`tel:${block.phone.replace(/\D/g, "")}`}
+            href={`tel:${phoneDisplay.replace(/\D/g, "")}`}
             data-dni-phone="primary"
             className="block w-full"
           >
@@ -301,7 +303,7 @@ function CTABlock({
                     Call Us Now
                   </h4>
                   <p className="font-outfit text-[clamp(1.75rem,5vw,40px)] text-black leading-tight group-hover:text-white transition-colors duration-300">
-                    {block.phone}
+                    {phoneDisplay}
                   </p>
                 </div>
               </div>
