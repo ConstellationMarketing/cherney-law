@@ -537,7 +537,6 @@ export default function AdminPageEdit() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="standard">Standard Page</SelectItem>
-                    <SelectItem value="practice">Practice Area Page</SelectItem>
                     <SelectItem value="landing">Landing Page</SelectItem>
                     <SelectItem value="area">Area Page</SelectItem>
                     <SelectItem value="practice_detail">Practice Area Detail</SelectItem>
