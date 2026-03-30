@@ -33,6 +33,7 @@
     "@tiptap/starter-kit": "^3.19.0",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
+    "openai": "^6.33.0",
     "react-helmet-async": "^2.0.5",
     "zod": "^3.25.76"
   },
