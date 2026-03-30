@@ -38,7 +38,7 @@ export default function PracticeAreaDetailPage() {
   const seo = resolveSeo(page as any, siteSettings.settings, pathname, siteUrl);
 
   return (
-    <Layout>
+    <Layout heroBg="practice_detail">
       <Seo
         {...seo}
         ogTitle={page.og_title || undefined}

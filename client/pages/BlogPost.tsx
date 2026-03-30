@@ -52,7 +52,7 @@ export default function BlogPost() {
   const canonical = post.canonical_url || (siteUrl ? `${siteUrl}/blog/${post.slug.endsWith("/") ? post.slug : post.slug + "/"}` : undefined);
 
   return (
-    <Layout>
+    <Layout heroBg="blog">
       <Seo
         title={title}
         description={description}
@@ -65,7 +65,7 @@ export default function BlogPost() {
 
       {/* Hero */}
       <div
-        className={`relative pt-[30px] md:pt-[54px] pb-[30px] md:pb-[54px] ${post.featured_image ? "" : "bg-[#1a1a2e]"}`}
+        className={`relative -mt-[144px] pt-[171px] md:pt-[194px] pb-[30px] md:pb-[54px] ${post.featured_image ? "" : "bg-[#1a1a2e]"}`}
       >
         {post.featured_image && (
           <div className="absolute inset-0">

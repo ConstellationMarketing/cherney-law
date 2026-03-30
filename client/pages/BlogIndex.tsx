@@ -12,7 +12,7 @@ export default function BlogIndex() {
   const siteUrl = siteSettings.settings.siteUrl || "";
 
   return (
-    <Layout>
+    <Layout heroBg="blog">
       <Seo
         title={`Blog | ${siteName}`}
         description="Legal news and updates from our firm."

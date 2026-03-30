@@ -12,7 +12,7 @@ export default function PracticeAreaDetailHero({ content, headingTag }: Props) {
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
 
   return (
-    <div className="relative bg-law-accent pt-[30px] md:pt-[54px] pb-[30px] md:pb-[54px]">
+    <div className="relative bg-law-accent -mt-[144px] pt-[171px] md:pt-[194px] pb-[30px] md:pb-[54px]">
       {/* Optional background image */}
       {content.backgroundImage && (
         <div className="absolute inset-0">

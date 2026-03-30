@@ -125,7 +125,7 @@ export default function DynamicCmsPage() {
   const seo = resolveSeo(page, siteSettings, pathname, siteUrl);
 
   return (
-    <Layout>
+    <Layout heroBg={page.page_type === 'practice_detail' ? 'practice_detail' : undefined}>
       <Seo {...seo} />
       {page.page_type === 'area' ? (
         <AreaPageRenderer content={page.content as AreaPageContent} />

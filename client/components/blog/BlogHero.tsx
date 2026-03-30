@@ -10,7 +10,7 @@ export default function BlogHero({ title, subtitle }: Props) {
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
 
   return (
-    <div className="bg-[#1a1a2e] pt-[30px] md:pt-[54px] pb-[30px] md:pb-[54px]">
+    <div className="bg-[#1a1a2e] -mt-[144px] pt-[171px] md:pt-[194px] pb-[30px] md:pb-[54px]">
       <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%]">
         <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-8">
           <div className="flex-1">
