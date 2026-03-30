@@ -49,6 +49,9 @@ const AdminPostNew = lazy(
 const AdminPostEdit = lazy(
   () => import("../../vendor/cms-core/client/pages/admin/AdminPostEdit"),
 );
+const AdminBulkImport = lazy(
+  () => import("../../vendor/cms-core/client/pages/admin/AdminBulkImport"),
+);
 
 // Loading fallback for admin pages
 function AdminLoading() {
@@ -105,6 +108,9 @@ export default function AdminRoutes() {
           <Route path="posts" element={<AdminPosts />} />
           <Route path="posts/new" element={<AdminPostNew />} />
           <Route path="posts/:id" element={<AdminPostEdit />} />
+
+          {/* Bulk import */}
+          <Route path="bulk-import" element={<AdminBulkImport />} />
 
           {/* User management */}
           <Route path="users" element={<AdminUsers />} />

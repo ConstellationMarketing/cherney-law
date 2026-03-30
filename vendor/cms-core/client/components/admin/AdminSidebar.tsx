@@ -12,6 +12,7 @@ import {
   Image,
   Users,
   Newspaper,
+  Upload,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useNavigate } from "react-router-dom";
@@ -34,6 +35,7 @@ const navItems: NavItem[] = [
   { label: "Site Settings", href: "/admin/site-settings", icon: Settings },
   { label: "Redirects", href: "/admin/redirects", icon: ArrowRightLeft, adminOnly: true },
   { label: "Search & Replace", href: "/admin/search-replace", icon: Replace },
+  { label: "Bulk Import", href: "/admin/bulk-import", icon: Upload, adminOnly: true },
   { label: "Templates", href: "/admin/templates", icon: FileCode, adminOnly: true },
   { label: "Users", href: "/admin/users", icon: Users, adminOnly: true },
 ];

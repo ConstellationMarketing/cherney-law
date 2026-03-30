@@ -3,6 +3,8 @@ import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
 import { handleGoogleReviews } from "./routes/google-reviews";
+import { handleBulkImport } from "./routes/bulk-import";
+import { handleBulkImportFetch } from "./routes/bulk-import-fetch";
 
 export function createServer() {
   const app = express();
@@ -20,6 +22,8 @@ export function createServer() {
 
   app.get("/api/demo", handleDemo);
   app.get("/api/google-reviews", handleGoogleReviews);
+  app.post("/api/bulk-import", handleBulkImport);
+  app.post("/api/bulk-import-fetch", handleBulkImportFetch);
 
   return app;
 }
