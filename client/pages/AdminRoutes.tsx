@@ -40,6 +40,15 @@ const AdminSiteSettings = lazy(
 const AdminSearchReplace = lazy(
   () => import("../../vendor/cms-core/client/pages/admin/AdminSearchReplace"),
 );
+const AdminPosts = lazy(
+  () => import("../../vendor/cms-core/client/pages/admin/AdminPosts"),
+);
+const AdminPostNew = lazy(
+  () => import("../../vendor/cms-core/client/pages/admin/AdminPostNew"),
+);
+const AdminPostEdit = lazy(
+  () => import("../../vendor/cms-core/client/pages/admin/AdminPostEdit"),
+);
 
 // Loading fallback for admin pages
 function AdminLoading() {
@@ -91,6 +100,11 @@ export default function AdminRoutes() {
           <Route path="site-settings" element={<AdminSiteSettings />} />
           <Route path="redirects" element={<AdminRedirects />} />
           <Route path="templates" element={<AdminTemplates />} />
+
+          {/* Blog management */}
+          <Route path="posts" element={<AdminPosts />} />
+          <Route path="posts/new" element={<AdminPostNew />} />
+          <Route path="posts/:id" element={<AdminPostEdit />} />
 
           {/* User management */}
           <Route path="users" element={<AdminUsers />} />

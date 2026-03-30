@@ -93,6 +93,18 @@ async function generateSSG() {
 
   console.log(`Found ${pages?.length || 0} published pages`);
 
+  // 1b. Fetch all published blog posts
+  const { data: blogPosts, error: postsError } = await supabase
+    .from('posts')
+    .select('id, title, slug, meta_title, meta_description, canonical_url, og_title, og_description, og_image, noindex, updated_at')
+    .eq('status', 'published');
+
+  if (postsError) {
+    console.error('Error fetching blog posts:', postsError);
+  }
+
+  console.log(`Found ${blogPosts?.length || 0} published blog posts`);
+
   // 2. Read the SPA index.html as template
   const templatePath = path.join(process.cwd(), 'dist/spa/index.html');
   if (!fs.existsSync(templatePath)) {
@@ -119,6 +131,30 @@ async function generateSSG() {
     console.log(`Generated: ${page.url_path}`);
   }
 
+  // 3b. Generate static HTML for blog posts
+  for (const post of blogPosts || []) {
+    const postSlug = post.slug.endsWith('/') ? post.slug : `${post.slug}/`;
+    const postUrlPath = `/blog/${postSlug}`;
+    const postPage: Page = {
+      id: post.id,
+      title: post.title,
+      url_path: postUrlPath,
+      meta_title: post.meta_title,
+      meta_description: post.meta_description,
+      canonical_url: post.canonical_url,
+      og_title: post.og_title,
+      og_description: post.og_description,
+      og_image: post.og_image,
+      noindex: post.noindex,
+      updated_at: post.updated_at,
+    };
+    const html = generatePageHTML(template, postPage, siteSettings, siteUrl);
+    const outputPath = path.join(process.cwd(), 'dist/spa', `blog/${postSlug}`, 'index.html');
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    fs.writeFileSync(outputPath, html);
+    console.log(`Generated: ${postUrlPath}`);
+  }
+
   // 4. Fetch and generate _redirects
   const { data: redirects, error: redirectsError } = await supabase
     .from('redirects')
@@ -143,6 +179,7 @@ async function generateSSG() {
   const fullRedirectsContent = [
     '# Trailing-slash enforcement',
     trailingSlashRules,
+    blogTrailingSlashRules ? `\n# Blog trailing-slash enforcement\n${blogTrailingSlashRules}` : '',
     userRedirects ? `\n# Custom redirects\n${userRedirects}` : '',
     '\n/* /index.html 200',
   ].filter(Boolean).join('\n');
@@ -154,9 +191,36 @@ async function generateSSG() {
     console.error('Error fetching redirects (custom rules skipped):', redirectsError);
   }
 
+  // Also add blog post trailing-slash redirects
+  const blogTrailingSlashRules = (blogPosts || [])
+    .map(p => {
+      const postSlug = p.slug.endsWith('/') ? p.slug : `${p.slug}/`;
+      const withSlash = `/blog/${postSlug}`;
+      const withoutSlash = withSlash.slice(0, -1);
+      return `${withoutSlash} ${withSlash} 301`;
+    })
+    .join('\n');
+
   // 5. Generate sitemap.xml (only if site is indexable)
   if (!siteSettings.site_noindex) {
-    const sitemap = generateSitemap(pages || [], siteUrl);
+    // Combine pages and blog posts for sitemap
+    const allPages: Page[] = [
+      ...(pages || []),
+      ...(blogPosts || []).map(p => ({
+        id: p.id,
+        title: p.title,
+        url_path: `/blog/${p.slug.endsWith('/') ? p.slug : p.slug + '/'}`,
+        meta_title: p.meta_title,
+        meta_description: p.meta_description,
+        canonical_url: p.canonical_url,
+        og_title: p.og_title,
+        og_description: p.og_description,
+        og_image: p.og_image,
+        noindex: p.noindex,
+        updated_at: p.updated_at,
+      })),
+    ];
+    const sitemap = generateSitemap(allPages, siteUrl);
     fs.writeFileSync(path.join(process.cwd(), 'dist/spa/sitemap.xml'), sitemap);
     console.log('Generated sitemap.xml');
   } else {

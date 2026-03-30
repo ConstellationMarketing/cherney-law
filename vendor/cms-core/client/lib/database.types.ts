@@ -41,7 +41,7 @@ export type ContentBlock =
     };
 
 export type PageStatus = "draft" | "published";
-export type PageType = "standard" | "practice" | "landing" | "area";
+export type PageType = "standard" | "practice" | "landing" | "area" | "practice_detail";
 
 export interface Page {
   id: string;

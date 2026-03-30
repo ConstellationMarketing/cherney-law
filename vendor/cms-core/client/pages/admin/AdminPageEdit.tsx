@@ -210,7 +210,7 @@ export default function AdminPageEdit() {
 
   // Check if this is a structured page using stable page IDs or page_type
   const isStructuredPage = page?.id
-    ? STRUCTURED_PAGE_IDS.has(page.id) || page.page_type === 'area'
+    ? STRUCTURED_PAGE_IDS.has(page.id) || page.page_type === 'area' || page.page_type === 'practice_detail'
     : false;
 
   const handleStructuredContentChange = (content: unknown) => {
@@ -540,6 +540,7 @@ export default function AdminPageEdit() {
                     <SelectItem value="practice">Practice Area Page</SelectItem>
                     <SelectItem value="landing">Landing Page</SelectItem>
                     <SelectItem value="area">Area Page</SelectItem>
+                    <SelectItem value="practice_detail">Practice Area Detail</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

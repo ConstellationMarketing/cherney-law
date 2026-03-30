@@ -255,6 +255,7 @@ export function normalizeTestimonialsPageContent(content: unknown): Testimonials
 import type { CommonQuestionsPageContent } from '../../client/lib/cms/commonQuestionsPageTypes';
 import type { AreasWeServePageContent } from '../../client/lib/cms/areasWeServePageTypes';
 import type { AreaPageContent } from '../../client/lib/cms/areaPageTypes';
+import type { PracticeAreaDetailPageContent } from '../../client/lib/cms/practiceAreaDetailPageTypes';
 
 export function normalizeCommonQuestionsPageContent(content: unknown): CommonQuestionsPageContent {
   const c = ensureObject(content, {});
@@ -371,5 +372,40 @@ export function normalizeAreaPageContent(content: unknown): AreaPageContent {
       heading: str(c.mapSection?.heading),
       embedUrl: str(c.mapSection?.embedUrl),
     }),
+  };
+}
+
+export function normalizePracticeAreaDetailContent(content: unknown): PracticeAreaDetailPageContent {
+  const c = ensureObject(content, {});
+
+  return {
+    hero: ensureObject(c.hero, {
+      sectionLabel: str(c.hero?.sectionLabel),
+      tagline: str(c.hero?.tagline),
+      description: str(c.hero?.description),
+      backgroundImage: str(c.hero?.backgroundImage),
+      backgroundImageAlt: str(c.hero?.backgroundImageAlt),
+    }),
+    socialProof: ensureObject(c.socialProof, {
+      mode: (['testimonials', 'awards', 'none'].includes(c.socialProof?.mode) ? c.socialProof.mode : 'none') as 'testimonials' | 'awards' | 'none',
+      testimonials: ensureArray(c.socialProof?.testimonials, { rating: '', text: '', author: '' }),
+      awards: ensureObject(c.socialProof?.awards, {
+        logos: ensureArray(c.socialProof?.awards?.logos, { src: '', alt: '' }),
+      }),
+    }),
+    contentSections: ensureArray(c.contentSections, {
+      body: '<p>Enter content here.</p>',
+      image: '',
+      imageAlt: '',
+      imagePosition: 'right' as 'left' | 'right',
+      showCTAs: true,
+    }),
+    faq: ensureObject(c.faq, {
+      enabled: c.faq?.enabled ?? true,
+      heading: str(c.faq?.heading) || 'Frequently Asked Questions',
+      description: str(c.faq?.description),
+      items: ensureArray(c.faq?.items, { question: '', answer: '' }),
+    }),
+    headingTags: (typeof c.headingTags === 'object' && c.headingTags !== null ? c.headingTags : {}) as Record<string, string>,
   };
 }

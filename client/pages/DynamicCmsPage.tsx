@@ -11,6 +11,8 @@ import Seo from "@site/components/Seo";
 import BlockRenderer from "@site/components/BlockRenderer";
 import AreaPageRenderer from "@site/components/area-page/AreaPageRenderer";
 import type { AreaPageContent } from "@site/lib/cms/areaPageTypes";
+import PracticeAreaDetailRenderer from "@site/components/practice-detail/PracticeAreaDetailRenderer";
+import type { PracticeAreaDetailPageContent } from "@site/lib/cms/practiceAreaDetailPageTypes";
 import { useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { resolveSeo } from "@site/utils/resolveSeo";
 import type { ContentBlock } from "@site/lib/blocks";
@@ -127,6 +129,8 @@ export default function DynamicCmsPage() {
       <Seo {...seo} />
       {page.page_type === 'area' ? (
         <AreaPageRenderer content={page.content as AreaPageContent} />
+      ) : page.page_type === 'practice_detail' ? (
+        <PracticeAreaDetailRenderer content={page.content as unknown as PracticeAreaDetailPageContent} />
       ) : (
         <BlockRenderer content={page.content as ContentBlock[]} />
       )}

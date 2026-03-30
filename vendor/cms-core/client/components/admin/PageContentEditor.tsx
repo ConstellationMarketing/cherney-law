@@ -9,6 +9,7 @@ import {
   normalizeCommonQuestionsPageContent,
   normalizeAreasWeServePageContent,
   normalizeAreaPageContent,
+  normalizePracticeAreaDetailContent,
 } from "../../lib/contentNormalizer";
 import HomePageFieldEditor from "@site/components/admin/HomePageFieldEditor";
 import Homepage2FieldEditor from "@site/components/admin/Homepage2FieldEditor";
@@ -19,6 +20,7 @@ import TestimonialsPageFieldEditor from "@site/components/admin/TestimonialsPage
 import CommonQuestionsPageFieldEditor from "@site/components/admin/CommonQuestionsPageFieldEditor";
 import AreasWeServePageFieldEditor from "@site/components/admin/AreasWeServePageFieldEditor";
 import AreaPageFieldEditor from "@site/components/admin/AreaPageFieldEditor";
+import PracticeAreaDetailFieldEditor from "@site/components/admin/PracticeAreaDetailFieldEditor";
 
 interface PageContentEditorProps {
   pageKey: string;
@@ -48,7 +50,7 @@ export default function PageContentEditor({
     return "unknown";
   };
 
-  const pageType = explicitPageType === 'area' ? 'area' : getPageType(pageKey);
+  const pageType = explicitPageType === 'area' ? 'area' : explicitPageType === 'practice_detail' ? 'practice_detail' : getPageType(pageKey);
 
   // Normalize on mount / when content changes from outside
   useEffect(() => {
@@ -63,6 +65,7 @@ export default function PageContentEditor({
         case "common-questions": n = normalizeCommonQuestionsPageContent(content); break;
         case "areas-we-serve": n = normalizeAreasWeServePageContent(content); break;
         case "area": n = normalizeAreaPageContent(content); break;
+        case "practice_detail": n = normalizePracticeAreaDetailContent(content); break;
         default: n = content || {};
       }
       setNormalized(n);
@@ -125,6 +128,9 @@ export default function PageContentEditor({
       )}
       {pageType === "area" && (
         <AreaPageFieldEditor content={normalized} onChange={handleChange} />
+      )}
+      {pageType === "practice_detail" && (
+        <PracticeAreaDetailFieldEditor content={normalized} onChange={handleChange} />
       )}
     </div>
   );

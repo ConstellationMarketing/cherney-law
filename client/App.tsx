@@ -19,6 +19,8 @@ import TestimonialsPage from "./pages/TestimonialsPage";
 import CommonQuestionsPage from "./pages/CommonQuestionsPage";
 import AreasWeServePage from "./pages/AreasWeServePage";
 import DynamicCmsPage from "./pages/DynamicCmsPage";
+import BlogIndex from "./pages/BlogIndex";
+import BlogPost from "./pages/BlogPost";
 import AdminRoutes from "./pages/AdminRoutes";
 import ScrollToTop from "./components/ScrollToTop";
 
@@ -115,6 +117,8 @@ const App = () => (
               <Route path="/common-questions/" element={<CommonQuestionsPage />} />
               <Route path="/areas-we-serve/" element={<AreasWeServePage />} />
               <Route path="/homepage-2/" element={<Homepage2 />} />
+              <Route path="/blog/" element={<BlogIndex />} />
+              <Route path="/blog/:slug/" element={<BlogPost />} />
               <Route path="/admin/*" element={<AdminRoutes />} />
               {/* Dynamic CMS pages — catches any URL not matched above */}
               <Route path="*" element={<DynamicCmsPage />} />
