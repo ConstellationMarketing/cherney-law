@@ -161,6 +161,16 @@ async function generateSSG() {
     .select('from_path, to_path, status_code')
     .eq('enabled', true);
 
+  // Build blog post trailing-slash redirects
+  const blogTrailingSlashRules = (blogPosts || [])
+    .map(p => {
+      const postSlug = p.slug.endsWith('/') ? p.slug : `${p.slug}/`;
+      const withSlash = `/${postSlug}`;
+      const withoutSlash = withSlash.slice(0, -1);
+      return `${withoutSlash} ${withSlash} 301`;
+    })
+    .join('\n');
+
   // Build per-page trailing-slash redirects (e.g. /about -> /about/ 301)
   const trailingSlashRules = (pages || [])
     .filter(p => p.url_path !== '/')
@@ -190,16 +200,6 @@ async function generateSSG() {
   if (redirectsError) {
     console.error('Error fetching redirects (custom rules skipped):', redirectsError);
   }
-
-  // Also add blog post trailing-slash redirects
-  const blogTrailingSlashRules = (blogPosts || [])
-    .map(p => {
-      const postSlug = p.slug.endsWith('/') ? p.slug : `${p.slug}/`;
-      const withSlash = `/${postSlug}`;
-      const withoutSlash = withSlash.slice(0, -1);
-      return `${withoutSlash} ${withSlash} 301`;
-    })
-    .join('\n');
 
   // 5. Generate sitemap.xml (only if site is indexable)
   if (!siteSettings.site_noindex) {
