@@ -12,7 +12,8 @@ export type ContentBlock =
   | MapBlock
   | TwoColumnBlock
   | PracticeAreasGridBlock
-  | GoogleReviewsBlock;
+  | GoogleReviewsBlock
+  | RecentPostsBlock;
 
 export type HeroBlock = {
   type: "hero";
@@ -20,6 +21,7 @@ export type HeroBlock = {
   subtitle?: string;
   backgroundImage?: string;
   showCTA?: boolean;
+  variant?: "accent" | "dark";
 };
 
 export type HeadingBlock = { type: "heading"; level: 1 | 2 | 3; text: string };
@@ -77,4 +79,11 @@ export type PracticeAreasGridBlock = {
 export type GoogleReviewsBlock = {
   type: "google-reviews";
   reviews: { author: string; rating: number; text: string; image?: string }[];
+};
+
+export type RecentPostsBlock = {
+  type: "recent-posts";
+  heading?: string;
+  postsPerPage?: number;
+  showLoadMore?: boolean;
 };

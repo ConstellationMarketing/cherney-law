@@ -1,4 +1,5 @@
 import type { ContentBlock } from "@site/lib/blocks";
+import RecentPostsBlock from "@site/components/blocks/RecentPostsBlock";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -127,6 +128,14 @@ function RenderBlock({
         return <PracticeAreasGridBlock block={block} />;
       case "google-reviews":
         return <GoogleReviewsBlock block={block} />;
+      case "recent-posts":
+        return (
+          <RecentPostsBlock
+            heading={(block as any).heading}
+            postsPerPage={(block as any).postsPerPage}
+            showLoadMore={(block as any).showLoadMore}
+          />
+        );
       default:
         return <div className="p-4 bg-gray-100 rounded">Unknown block type: {block.type}</div>;
     }
@@ -154,6 +163,51 @@ function HeroBlock({
   }
 
   const telHref = `tel:${phoneNumber || phoneToTel(phoneDisplay)}`;
+
+  const isDark = (block as any).variant === "dark";
+
+  if (isDark) {
+    return (
+      <div className="bg-[#1a1a2e] -mt-[144px] pt-[171px] md:pt-[194px] pb-[30px] md:pb-[54px]">
+        <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%]">
+          <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-8">
+            <div className="flex-1">
+              <h1 className="font-playfair text-[clamp(2.5rem,7vw,68.8px)] font-light leading-[1.2] text-white max-w-[900px]">
+                {block.title}
+              </h1>
+              {block.subtitle && (
+                <p className="font-outfit text-[18px] md:text-[22px] leading-tight text-white/70 mt-3">
+                  {block.subtitle}
+                </p>
+              )}
+            </div>
+
+            {block.showCTA && (
+              <div className="shrink-0 w-full md:w-auto md:max-w-[380px]">
+                <a href={telHref} data-dni-phone="primary" className="block">
+                  <div className="bg-law-accent p-[8px] w-full cursor-pointer border-2 border-transparent hover:border-white transition-all duration-300 group">
+                    <div className="flex items-start gap-4">
+                      <div className="bg-white p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
+                        <Phone className="w-8 h-8 text-black group-hover:text-white transition-colors duration-300" strokeWidth={1.5} />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] font-normal">
+                          Call Us Now
+                        </h4>
+                        <p className="font-outfit text-[clamp(1.75rem,5vw,40px)] text-black leading-tight">
+                          {phoneDisplay}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

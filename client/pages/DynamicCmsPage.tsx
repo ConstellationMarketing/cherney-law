@@ -167,8 +167,15 @@ export default function DynamicCmsPage() {
 
   const seo = resolveSeo(page, siteSettings, pathname, siteUrl);
 
+  // Determine if first block is a hero that needs transparent header overlap
+  const firstBlock = Array.isArray(page.content) && page.content.length > 0
+    ? (page.content as ContentBlock[])[0]
+    : null;
+  const needsHeroBg = page.page_type === 'practice_detail'
+    || (firstBlock?.type === 'hero' && ((firstBlock as any).variant === 'dark' || firstBlock.backgroundImage));
+
   return (
-    <Layout heroBg={page.page_type === 'practice_detail' ? 'practice_detail' : undefined}>
+    <Layout heroBg={needsHeroBg ? (page.page_type === 'practice_detail' ? 'practice_detail' : 'hero') : undefined}>
       <Seo {...seo} />
       {page.page_type === 'area' ? (
         <AreaPageRenderer content={page.content as AreaPageContent} />

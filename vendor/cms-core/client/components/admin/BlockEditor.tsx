@@ -31,6 +31,7 @@ import {
   MapPin,
   Columns,
   FileText,
+  Newspaper,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -58,6 +59,7 @@ const BLOCK_TYPES = [
   { type: 'map', label: 'Map', icon: MapPin },
   { type: 'two-column', label: 'Two Columns', icon: Columns },
   { type: 'practice-areas-grid', label: 'Practice Areas Grid', icon: Grid },
+  { type: 'recent-posts', label: 'Recent Blog Posts', icon: Newspaper },
 ] as const;
 
 function getDefaultBlock(type: string): ContentBlock {
@@ -88,6 +90,8 @@ function getDefaultBlock(type: string): ContentBlock {
       return { type: 'two-column', left: [], right: [] };
     case 'practice-areas-grid':
       return { type: 'practice-areas-grid', areas: [{ icon: 'Car', title: 'Practice Area', description: 'Description' }] };
+    case 'recent-posts':
+      return { type: 'recent-posts', heading: '', postsPerPage: 6, showLoadMore: true } as any;
     default:
       return { type: 'paragraph', content: '' };
   }
@@ -237,6 +241,18 @@ function BlockFields({ block, onUpdate }: { block: ContentBlock; onUpdate: (upda
           <div className="flex items-center gap-2">
             <Switch checked={block.showCTA || false} onCheckedChange={(checked) => onUpdate({ showCTA: checked })} />
             <Label>Show Call-to-Action Button</Label>
+          </div>
+          <div>
+            <Label>Variant</Label>
+            <Select value={(block as any).variant || 'accent'} onValueChange={(v) => onUpdate({ variant: v } as any)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="accent">Accent (Green)</SelectItem>
+                <SelectItem value="dark">Dark (Navy)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       );
@@ -489,6 +505,26 @@ function BlockFields({ block, onUpdate }: { block: ContentBlock; onUpdate: (upda
           </Button>
         </div>
       );
+
+    case 'recent-posts': {
+      const rpBlock = block as any;
+      return (
+        <div className="space-y-4">
+          <div>
+            <Label>Heading (optional)</Label>
+            <Input value={rpBlock.heading || ''} onChange={(e) => onUpdate({ heading: e.target.value } as any)} placeholder="e.g. Latest Articles" />
+          </div>
+          <div>
+            <Label>Posts Per Page</Label>
+            <Input type="number" min={1} max={12} value={rpBlock.postsPerPage || 6} onChange={(e) => onUpdate({ postsPerPage: Number(e.target.value) } as any)} />
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch checked={rpBlock.showLoadMore ?? true} onCheckedChange={(checked) => onUpdate({ showLoadMore: checked } as any)} />
+            <Label>Show "See More" Button</Label>
+          </div>
+        </div>
+      );
+    }
 
     default:
       return <p className="text-gray-500">No editor available for this block type</p>;
