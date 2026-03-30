@@ -16,6 +16,7 @@ import type { PracticeAreaDetailPageContent } from "@site/lib/cms/practiceAreaDe
 import { useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { resolveSeo } from "@site/utils/resolveSeo";
 import type { ContentBlock } from "@site/lib/blocks";
+import BlogPost from "./BlogPost";
 import NotFound from "./NotFound";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -39,6 +40,7 @@ interface CmsPage {
 
 // Module-level cache
 const cmsPageCache = new Map<string, CmsPage | null>();
+const blogSlugCache = new Map<string, boolean>();
 
 export default function DynamicCmsPage() {
   const { pathname } = useLocation();
@@ -47,6 +49,7 @@ export default function DynamicCmsPage() {
     siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || "";
 
   const [page, setPage] = useState<CmsPage | null | undefined>(undefined); // undefined = loading
+  const [isBlogPost, setIsBlogPost] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -91,15 +94,49 @@ export default function DynamicCmsPage() {
           const p = data[0] as CmsPage;
           cmsPageCache.set(normPath, p);
           setPage(p);
+          setIsBlogPost(false);
         } else {
           cmsPageCache.set(normPath, null);
-          setPage(null);
+
+          // No CMS page found — check if it's a blog post
+          const slug = normPath.replace(/^\//, ""); // strip leading slash, keep trailing
+          if (blogSlugCache.has(slug)) {
+            const isBlog = blogSlugCache.get(slug)!;
+            setIsBlogPost(isBlog);
+            if (!isBlog) setPage(null);
+          } else {
+            const found = await checkBlogPost(slug);
+            blogSlugCache.set(slug, found);
+            setIsBlogPost(found);
+            if (!found) setPage(null);
+          }
         }
       } catch (err) {
         console.error(`[DynamicCmsPage] Error loading ${normPath}:`, err);
         setPage(null);
       } finally {
         setIsLoading(false);
+      }
+    }
+
+    async function checkBlogPost(slug: string): Promise<boolean> {
+      try {
+        const slugs = [slug, slug.endsWith("/") ? slug.slice(0, -1) : `${slug}/`];
+        const orFilter = slugs.map((s) => `slug.eq.${s}`).join(",");
+        const response = await fetch(
+          `${SUPABASE_URL}/rest/v1/posts?or=(${encodeURIComponent(orFilter)})&status=eq.published&select=id&limit=1`,
+          {
+            headers: {
+              apikey: SUPABASE_ANON_KEY,
+              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            },
+          }
+        );
+        if (!response.ok) return false;
+        const data = await response.json();
+        return Array.isArray(data) && data.length > 0;
+      } catch {
+        return false;
       }
     }
 
@@ -115,6 +152,12 @@ export default function DynamicCmsPage() {
         </div>
       </Layout>
     );
+  }
+
+  // Blog post found — render BlogPost component
+  if (isBlogPost) {
+    const slug = (pathname.endsWith("/") ? pathname : `${pathname}/`).replace(/^\//, "");
+    return <BlogPost slugOverride={slug} />;
   }
 
   // No published CMS page found — show 404

@@ -23,8 +23,9 @@ function formatDate(dateStr: string | null): string {
   }
 }
 
-export default function BlogPost() {
-  const { slug } = useParams<{ slug: string }>();
+export default function BlogPost({ slugOverride }: { slugOverride?: string }) {
+  const { slug: paramSlug } = useParams<{ slug: string }>();
+  const slug = slugOverride || paramSlug || "";
   const { pathname } = useLocation();
   const siteSettings = useSiteSettings();
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
@@ -49,7 +50,7 @@ export default function BlogPost() {
 
   const title = post.meta_title || `${post.title} | ${siteName}`;
   const description = post.meta_description || post.excerpt || "";
-  const canonical = post.canonical_url || (siteUrl ? `${siteUrl}/blog/${post.slug.endsWith("/") ? post.slug : post.slug + "/"}` : undefined);
+  const canonical = post.canonical_url || (siteUrl ? `${siteUrl}/${post.slug.endsWith("/") ? post.slug : post.slug + "/"}` : undefined);
 
   return (
     <Layout heroBg="blog">

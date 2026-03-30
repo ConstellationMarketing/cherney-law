@@ -134,7 +134,7 @@ async function generateSSG() {
   // 3b. Generate static HTML for blog posts
   for (const post of blogPosts || []) {
     const postSlug = post.slug.endsWith('/') ? post.slug : `${post.slug}/`;
-    const postUrlPath = `/blog/${postSlug}`;
+    const postUrlPath = `/${postSlug}`;
     const postPage: Page = {
       id: post.id,
       title: post.title,
@@ -149,7 +149,7 @@ async function generateSSG() {
       updated_at: post.updated_at,
     };
     const html = generatePageHTML(template, postPage, siteSettings, siteUrl);
-    const outputPath = path.join(process.cwd(), 'dist/spa', `blog/${postSlug}`, 'index.html');
+    const outputPath = path.join(process.cwd(), 'dist/spa', postSlug, 'index.html');
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     fs.writeFileSync(outputPath, html);
     console.log(`Generated: ${postUrlPath}`);
@@ -195,7 +195,7 @@ async function generateSSG() {
   const blogTrailingSlashRules = (blogPosts || [])
     .map(p => {
       const postSlug = p.slug.endsWith('/') ? p.slug : `${p.slug}/`;
-      const withSlash = `/blog/${postSlug}`;
+      const withSlash = `/${postSlug}`;
       const withoutSlash = withSlash.slice(0, -1);
       return `${withoutSlash} ${withSlash} 301`;
     })
@@ -209,7 +209,7 @@ async function generateSSG() {
       ...(blogPosts || []).map(p => ({
         id: p.id,
         title: p.title,
-        url_path: `/blog/${p.slug.endsWith('/') ? p.slug : p.slug + '/'}`,
+        url_path: `/${p.slug.endsWith('/') ? p.slug : p.slug + '/'}`,
         meta_title: p.meta_title,
         meta_description: p.meta_description,
         canonical_url: p.canonical_url,

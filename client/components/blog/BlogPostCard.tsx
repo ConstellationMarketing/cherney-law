@@ -21,7 +21,7 @@ function formatDate(dateStr: string | null): string {
 export default function BlogPostCard({ post }: Props) {
   // Normalize slug for link
   const slug = post.slug.endsWith("/") ? post.slug : `${post.slug}/`;
-  const href = `/blog/${slug}`;
+  const href = `/${slug}`;
   const firstLetter = post.title?.charAt(0)?.toUpperCase() || "B";
 
   return (
