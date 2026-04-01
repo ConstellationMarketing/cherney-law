@@ -250,10 +250,8 @@ export default function StepImportRun({ state, updateState, onBack }: Props) {
             Records were imported as drafts. Visit the {state.templateType === 'post' ? 'Blog Posts' : 'Pages'} section to review and publish.
           </p>
           {failedCount > 0 && (
-            <p className="text-xs text-red-500 mt-2">
-              Failed records are shown above with their error messages. Common cause: the import tracking tables
-              (<code>import_jobs</code>, <code>import_job_items</code>) may not exist yet — run the SQL migration
-              in your Supabase dashboard.
+            <p className="text-xs text-muted-foreground mt-2">
+              Check the error messages above for details on each failed record.
             </p>
           )}
         </div>

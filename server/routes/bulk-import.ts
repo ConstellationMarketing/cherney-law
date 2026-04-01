@@ -143,8 +143,6 @@ async function importPracticePage(
     og_description: record.data.og_description || null,
     og_image: record.data.og_image || null,
     noindex: record.data.noindex || false,
-    schema_type: record.data.schema_type || "LegalService",
-    schema_data: record.data.schema_data || null,
     status: record.data.status || "draft",
   };
 
@@ -197,8 +195,6 @@ async function importAreaPage(
     og_description: record.data.og_description || null,
     og_image: record.data.og_image || null,
     noindex: record.data.noindex || false,
-    schema_type: record.data.schema_type || "LegalService",
-    schema_data: record.data.schema_data || null,
     status: record.data.status || "draft",
   };
 
