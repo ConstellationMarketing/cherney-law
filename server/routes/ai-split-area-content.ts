@@ -90,18 +90,61 @@ function evenSplit(sections: H2Section[]): {
   body: string;
   why_body: string;
   closing_body: string;
+  faq: string;
 } {
   const total = sections.length;
-  if (total === 0) return { body: "", why_body: "", closing_body: "" };
-  if (total === 1) return { body: sections[0].html, why_body: "", closing_body: "" };
-  if (total === 2) return { body: sections[0].html, why_body: "", closing_body: sections[1].html };
+  if (total === 0) return { body: "", why_body: "", closing_body: "", faq: "[]" };
+  if (total === 1) return { body: sections[0].html, why_body: "", closing_body: "", faq: "[]" };
+  if (total === 2) return { body: sections[0].html, why_body: "", closing_body: sections[1].html, faq: "[]" };
 
   const third = Math.ceil(total / 3);
   return {
     body: joinSections(sections.slice(0, third)),
     why_body: joinSections(sections.slice(third, third * 2)),
     closing_body: joinSections(sections.slice(third * 2)),
+    faq: "[]",
   };
+}
+
+/** Extract FAQ items from HTML sections classified as "faq" */
+function extractFaqItems(html: string): { question: string; answer: string }[] {
+  const items: { question: string; answer: string }[] = [];
+
+  // Pattern 1: H3/H4 headings as questions
+  const headingPattern = /<h[3-4][^>]*>([\s\S]*?)<\/h[3-4]>/gi;
+  let match: RegExpExecArray | null;
+  const qaPositions: { question: string; start: number }[] = [];
+
+  while ((match = headingPattern.exec(html)) !== null) {
+    const question = stripTags(match[1]).trim();
+    if (question) {
+      qaPositions.push({ question, start: match.index + match[0].length });
+    }
+  }
+
+  for (let i = 0; i < qaPositions.length; i++) {
+    const start = qaPositions[i].start;
+    const end = i + 1 < qaPositions.length
+      ? html.indexOf('<h', start)
+      : html.length;
+    const answerHtml = html.substring(start, end > start ? end : html.length).trim();
+    const answerText = stripTags(answerHtml).trim();
+    if (answerText) {
+      items.push({ question: qaPositions[i].question, answer: answerHtml });
+    }
+  }
+
+  // Pattern 2: <dt>/<dd> definition lists
+  if (items.length === 0) {
+    const dlPattern = /<dt[^>]*>([\s\S]*?)<\/dt>\s*<dd[^>]*>([\s\S]*?)<\/dd>/gi;
+    while ((match = dlPattern.exec(html)) !== null) {
+      const q = stripTags(match[1]).trim();
+      const a = match[2].trim();
+      if (q && a) items.push({ question: q, answer: a });
+    }
+  }
+
+  return items;
 }
 
 /**
@@ -149,8 +192,9 @@ export const handleAiSplitAreaContent: RequestHandler = async (req, res) => {
 - "intro": introduction to the firm's services in this location, general overview
 - "why": why choose this firm — credentials, experience, testimonials, benefits, qualifications
 - "closing": call to action, contact info, next steps, consultation offers
+- "faq": frequently asked questions — heading mentions FAQ or "Questions", contains H3/H4 question+answer pairs or <dl>/<dt>/<dd> structure
 
-Return JSON: { "classifications": ["intro"|"why"|"closing", ...] }
+Return JSON: { "classifications": ["intro"|"why"|"closing"|"faq", ...] }
 The array must have exactly ${sections.length} entries, one per section, in order.
 If unsure, assign "intro" to earlier sections and "closing" to the final section.`,
         },
@@ -177,18 +221,24 @@ If unsure, assign "intro" to earlier sections and "closing" to the final section
     const introSections: H2Section[] = [];
     const whySections: H2Section[] = [];
     const closingSections: H2Section[] = [];
+    const faqSections: H2Section[] = [];
 
     for (let i = 0; i < sections.length; i++) {
       const cls = classifications[i];
       if (cls === "why") whySections.push(sections[i]);
       else if (cls === "closing") closingSections.push(sections[i]);
+      else if (cls === "faq") faqSections.push(sections[i]);
       else introSections.push(sections[i]); // "intro" or unrecognized → intro
     }
+
+    const faqHtml = joinSections(faqSections);
+    const faqItems = faqHtml ? extractFaqItems(faqHtml) : [];
 
     res.json({
       body: joinSections(introSections),
       why_body: joinSections(whySections),
       closing_body: joinSections(closingSections),
+      faq: JSON.stringify(faqItems),
     });
   } catch (err) {
     console.error("ai-split-area-content error:", err);

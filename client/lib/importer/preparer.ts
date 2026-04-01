@@ -44,7 +44,7 @@ export function prepareRecord(
   if (templateType === 'practice') {
     data = buildPracticeRecord(mappedData, contentSections, faqItems, slug);
   } else if (templateType === 'area') {
-    data = buildAreaRecord(mappedData, slug);
+    data = buildAreaRecord(mappedData, faqItems, slug);
   } else {
     data = buildPostRecord(mappedData, slug);
   }
@@ -187,6 +187,13 @@ export function splitBodyOnH2(html: string): ContentSection[] {
 }
 
 // ─── FAQ Extraction ──────────────────────────────────────────────────────────
+
+/**
+ * Extract FAQ items from content (alias used by buildAreaRecord).
+ */
+function extractFaqFromHtml(body: string, sections: ContentSection[]): FaqItem[] {
+  return extractFaqItems(body, sections);
+}
 
 /**
  * Extract FAQ items from content.
@@ -344,9 +351,28 @@ function buildPracticeRecord(
  */
 function buildAreaRecord(
   data: Record<string, string>,
+  faqItems: FaqItem[],
   slug: string
 ): Record<string, unknown> {
   const defaults = defaultAreaPageContent;
+
+  // Parse explicit faq JSON if provided
+  let resolvedFaqItems = faqItems;
+  if (data.faq && resolvedFaqItems.length === 0) {
+    try {
+      const parsed = JSON.parse(data.faq);
+      if (Array.isArray(parsed)) resolvedFaqItems = parsed;
+    } catch { /* ignore */ }
+  }
+
+  // Fallback: extract FAQ from body content if not already found
+  if (resolvedFaqItems.length === 0) {
+    const allBody = [data.body, data.why_body, data.closing_body].filter(Boolean).join('\n');
+    if (allBody) {
+      const sections = splitBodyOnH2(allBody);
+      resolvedFaqItems = extractFaqFromHtml(allBody, sections);
+    }
+  }
 
   const content = {
     hero: {
@@ -365,6 +391,11 @@ function buildAreaRecord(
     closingSection: {
       ...defaults.closingSection,
       body: data.closing_body || defaults.closingSection.body,
+    },
+    faq: {
+      enabled: resolvedFaqItems.length > 0,
+      heading: 'Frequently Asked Questions',
+      items: resolvedFaqItems,
     },
     cta: defaults.cta,
     locationsSection: defaults.locationsSection,

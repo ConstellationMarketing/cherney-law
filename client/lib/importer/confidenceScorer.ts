@@ -120,12 +120,14 @@ function scoreExtraction(
     const hero = content?.hero as Record<string, string> | undefined;
     if (hero?.tagline) score += 0.1;
   } else if (templateType === 'area') {
-    // Area: hero tagline and intro body
+    // Area: hero tagline, intro body, and FAQ items
     const content = data.content as Record<string, unknown> | undefined;
     const hero = content?.hero as Record<string, string> | undefined;
     if (hero?.tagline) score += 0.1;
     const intro = content?.introSection as Record<string, string> | undefined;
     if (intro?.body && intro.body.replace(/<[^>]*>/g, '').trim().length > 20) score += 0.1;
+    const faq = content?.faq as { enabled?: boolean; items?: unknown[] } | undefined;
+    if (faq?.enabled && (faq.items?.length ?? 0) > 0) score += 0.1;
   } else {
     // Blog: excerpt, featured image
     if (data.excerpt) score += 0.1;

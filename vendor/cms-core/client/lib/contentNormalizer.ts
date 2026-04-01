@@ -356,6 +356,11 @@ export function normalizeAreaPageContent(content: unknown): AreaPageContent {
       image: str(c.closingSection?.image),
       imageAlt: str(c.closingSection?.imageAlt),
     },
+    faq: ensureObject(c.faq, {
+      enabled: c.faq?.enabled ?? true,
+      heading: str(c.faq?.heading) || 'Frequently Asked Questions',
+      items: ensureArray(c.faq?.items, { question: '', answer: '' }),
+    }),
     cta: ensureObject(c.cta, {
       heading: str(c.cta?.heading),
       description: str(c.cta?.description),

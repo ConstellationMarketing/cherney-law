@@ -140,6 +140,7 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
         body: string;
         why_body: string;
         closing_body: string;
+        faq?: string;
       };
 
       setCorrections((prev) => ({
@@ -147,6 +148,7 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
         body: splitData.body,
         why_body: splitData.why_body,
         closing_body: splitData.closing_body,
+        ...(splitData.faq !== undefined ? { faq: splitData.faq } : {}),
       }));
     } catch (err) {
       console.error('AI split error:', err);

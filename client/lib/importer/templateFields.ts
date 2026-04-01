@@ -267,6 +267,14 @@ export const areaFields: TemplateField[] = [
     aliases: ['closing_body', 'closing_content', 'closing', 'contact_section', 'cta_body'],
   },
   {
+    key: 'faq',
+    label: 'FAQ Section',
+    type: 'json',
+    required: false,
+    isContentField: false,
+    aliases: ['faq', 'faqs', 'frequently_asked_questions', 'questions', 'qa', 'q_and_a'],
+  },
+  {
     key: 'meta_title',
     label: 'Meta Title',
     type: 'text',

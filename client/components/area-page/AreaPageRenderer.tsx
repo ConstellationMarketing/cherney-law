@@ -2,6 +2,7 @@ import type { AreaPageContent } from "@site/lib/cms/areaPageTypes";
 import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
 import AboutHero from "@site/components/about/AboutHero";
 import LocationsGrid from "@site/components/areas-we-serve/LocationsGrid";
+import PracticeAreaDetailFaq from "@site/components/practice-detail/PracticeAreaDetailFaq";
 
 function HeadingRenderer({ text, level }: { text: string; level: 1 | 2 | 3 | 4 }) {
   const classes: Record<number, string> = {
@@ -135,6 +136,18 @@ export default function AreaPageRenderer({ content }: AreaPageRendererProps) {
           </div>
         </div>
       </div>
+
+      {/* FAQ Section — Full Width, below Closing Section */}
+      {content.faq?.enabled && content.faq.items.length > 0 && (
+        <PracticeAreaDetailFaq
+          content={{
+            enabled: content.faq.enabled,
+            heading: content.faq.heading,
+            description: undefined,
+            items: content.faq.items,
+          }}
+        />
+      )}
 
       {/* Locations Section — Full Width */}
       {content.locationsSection.items.length > 0 && (

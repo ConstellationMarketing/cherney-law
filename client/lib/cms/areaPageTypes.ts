@@ -40,11 +40,23 @@ export interface AreaMapSection {
   embedUrl: string;
 }
 
+export interface AreaFaqItem {
+  question: string;
+  answer: string;
+}
+
+export interface AreaFaqContent {
+  enabled: boolean;
+  heading: string;
+  items: AreaFaqItem[];
+}
+
 export interface AreaPageContent {
   hero: AreaHeroContent;
   introSection: AreaTextSection;
   whySection: AreaTextSection;
   closingSection: AreaTextSection;
+  faq: AreaFaqContent;
   cta: AreaCTAContent;
   locationsSection: AreaLocationsSection;
   mapSection: AreaMapSection;
@@ -75,6 +87,11 @@ export const defaultAreaPageContent: AreaPageContent = {
     body: '<p>Enter closing content here.</p>',
     image: '',
     imageAlt: '',
+  },
+  faq: {
+    enabled: true,
+    heading: 'Frequently Asked Questions',
+    items: [],
   },
   cta: {
     heading: 'Ready to Get Started?',

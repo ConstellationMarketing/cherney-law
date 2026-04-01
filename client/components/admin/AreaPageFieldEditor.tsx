@@ -2,10 +2,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Plus, Trash2 } from "lucide-react";
-import type { AreaPageContent, LocationItem } from "@/lib/cms/areaPageTypes";
+import type { AreaPageContent, AreaFaqItem, LocationItem } from "@/lib/cms/areaPageTypes";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import ImageUploader from "@/components/admin/ImageUploader";
 
@@ -123,6 +124,17 @@ export default function AreaPageFieldEditor({ content, onChange }: Props) {
     onChange({ ...content, [section]: { ...content[section], ...updates } });
   };
 
+  const addFaqItem = () =>
+    set("faq", { items: [...(content.faq?.items ?? []), { question: '', answer: '' }] });
+  const removeFaqItem = (i: number) =>
+    set("faq", { items: (content.faq?.items ?? []).filter((_, idx) => idx !== i) });
+  const updateFaqItem = (i: number, k: keyof AreaFaqItem, v: string) => {
+    const items = (content.faq?.items ?? []).map((item, idx) =>
+      idx === i ? { ...item, [k]: v } : item
+    );
+    set("faq", { items });
+  };
+
   const addLocation = () =>
     set("locationsSection", { items: [...content.locationsSection.items, { name: "", description: "", href: "" }] });
   const removeLocation = (i: number) =>
@@ -182,6 +194,56 @@ export default function AreaPageFieldEditor({ content, onChange }: Props) {
         content={content.closingSection}
         onChange={(updates) => set("closingSection", updates)}
       />
+
+      {/* FAQ SECTION */}
+      <AccordionItem value="faq" className="border rounded-lg px-4">
+        <AccordionTrigger className="text-sm font-semibold">FAQ Section</AccordionTrigger>
+        <AccordionContent className="space-y-4 pb-4">
+          <div className="flex items-center gap-3">
+            <Switch
+              checked={content.faq?.enabled ?? true}
+              onCheckedChange={(v) => set("faq", { enabled: v })}
+            />
+            <Label className="text-sm">Enable FAQ Section</Label>
+          </div>
+          <Field label="Section Heading">
+            <Input
+              value={content.faq?.heading ?? 'Frequently Asked Questions'}
+              onChange={(e) => set("faq", { heading: e.target.value })}
+              placeholder="Frequently Asked Questions"
+            />
+          </Field>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">FAQ Items</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addFaqItem}>
+                <Plus className="w-3 h-3 mr-1" /> Add Question
+              </Button>
+            </div>
+            <div className="space-y-3">
+              {(content.faq?.items ?? []).map((item, i) => (
+                <ArrayCard key={i} onRemove={() => removeFaqItem(i)}>
+                  <Field label="Question">
+                    <Input
+                      value={item.question}
+                      onChange={(e) => updateFaqItem(i, 'question', e.target.value)}
+                      placeholder="e.g., How does bankruptcy work?"
+                    />
+                  </Field>
+                  <Field label="Answer">
+                    <Textarea
+                      value={item.answer}
+                      onChange={(e) => updateFaqItem(i, 'answer', e.target.value)}
+                      placeholder="Enter the answer..."
+                      rows={3}
+                    />
+                  </Field>
+                </ArrayCard>
+              ))}
+            </div>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
 
       {/* CTA */}
       <AccordionItem value="cta" className="border rounded-lg px-4">
