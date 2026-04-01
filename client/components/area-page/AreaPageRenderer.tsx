@@ -45,9 +45,10 @@ interface AreaPageRendererProps {
 
 export default function AreaPageRenderer({ content }: AreaPageRendererProps) {
   const { phoneDisplay } = useGlobalPhone();
-  const { locationsSection: hubLocations } = useHubPageLocations();
-  // Use hub page locations as source of truth; fall back to page's own data
+  const { locationsSection: hubLocations, cta: hubCta } = useHubPageLocations();
+  // Use hub page data as source of truth; fall back to page's own data
   const effectiveLocations = hubLocations ?? content.locationsSection;
+  const effectiveCta = hubCta ?? content.cta;
 
   return (
     <>
@@ -98,11 +99,11 @@ export default function AreaPageRenderer({ content }: AreaPageRendererProps) {
             {/* Right Column — Sticky CTA Card */}
             <div className="lg:col-span-2">
               <div className="lg:sticky lg:top-[100px]">
-                {content.cta.image && (
+                {effectiveCta.image && (
                   <div className="relative overflow-hidden mb-0">
                     <img
-                      src={content.cta.image}
-                      alt={content.cta.imageAlt}
+                      src={effectiveCta.image}
+                      alt={effectiveCta.imageAlt}
                       className="w-full h-auto object-cover"
                       loading="lazy"
                     />
@@ -111,17 +112,17 @@ export default function AreaPageRenderer({ content }: AreaPageRendererProps) {
                 )}
                 <div className="bg-[#1a1a2e] p-6 text-center space-y-4">
                   <h3 className="font-playfair text-[22px] md:text-[26px] text-white leading-tight">
-                    {content.cta.heading}
+                    {effectiveCta.heading}
                   </h3>
                   <p className="font-outfit text-[15px] md:text-[16px] leading-[24px] text-white/80">
-                    {content.cta.description}
+                    {effectiveCta.description}
                   </p>
                   <a
-                    href={content.cta.secondaryButton.href}
+                    href={effectiveCta.secondaryButton.href}
                     className="block w-full bg-law-accent text-black font-outfit text-[16px] md:text-[18px] font-semibold py-3 px-6 hover:bg-[#7a9e10] transition-colors duration-300 text-center"
                   >
-                    <div>{content.cta.secondaryButton.label}</div>
-                    <div className="text-xs font-normal">{content.cta.secondaryButton.sublabel}</div>
+                    <div>{effectiveCta.secondaryButton.label}</div>
+                    <div className="text-xs font-normal">{effectiveCta.secondaryButton.sublabel}</div>
                   </a>
                   <a
                     href={`tel:${phoneDisplay.replace(/[^0-9]/g, "")}`}

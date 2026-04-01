@@ -129,10 +129,11 @@ export const handleBulkPatchAdminPages: RequestHandler = async (req, res) => {
  * Bulk-deletes multiple pages using the service-role key.
  */
 export const handleBulkDeleteAdminPages: RequestHandler = async (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
   try {
-    const { ids } = req.body as { ids: string[] };
-    if (!ids?.length) {
-      res.status(400).json({ error: "Missing ids" });
+    const ids: string[] = req.body?.ids;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ error: "Missing or empty ids array" });
       return;
     }
 

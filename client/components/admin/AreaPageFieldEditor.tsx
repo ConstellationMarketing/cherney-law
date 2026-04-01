@@ -232,69 +232,20 @@ export default function AreaPageFieldEditor({ content, onChange }: Props) {
         </AccordionContent>
       </AccordionItem>
 
-      {/* CTA */}
+      {/* CTA — Global (managed from hub page) */}
       <AccordionItem value="cta" className="border rounded-lg px-4">
-        <AccordionTrigger className="text-sm font-semibold">Call to Action</AccordionTrigger>
-        <AccordionContent className="space-y-4 pb-4">
-          <Field label="Heading">
-            <Input
-              value={content.cta.heading}
-              onChange={(e) => set("cta", { heading: e.target.value })}
-              placeholder="Ready to Get Started?"
-            />
-          </Field>
-          <Field label="Description">
-            <RichTextEditor
-              value={content.cta.description}
-              onChange={(v) => set("cta", { description: v })}
-              minHeight="100px"
-            />
-          </Field>
-          <Field label="CTA Image (Optional)">
-            <ImageUploader
-              value={content.cta.image || ""}
-              onChange={(v) => set("cta", { image: v })}
-              folder="area-pages"
-            />
-          </Field>
-          {content.cta.image && (
-            <Field label="Image Alt Text">
-              <Input
-                value={content.cta.imageAlt || ""}
-                onChange={(e) => set("cta", { imageAlt: e.target.value })}
-                placeholder="Descriptive alt text for image"
-              />
-            </Field>
-          )}
-          <SectionGrid>
-            <Field label="Button Text">
-              <Input
-                value={content.cta.secondaryButton.label}
-                onChange={(e) =>
-                  set("cta", { secondaryButton: { ...content.cta.secondaryButton, label: e.target.value } })
-                }
-                placeholder="Schedule Now"
-              />
-            </Field>
-            <Field label="Button Sublabel">
-              <Input
-                value={content.cta.secondaryButton.sublabel}
-                onChange={(e) =>
-                  set("cta", { secondaryButton: { ...content.cta.secondaryButton, sublabel: e.target.value } })
-                }
-                placeholder="Free Consultation"
-              />
-            </Field>
-          </SectionGrid>
-          <Field label="Button Link">
-            <Input
-              value={content.cta.secondaryButton.href}
-              onChange={(e) =>
-                set("cta", { secondaryButton: { ...content.cta.secondaryButton, href: e.target.value } })
-              }
-              placeholder="/contact/"
-            />
-          </Field>
+        <AccordionTrigger className="text-sm font-semibold">Call to Action (Global)</AccordionTrigger>
+        <AccordionContent className="pb-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+            <p className="font-semibold mb-1">This section is managed globally.</p>
+            <p>
+              The sidebar CTA (image, heading, description, button) shown on all area pages is sourced from the{" "}
+              <a href="/admin/pages" className="underline font-medium hover:text-blue-900">
+                Areas We Serve hub page
+              </a>
+              . Edit it there and the change will apply to every area page automatically.
+            </p>
+          </div>
         </AccordionContent>
       </AccordionItem>
 

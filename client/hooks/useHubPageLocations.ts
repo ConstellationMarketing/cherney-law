@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import type { AreaLocationsSection } from '@/lib/cms/areaPageTypes';
+import type { AreaLocationsSection, AreaCTAContent } from '@/lib/cms/areaPageTypes';
 
 function getSupabaseClient() {
   const url = import.meta.env.VITE_SUPABASE_URL;
@@ -9,24 +9,30 @@ function getSupabaseClient() {
   return createClient(url, key);
 }
 
-let cachedLocations: AreaLocationsSection | null = null;
+interface HubAreaData {
+  locationsSection: AreaLocationsSection | null;
+  cta: AreaCTAContent | null;
+}
+
+let cachedData: HubAreaData = { locationsSection: null, cta: null };
 let cacheLoaded = false;
 
 /**
- * Fetches the locationsSection from the /areas-we-serve/ hub page.
- * This is the single source of truth for the locations section —
- * individual area pages render from this instead of their own stored data.
+ * Fetches the locationsSection and cta from the /areas-we-serve/ hub page.
+ * These are the single source of truth — individual area pages render from
+ * this instead of their own stored data.
  */
 export function useHubPageLocations(): {
   locationsSection: AreaLocationsSection | null;
+  cta: AreaCTAContent | null;
   loading: boolean;
 } {
-  const [locationsSection, setLocationsSection] = useState<AreaLocationsSection | null>(cachedLocations);
+  const [data, setData] = useState<HubAreaData>(cachedData);
   const [loading, setLoading] = useState(!cacheLoaded);
 
   useEffect(() => {
     if (cacheLoaded) {
-      setLocationsSection(cachedLocations);
+      setData(cachedData);
       setLoading(false);
       return;
     }
@@ -43,15 +49,21 @@ export function useHubPageLocations(): {
       .eq('url_path', '/areas-we-serve/')
       .eq('status', 'published')
       .single()
-      .then(({ data, error }) => {
-        if (!error && data?.content?.locationsSection) {
-          cachedLocations = data.content.locationsSection as AreaLocationsSection;
+      .then(({ data: pageData, error }) => {
+        if (!error && pageData?.content) {
+          const content = pageData.content as Record<string, unknown>;
+          if (content.locationsSection) {
+            cachedData.locationsSection = content.locationsSection as AreaLocationsSection;
+          }
+          if (content.cta) {
+            cachedData.cta = content.cta as AreaCTAContent;
+          }
         }
         cacheLoaded = true;
-        setLocationsSection(cachedLocations);
+        setData({ ...cachedData });
         setLoading(false);
       });
   }, []);
 
-  return { locationsSection, loading };
+  return { locationsSection: data.locationsSection, cta: data.cta, loading };
 }
