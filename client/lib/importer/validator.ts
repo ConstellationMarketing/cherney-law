@@ -71,10 +71,20 @@ export function validateRecord(
     issues.push(issue('error', 'slug', 'Slug is empty'));
   } else {
     const slugBase = record.slug.replace(/\/$/, '');
-    if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(slugBase) && slugBase.length > 1) {
+
+    // Support full-path slugs (e.g. /areas-we-serve/alpharetta-bankruptcy-lawyer).
+    // Extract the last path segment for format validation — the prefix is structural,
+    // only the bare slug portion needs to match the slug format regex.
+    let segmentToValidate = slugBase;
+    if (slugBase.startsWith('/')) {
+      const parts = slugBase.split('/').filter(Boolean);
+      segmentToValidate = parts[parts.length - 1] ?? '';
+    }
+
+    if (segmentToValidate.length > 1 && !/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(segmentToValidate)) {
       issues.push(issue('error', 'slug', `Invalid slug format: "${record.slug}"`));
     }
-    if (slugBase.includes('--')) {
+    if (segmentToValidate.includes('--')) {
       issues.push(issue('warning', 'slug', 'Slug contains consecutive hyphens'));
     }
   }
