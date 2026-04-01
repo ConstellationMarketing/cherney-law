@@ -19,7 +19,7 @@ export const practiceFields: TemplateField[] = [
     type: 'slug',
     required: true,
     isContentField: false,
-    aliases: ['slug', 'url', 'url_path', 'permalink', 'path', 'page_url', 'post_name', 'url_slug'],
+    aliases: ['slug', 'url', 'url_path', 'permalink', 'path', 'page_url', 'post_name', 'url_slug', 'og_url', 'ogurl', 'metadata_og_url', 'metadata_ogurl'],
   },
   {
     key: 'hero_tagline',
@@ -83,6 +83,7 @@ export const practiceFields: TemplateField[] = [
     type: 'url',
     required: false,
     isContentField: false,
+    excludeFromAutoMap: true,
     aliases: ['canonical_url', 'canonical', 'canonical_link'],
   },
   {
@@ -186,6 +187,7 @@ export const postFields: TemplateField[] = [
     type: 'url',
     required: false,
     isContentField: false,
+    excludeFromAutoMap: true,
     aliases: ['canonical_url', 'canonical', 'canonical_link'],
   },
   {
@@ -232,7 +234,7 @@ export const areaFields: TemplateField[] = [
     type: 'slug',
     required: true,
     isContentField: false,
-    aliases: ['slug', 'url_path', 'permalink', 'path', 'source_url', 'page_url', 'canonical', 'post_name', 'url_slug'],
+    aliases: ['slug', 'url_path', 'permalink', 'path', 'source_url', 'page_url', 'canonical', 'post_name', 'url_slug', 'og_url', 'ogurl', 'metadata_og_url', 'metadata_ogurl'],
   },
   {
     key: 'hero_tagline',
@@ -296,6 +298,7 @@ export const areaFields: TemplateField[] = [
     type: 'url',
     required: false,
     isContentField: false,
+    excludeFromAutoMap: true,
     aliases: ['canonical_url', 'canonical', 'canonical_link'],
   },
   {

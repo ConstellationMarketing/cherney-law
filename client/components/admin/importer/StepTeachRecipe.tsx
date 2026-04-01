@@ -54,17 +54,19 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
     // Stages 1-4: clean source record
     const [cleaned] = cleanSourceRecords([sampleRecord], contentFieldKeys, filterOptions);
 
-    // Stage 5: normalize HTML for content fields
-    const normalizedData: Record<string, string> = {};
-    for (const [key, value] of Object.entries(cleaned.data)) {
-      normalizedData[key] =
+    // Stage 6: field mapping first (so keys become template field keys)
+    const mapped = applyFieldMappingSingle(cleaned, state.mappingConfig);
+
+    // Stage 5: normalize HTML for content fields (now keys match contentFieldKeys)
+    const normalizedMappedData: Record<string, string> = {};
+    for (const [key, value] of Object.entries(mapped.mappedData)) {
+      normalizedMappedData[key] =
         contentFieldKeys.includes(key) && value
           ? normalizeHtml(value, filterOptions)
           : value;
     }
 
-    // Stage 6: field mapping
-    return applyFieldMappingSingle({ ...cleaned, data: normalizedData }, state.mappingConfig);
+    return { ...mapped, mappedData: normalizedMappedData };
   }, [sampleRecord, state.mappingConfig, state.filterOptions, state.templateType]);
 
   const [corrections, setCorrections] = useState<Record<string, string>>(

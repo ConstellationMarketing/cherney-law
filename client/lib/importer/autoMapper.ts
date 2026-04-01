@@ -22,6 +22,7 @@ export function autoMapFields(
 
     for (const field of fields) {
       if (usedFields.has(field.key)) continue;
+      if (field.excludeFromAutoMap) continue;
 
       const allNames = [field.key, ...field.aliases].map(normalize);
       if (allNames.includes(normalizedCol)) {
@@ -51,6 +52,7 @@ export function autoMapFields(
 
     for (const field of fields) {
       if (usedFields.has(field.key)) continue;
+      if (field.excludeFromAutoMap) continue;
 
       // Guard: never map an image-named column to the slug field
       if (isImageColumn && field.key === 'slug') continue;
@@ -143,8 +145,10 @@ function fuzzyMatchScore(
 function normalize(str: string): string {
   return str
     .toLowerCase()
+    .replace(/[.:]/g, '_')
     .replace(/[^a-z0-9\s_-]/g, '')
-    .replace(/[-\s]+/g, '_')
+    .replace(/[-\s_]+/g, '_')
+    .replace(/^_|_$/g, '')
     .trim();
 }
 

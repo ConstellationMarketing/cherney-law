@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { WizardState } from '@site/lib/importer/recipeTypes';
 import type { WizardStep } from '@site/lib/importer/types';
 import { defaultFilterOptions } from '@site/lib/importer/types';
 import { defaultAiSettings } from '@site/lib/importer/recipeTypes';
+import { checkAiAvailability } from '@site/lib/importer/aiAssist';
 import StepSourceSelect from './StepSourceSelect';
 import StepFieldDetection from './StepFieldDetection';
 import StepTeachRecipe from './StepTeachRecipe';
@@ -50,6 +51,12 @@ export default function ImportWizard() {
   const updateState = useCallback((updates: Partial<WizardState>) => {
     setState((prev) => ({ ...prev, ...updates }));
   }, []);
+
+  useEffect(() => {
+    checkAiAvailability().then((available) => {
+      updateState({ aiAvailable: available });
+    });
+  }, [updateState]);
 
   const goToStep = useCallback((step: WizardStep) => {
     setState((prev) => ({ ...prev, currentStep: step }));

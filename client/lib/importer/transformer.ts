@@ -61,19 +61,19 @@ export function transformRecords(
   const cleaned = cleanSourceRecords(records, contentFieldKeys, filterOptions);
   onProgress?.(Math.floor(total * 0.1), total);
 
-  // Stage 5: Normalize HTML for content fields
-  const normalized = cleaned.map((record) => ({
-    rowIndex: record.rowIndex,
-    data: normalizeContentFields(record.data, contentFieldKeys, filterOptions),
-  }));
+  // Stage 6: Apply field mapping (BEFORE HTML normalization so keys become template field keys)
+  const mapped = applyFieldMapping(cleaned, mappingConfig);
   onProgress?.(Math.floor(total * 0.3), total);
 
-  // Stage 6: Apply field mapping
-  const mapped = applyFieldMapping(normalized, mappingConfig);
+  // Stage 5: Normalize HTML for content fields (now keys match template field keys)
+  const normalized = mapped.map((record) => ({
+    ...record,
+    mappedData: normalizeContentFields(record.mappedData, contentFieldKeys, filterOptions),
+  }));
   onProgress?.(Math.floor(total * 0.4), total);
 
   // Stage 7: Apply recipe rules
-  const reciped = executeRecipe(mapped, recipe);
+  const reciped = executeRecipe(normalized, recipe);
   onProgress?.(Math.floor(total * 0.5), total);
 
   // Stage 8: Prepare records (H2 split, FAQ, slug)
@@ -105,7 +105,7 @@ export function transformRecords(
       slug: record.slug,
       sourceData: record.sourceData,
       mappedData: reciped[i].mappedData,
-      cleanedData: normalized[i].data,
+      cleanedData: cleaned[i].data,
       preparedData: record.data,
       contentSections: record.contentSections,
       faqItems: record.faqItems,

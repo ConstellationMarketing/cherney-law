@@ -89,6 +89,8 @@ export interface TemplateField {
   isContentField: boolean;
   /** Common aliases/synonyms for fuzzy matching */
   aliases: string[];
+  /** If true, this field is excluded from auto-mapping (user must map manually) */
+  excludeFromAutoMap?: boolean;
   /** Default value if not mapped */
   defaultValue?: string;
   /** Select options if type is 'select' */
