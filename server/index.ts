@@ -5,6 +5,8 @@ import { handleDemo } from "./routes/demo";
 import { handleGoogleReviews } from "./routes/google-reviews";
 import { handleBulkImport } from "./routes/bulk-import";
 import { handleBulkImportFetch } from "./routes/bulk-import-fetch";
+import { handleBulkImportImages } from "./routes/bulk-import-images";
+import { handleAiSplitAreaContent } from "./routes/ai-split-area-content";
 import {
   handleAiStatus,
   handleAiGenerateMeta,
@@ -31,6 +33,8 @@ export function createServer() {
   app.get("/api/google-reviews", handleGoogleReviews);
   app.post("/api/bulk-import", handleBulkImport);
   app.post("/api/bulk-import-fetch", handleBulkImportFetch);
+  app.post("/api/bulk-import-images", handleBulkImportImages);
+  app.post("/api/ai-split-area-content", handleAiSplitAreaContent);
 
   // AI assist routes for bulk importer
   app.get("/api/ai-status", handleAiStatus);

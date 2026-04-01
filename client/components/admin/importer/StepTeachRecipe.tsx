@@ -3,7 +3,9 @@ import type { WizardState } from '@site/lib/importer/recipeTypes';
 import { createDefaultRecipe } from '@site/lib/importer/recipeEngine';
 import { applyFieldMappingSingle } from '@site/lib/importer/fieldMapping';
 import { computeFieldDiffs, inferRulesFromDiff } from '@site/lib/importer/recipeInference';
-import { getTemplateFields } from '@site/lib/importer/templateFields';
+import { getTemplateFields, getContentFieldKeys } from '@site/lib/importer/templateFields';
+import { cleanSourceRecords } from '@site/lib/importer/sourceCleaner';
+import { normalizeHtml } from '@site/lib/importer/htmlNormalizer';
 
 interface Props {
   state: WizardState;
@@ -12,20 +14,66 @@ interface Props {
   onBack: () => void;
 }
 
+/** Extract all img src URLs from an HTML string */
+function extractImageUrls(html: string): string[] {
+  const urls: string[] = [];
+  const re = /<img[^>]+src=["']([^"']+)["']/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null) {
+    const src = m[1];
+    if (src && src.startsWith('http')) {
+      urls.push(src);
+    }
+  }
+  return [...new Set(urls)];
+}
+
+/** Replace image src URLs in HTML using the given mapping */
+function replaceImageUrls(html: string, mapping: Record<string, string>): string {
+  return html.replace(/<img([^>]+)src=["']([^"']+)["']/gi, (_match, attrs, src) => {
+    const newSrc = mapping[src] ?? src;
+    return `<img${attrs}src="${newSrc}"`;
+  });
+}
+
 export default function StepTeachRecipe({ state, updateState, onNext, onBack }: Props) {
   const templateFields = getTemplateFields(state.templateType!);
   const recipe = state.recipe ?? createDefaultRecipe(state.templateType!);
 
   // Get first record as sample
   const sampleRecord = state.sourceRecords[0];
+
+  // CRITICAL (Rule 3): Run the same pipeline stages 1-5 that auto-transform uses,
+  // so the Build Recipe step always shows cleaned HTML — not raw source.
   const mappedSample = useMemo(() => {
     if (!sampleRecord || !state.mappingConfig) return null;
-    return applyFieldMappingSingle(sampleRecord, state.mappingConfig);
-  }, [sampleRecord, state.mappingConfig]);
+
+    const contentFieldKeys = getContentFieldKeys(state.templateType!);
+    const filterOptions = state.filterOptions;
+
+    // Stages 1-4: clean source record
+    const [cleaned] = cleanSourceRecords([sampleRecord], contentFieldKeys, filterOptions);
+
+    // Stage 5: normalize HTML for content fields
+    const normalizedData: Record<string, string> = {};
+    for (const [key, value] of Object.entries(cleaned.data)) {
+      normalizedData[key] =
+        contentFieldKeys.includes(key) && value
+          ? normalizeHtml(value, filterOptions)
+          : value;
+    }
+
+    // Stage 6: field mapping
+    return applyFieldMappingSingle({ ...cleaned, data: normalizedData }, state.mappingConfig);
+  }, [sampleRecord, state.mappingConfig, state.filterOptions, state.templateType]);
 
   const [corrections, setCorrections] = useState<Record<string, string>>(
     () => mappedSample?.mappedData ? { ...mappedSample.mappedData } : {}
   );
+
+  // AI split state (only relevant for 'area' template)
+  const [aiSplitting, setAiSplitting] = useState(false);
+  const [aiSplitError, setAiSplitError] = useState<string | null>(null);
 
   const handleFieldChange = (key: string, value: string) => {
     setCorrections((prev) => ({ ...prev, [key]: value }));
@@ -45,8 +93,70 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
     updateState({ recipe: updatedRecipe });
   };
 
+  /** Re-host images then call the AI content splitter */
+  const handleAiSplit = async () => {
+    const bodyHtml = corrections.body ?? '';
+    if (!bodyHtml.trim()) return;
+
+    setAiSplitting(true);
+    setAiSplitError(null);
+
+    try {
+      // Step 1: extract + re-host any external images
+      const imageUrls = extractImageUrls(bodyHtml);
+      let processedHtml = bodyHtml;
+
+      if (imageUrls.length > 0) {
+        const imgRes = await fetch('/api/bulk-import-images', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrls }),
+        });
+
+        if (imgRes.ok) {
+          const imgData = await imgRes.json() as { mappings: { originalUrl: string; newUrl: string }[] };
+          const urlMap: Record<string, string> = {};
+          for (const { originalUrl, newUrl } of imgData.mappings) {
+            urlMap[originalUrl] = newUrl;
+          }
+          processedHtml = replaceImageUrls(processedHtml, urlMap);
+        }
+        // Non-fatal: if image re-hosting fails, continue with original URLs
+      }
+
+      // Step 2: AI content split
+      const splitRes = await fetch('/api/ai-split-area-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html: processedHtml }),
+      });
+
+      if (!splitRes.ok) {
+        const err = await splitRes.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error((err as { error?: string }).error ?? 'AI split failed');
+      }
+
+      const splitData = await splitRes.json() as {
+        body: string;
+        why_body: string;
+        closing_body: string;
+      };
+
+      setCorrections((prev) => ({
+        ...prev,
+        body: splitData.body,
+        why_body: splitData.why_body,
+        closing_body: splitData.closing_body,
+      }));
+    } catch (err) {
+      console.error('AI split error:', err);
+      setAiSplitError(err instanceof Error ? err.message : 'AI split failed');
+    } finally {
+      setAiSplitting(false);
+    }
+  };
+
   const handleContinue = () => {
-    // Save recipe if not already set
     if (!state.recipe) {
       updateState({ recipe });
     }
@@ -59,6 +169,9 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
       (k) => corrections[k] !== (mappedSample.mappedData[k] ?? '')
     );
   }, [corrections, mappedSample]);
+
+  const isAreaTemplate = state.templateType === 'area';
+  const aiAvailable = state.aiAvailable ?? false;
 
   if (!mappedSample) {
     return (
@@ -73,7 +186,7 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
       <div>
         <h2 className="text-lg font-semibold text-gray-900">Build Recipe</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Review the first record's auto-mapped output. Correct any fields to teach the importer reusable transformation rules.
+          Review the first record's auto-mapped output (HTML has been cleaned). Correct any fields to teach the importer reusable transformation rules.
         </p>
       </div>
 
@@ -82,6 +195,7 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
           const autoValue = mappedSample.mappedData[field.key] ?? '';
           const correctedValue = corrections[field.key] ?? '';
           const isChanged = autoValue !== correctedValue;
+          const isBodyField = field.key === 'body' && isAreaTemplate;
 
           return (
             <div key={field.key} className="grid grid-cols-[180px_1fr] gap-3 items-start">
@@ -90,11 +204,40 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
                 {field.required && <span className="text-red-500 ml-0.5">*</span>}
               </label>
               <div className="space-y-1">
-                {field.type === 'html' || (autoValue.length > 200) ? (
+                {/* AI Split button for body field on area template */}
+                {isBodyField && (
+                  <div className="flex items-center gap-2 mb-1">
+                    {aiAvailable ? (
+                      <button
+                        onClick={handleAiSplit}
+                        disabled={aiSplitting || !correctedValue.trim()}
+                        className="px-3 py-1 bg-purple-600 text-white rounded text-xs font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                      >
+                        {aiSplitting ? (
+                          <>
+                            <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            Splitting…
+                          </>
+                        ) : (
+                          'AI Split Content'
+                        )}
+                      </button>
+                    ) : (
+                      <span className="text-xs text-gray-400 italic">
+                        AI unavailable — manually paste content into each section field below
+                      </span>
+                    )}
+                    {aiSplitError && (
+                      <span className="text-xs text-red-500">{aiSplitError}</span>
+                    )}
+                  </div>
+                )}
+
+                {field.type === 'html' || correctedValue.length > 200 ? (
                   <textarea
                     value={correctedValue}
                     onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                    rows={4}
+                    rows={field.type === 'html' ? 6 : 4}
                     className={`w-full rounded border px-3 py-2 text-sm font-mono ${
                       isChanged ? 'border-yellow-400 bg-yellow-50' : 'border-gray-300'
                     } focus:border-blue-500 focus:ring-1 focus:ring-blue-500`}

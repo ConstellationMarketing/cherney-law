@@ -232,7 +232,7 @@ export const areaFields: TemplateField[] = [
     type: 'slug',
     required: true,
     isContentField: false,
-    aliases: ['slug', 'url', 'url_path', 'permalink', 'path', 'page_url', 'post_name', 'url_slug'],
+    aliases: ['slug', 'url_path', 'permalink', 'path', 'source_url', 'page_url', 'canonical', 'post_name', 'url_slug'],
   },
   {
     key: 'hero_tagline',

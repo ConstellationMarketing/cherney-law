@@ -121,6 +121,7 @@ const TEMPLATE_FIELD_SUMMARIES: Record<string, string> = {
   practice:
     "title, slug, hero_tagline, hero_description, hero_image, body, faq, meta_title, meta_description, canonical_url, og_image, status, schema_type",
   post: "title, slug, body, excerpt, featured_image, category, meta_title, meta_description, canonical_url, og_image, published_at, status",
+  area: "title (city/location name), slug (URL path for the page), hero_tagline (short subtitle), body (introduction section HTML — main overview content), why_body (Why Choose Us section HTML — credentials, benefits, experience), closing_body (closing section HTML — call to action, contact info, next steps), meta_title, meta_description, canonical_url, og_image (featured image for the page), status",
 };
 
 export const handleAiSuggestMapping: RequestHandler = async (req, res) => {

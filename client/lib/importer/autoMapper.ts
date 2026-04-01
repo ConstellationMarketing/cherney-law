@@ -45,8 +45,15 @@ export function autoMapFields(
     let bestField: TemplateField | null = null;
     let bestScore = 0;
 
+    // Determine if this column is clearly an image/media column
+    const colLower = col.name.toLowerCase();
+    const isImageColumn = /image|img|photo|thumb|banner|cover|avatar|icon|picture/.test(colLower);
+
     for (const field of fields) {
       if (usedFields.has(field.key)) continue;
+
+      // Guard: never map an image-named column to the slug field
+      if (isImageColumn && field.key === 'slug') continue;
 
       const score = fuzzyMatchScore(col.name, field, col);
       if (score > bestScore && score >= 0.4) {
