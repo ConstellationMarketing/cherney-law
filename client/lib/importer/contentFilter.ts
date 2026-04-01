@@ -250,11 +250,9 @@ export function findMatchingClose(html: string, startIdx: number, tagName: strin
     if (!nextClose) return -1; // No matching close
 
     if (nextOpen && nextOpen.index < nextClose.index) {
-      // Check it's not a self-closing tag
-      const selfClose = html.substring(nextOpen.index, nextClose.index);
-      if (!selfClose.includes('/>')) {
-        depth++;
-      }
+      // Always increment depth — real layout tags (div, section, article) are never self-closing.
+      // Void/self-closing elements (br, img, input) do NOT match the <div|section|article> pattern.
+      depth++;
       pos = nextOpen.index + nextOpen[0].length;
     } else {
       depth--;
@@ -272,8 +270,10 @@ export function findMatchingClose(html: string, startIdx: number, tagName: strin
  * Unwrap layout container divs, keeping their inner content.
  * A layout container is a div/section/article used purely for layout
  * (identified by builder CSS classes or being a bare wrapper).
+ *
+ * Exported so htmlNormalizer can run a second pass AFTER classes are stripped.
  */
-function unwrapLayoutContainers(html: string): string {
+export function unwrapLayoutContainers(html: string): string {
   let result = html;
   let prev = '';
 

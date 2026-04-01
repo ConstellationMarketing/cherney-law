@@ -183,6 +183,9 @@ export interface FilterOptions {
   linkDensityThreshold: number;
   /** Base URL for resolving relative URLs */
   baseUrl?: string;
+  /** If true, skip secondary content filtering (filterSecondaryContent).
+   *  Use for law-firm templates where AI will split content intelligently. */
+  skipSecondaryFilter?: boolean;
 }
 
 /** Default filter options by template type */
@@ -197,6 +200,9 @@ export const defaultFilterOptions: Record<TemplateType, FilterOptions> = {
     removeFormBlocks: true,
     // Law firm pages have inline links to related practice areas — raise threshold.
     linkDensityThreshold: 0.85,
+    // Skip secondary content filter — extractMainContent already removes nav/sidebar/footer.
+    // AI handles intelligent content splitting for these templates.
+    skipSecondaryFilter: true,
   },
   post: {
     // Blog posts: sidebar CTAs are genuinely secondary content.
@@ -207,6 +213,7 @@ export const defaultFilterOptions: Record<TemplateType, FilterOptions> = {
     removeCommentSections: true,
     removeFormBlocks: true,
     linkDensityThreshold: 0.75,
+    skipSecondaryFilter: false,
   },
   area: {
     // Same as practice — law firm area pages are law firm content.
@@ -217,6 +224,8 @@ export const defaultFilterOptions: Record<TemplateType, FilterOptions> = {
     removeCommentSections: true,
     removeFormBlocks: true,
     linkDensityThreshold: 0.85,
+    // Skip secondary content filter — same reasoning as practice template.
+    skipSecondaryFilter: true,
   },
 };
 

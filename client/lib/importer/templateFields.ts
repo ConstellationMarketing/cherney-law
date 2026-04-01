@@ -92,7 +92,17 @@ export const practiceFields: TemplateField[] = [
     type: 'url',
     required: false,
     isContentField: false,
-    aliases: ['og_image', 'social_image', 'share_image', 'twitter_image'],
+    aliases: [
+      'og_image',
+      'social_image',
+      'share_image',
+      'twitter_image',
+      // API-sourced metadata field normalizations (dots/colons → underscores)
+      'og_image_secure_url',           // og:image:secure_url
+      'metadata_og_image',             // metadata.og:image
+      'metadata_og_image_secure_url',  // metadata.og:image:secure_url
+      'metadata_og_image_url',         // metadata.og:image:url
+    ],
   },
   {
     key: 'status',
@@ -196,7 +206,16 @@ export const postFields: TemplateField[] = [
     type: 'url',
     required: false,
     isContentField: false,
-    aliases: ['og_image', 'social_image', 'share_image'],
+    aliases: [
+      'og_image',
+      'social_image',
+      'share_image',
+      // API-sourced metadata field normalizations
+      'og_image_secure_url',
+      'metadata_og_image',
+      'metadata_og_image_secure_url',
+      'metadata_og_image_url',
+    ],
   },
   {
     key: 'published_at',
@@ -234,7 +253,7 @@ export const areaFields: TemplateField[] = [
     type: 'slug',
     required: true,
     isContentField: false,
-    aliases: ['slug', 'url_path', 'permalink', 'path', 'source_url', 'page_url', 'canonical', 'post_name', 'url_slug', 'og_url', 'ogurl', 'metadata_og_url', 'metadata_ogurl'],
+    aliases: ['slug', 'url', 'url_path', 'permalink', 'path', 'source_url', 'page_url', 'canonical', 'post_name', 'url_slug', 'og_url', 'ogurl', 'metadata_og_url', 'metadata_ogurl'],
   },
   {
     key: 'hero_tagline',
@@ -307,7 +326,19 @@ export const areaFields: TemplateField[] = [
     type: 'url',
     required: false,
     isContentField: false,
-    aliases: ['og_image', 'social_image', 'share_image', 'twitter_image', 'featured_image', 'image'],
+    aliases: [
+      'og_image',
+      'social_image',
+      'share_image',
+      'twitter_image',
+      'featured_image',
+      'image',
+      // API-sourced metadata field normalizations
+      'og_image_secure_url',
+      'metadata_og_image',
+      'metadata_og_image_secure_url',
+      'metadata_og_image_url',
+    ],
   },
   {
     key: 'status',

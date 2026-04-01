@@ -8,7 +8,7 @@
 // 5f. removeDuplicateBlocks
 // 5g. removeEmptyElements (iterative, FINAL)
 
-import { extractMainContent, filterSecondaryContent } from './contentFilter';
+import { extractMainContent, filterSecondaryContent, unwrapLayoutContainers } from './contentFilter';
 import type { FilterOptions } from './types';
 
 /**
@@ -26,8 +26,19 @@ export function normalizeHtml(html: string, options: FilterOptions): string {
   // 5a: Extract main content (strip shell, extract main column, unwrap wrappers)
   result = extractMainContent(result);
 
+  // 5a (second pass): After extractMainContent strips classes, newly-bare divs
+  // (elements that had non-layout classes which are now gone) need another unwrap
+  // pass. Rule 2: bare wrapper divs ARE layout wrappers.
+  result = unwrapLayoutContainers(result);
+
   // 5b: Filter secondary content (sidebar widgets, CTAs, etc.)
-  result = filterSecondaryContent(result, options);
+  // Skipped for law-firm templates (practice, area) — the page shell/nav/sidebar is
+  // already removed by extractMainContent; the AI content-splitting step handles
+  // intelligent organization. Running secondary filtering risks removing legitimate
+  // law-firm content (CTAs, contact sections, etc.).
+  if (!options.skipSecondaryFilter) {
+    result = filterSecondaryContent(result, options);
+  }
 
   // 5c: Normalize URLs (relative → absolute)
   if (options.baseUrl) {
