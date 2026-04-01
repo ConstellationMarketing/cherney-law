@@ -20,7 +20,7 @@ interface ImportRecord {
 
 interface ImportBody {
   records: ImportRecord[];
-  templateType: "practice" | "post";
+  templateType: "practice" | "post" | "area";
   jobId: string;
   mode: "create" | "update" | "upsert";
 }
@@ -47,6 +47,8 @@ export const handleBulkImport: RequestHandler = async (req, res) => {
 
         if (templateType === "practice") {
           entityId = await importPracticePage(supabase, record, mode);
+        } else if (templateType === "area") {
+          entityId = await importAreaPage(supabase, record, mode);
         } else {
           entityId = await importPost(supabase, record, mode);
         }
@@ -165,6 +167,59 @@ async function importPracticePage(
 
     if (mode === "update") {
       throw new Error(`Page not found for update: ${pageData.url_path}`);
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("pages")
+    .insert(pageData)
+    .select("id")
+    .single();
+
+  if (error) throw new Error(`Insert failed: ${error.message}`);
+  return data.id;
+}
+
+async function importAreaPage(
+  supabase: ServiceClient,
+  record: ImportRecord,
+  mode: string
+): Promise<string> {
+  const pageData = {
+    title: record.data.title as string,
+    url_path: record.data.url_path as string,
+    page_type: "area",
+    content: record.data.content,
+    meta_title: record.data.meta_title || null,
+    meta_description: record.data.meta_description || null,
+    canonical_url: record.data.canonical_url || null,
+    og_title: record.data.og_title || null,
+    og_description: record.data.og_description || null,
+    og_image: record.data.og_image || null,
+    noindex: record.data.noindex || false,
+    schema_type: record.data.schema_type || "LegalService",
+    schema_data: record.data.schema_data || null,
+    status: record.data.status || "draft",
+  };
+
+  if (mode === "update" || mode === "upsert") {
+    const { data: existing } = await supabase
+      .from("pages")
+      .select("id")
+      .eq("url_path", pageData.url_path)
+      .single();
+
+    if (existing) {
+      const { error } = await supabase
+        .from("pages")
+        .update(pageData)
+        .eq("id", existing.id);
+      if (error) throw new Error(`Update failed: ${error.message}`);
+      return existing.id;
+    }
+
+    if (mode === "update") {
+      throw new Error(`Area page not found for update: ${pageData.url_path}`);
     }
   }
 

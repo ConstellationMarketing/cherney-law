@@ -116,6 +116,8 @@ export function validateRecord(
   // Check content quality
   if (templateType === 'practice') {
     validatePracticeContent(data, issues);
+  } else if (templateType === 'area') {
+    validateAreaContent(data, issues);
   } else {
     validatePostContent(data, issues);
   }
@@ -167,6 +169,36 @@ function validatePracticeContent(
   }
 
   // Check hero
+  const hero = content.hero as Record<string, string> | undefined;
+  if (!hero?.tagline) {
+    issues.push(issue('warning', 'hero_tagline', 'Missing hero tagline'));
+  }
+}
+
+function validateAreaContent(
+  data: Record<string, unknown>,
+  issues: ValidationIssue[]
+): void {
+  const content = data.content as Record<string, unknown> | undefined;
+  if (!content) {
+    issues.push(issue('warning', 'body', 'No content structure'));
+    return;
+  }
+
+  const introSection = content.introSection as Record<string, string> | undefined;
+  const introBody = introSection?.body || '';
+  const introText = introBody.replace(/<[^>]*>/g, '').trim();
+
+  if (!introText || introText.length < 20) {
+    issues.push(issue('warning', 'body', 'Introduction content is empty or too short'));
+  } else {
+    const wordCount = introText.split(/\s+/).filter(Boolean).length;
+    if (wordCount < 50) {
+      issues.push(issue('warning', 'body', `Low word count in intro: ${wordCount} words`));
+    }
+  }
+
+  // Check hero tagline
   const hero = content.hero as Record<string, string> | undefined;
   if (!hero?.tagline) {
     issues.push(issue('warning', 'hero_tagline', 'Missing hero tagline'));

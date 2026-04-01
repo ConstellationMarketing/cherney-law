@@ -1,7 +1,7 @@
 // Core types for the bulk content importer pipeline
 
 /** Template types that can be imported */
-export type TemplateType = 'practice' | 'post';
+export type TemplateType = 'practice' | 'post' | 'area';
 
 /** Source input types */
 export type SourceType = 'csv' | 'json' | 'api';
@@ -195,6 +195,15 @@ export const defaultFilterOptions: Record<TemplateType, FilterOptions> = {
     linkDensityThreshold: 0.6,
   },
   post: {
+    removeContactBlocks: true,
+    removePostListings: true,
+    removeSidebarWidgets: true,
+    removeNewsletterBlocks: true,
+    removeCommentSections: true,
+    removeFormBlocks: true,
+    linkDensityThreshold: 0.6,
+  },
+  area: {
     removeContactBlocks: true,
     removePostListings: true,
     removeSidebarWidgets: true,

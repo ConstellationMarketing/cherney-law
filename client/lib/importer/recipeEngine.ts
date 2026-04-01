@@ -65,7 +65,7 @@ function applyRulesToRecord(
 /**
  * Create a default recipe for a given template type.
  */
-export function createDefaultRecipe(templateType: 'practice' | 'post'): Recipe {
+export function createDefaultRecipe(templateType: 'practice' | 'post' | 'area'): Recipe {
   const rules: RecipeRule[] = [];
   let order = 0;
 

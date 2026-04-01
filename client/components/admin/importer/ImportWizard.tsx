@@ -159,7 +159,7 @@ function StepTemplateSelect({
         <p className="text-sm text-gray-500 mt-1">Choose what type of content you want to import.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 max-w-lg">
+      <div className="grid grid-cols-3 gap-4 max-w-2xl">
         <button
           onClick={() => updateState({ templateType: 'practice', filterOptions: defaultFilterOptions.practice })}
           className={`p-4 border-2 rounded-lg text-left transition-colors ${
@@ -182,6 +182,18 @@ function StepTemplateSelect({
         >
           <div className="font-medium text-gray-900">Blog Posts</div>
           <div className="text-sm text-gray-500 mt-1">Import blog posts</div>
+        </button>
+
+        <button
+          onClick={() => updateState({ templateType: 'area', filterOptions: defaultFilterOptions.area })}
+          className={`p-4 border-2 rounded-lg text-left transition-colors ${
+            state.templateType === 'area'
+              ? 'border-blue-500 bg-blue-50'
+              : 'border-gray-200 hover:border-gray-300'
+          }`}
+        >
+          <div className="font-medium text-gray-900">Areas We Serve</div>
+          <div className="text-sm text-gray-500 mt-1">Import area/location pages</div>
         </button>
       </div>
 

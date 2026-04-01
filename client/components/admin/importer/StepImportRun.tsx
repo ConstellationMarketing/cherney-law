@@ -198,7 +198,7 @@ export default function StepImportRun({ state, updateState, onBack }: Props) {
               : `${successCount} imported, ${failedCount} failed`}
           </div>
           <p className="text-sm text-gray-500 mt-1">
-            Records were imported as drafts. Visit the {state.templateType === 'practice' ? 'Pages' : 'Blog Posts'} section to review and publish.
+            Records were imported as drafts. Visit the {state.templateType === 'post' ? 'Blog Posts' : 'Pages'} section to review and publish.
           </p>
         </div>
       )}
@@ -213,10 +213,10 @@ export default function StepImportRun({ state, updateState, onBack }: Props) {
         </button>
         {isDone && (
           <a
-            href={state.templateType === 'practice' ? '/admin/pages' : '/admin/posts'}
+            href={state.templateType === 'post' ? '/admin/posts' : '/admin/pages'}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 inline-block"
           >
-            View {state.templateType === 'practice' ? 'Pages' : 'Posts'}
+            View {state.templateType === 'post' ? 'Posts' : 'Pages'}
           </a>
         )}
       </div>

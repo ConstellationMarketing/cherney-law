@@ -72,6 +72,19 @@ function scoreStructural(
     return 0.7;
   }
 
+  if (templateType === 'area') {
+    // Area pages: check intro section has content
+    const data = record.data as Record<string, unknown>;
+    const content = data.content as Record<string, unknown> | undefined;
+    const intro = content?.introSection as Record<string, string> | undefined;
+    const introText = (intro?.body || '').replace(/<[^>]*>/g, '').trim();
+    if (!introText || introText.length < 20) {
+      notes.structural = 'Intro section is empty';
+      return 0.3;
+    }
+    return 0.9;
+  }
+
   // Blog posts — less strict on structure
   if (!record.data.body && !record.data.content) {
     notes.structural = 'No body content';
@@ -106,6 +119,13 @@ function scoreExtraction(
     const content = data.content as Record<string, unknown> | undefined;
     const hero = content?.hero as Record<string, string> | undefined;
     if (hero?.tagline) score += 0.1;
+  } else if (templateType === 'area') {
+    // Area: hero tagline and intro body
+    const content = data.content as Record<string, unknown> | undefined;
+    const hero = content?.hero as Record<string, string> | undefined;
+    if (hero?.tagline) score += 0.1;
+    const intro = content?.introSection as Record<string, string> | undefined;
+    if (intro?.body && intro.body.replace(/<[^>]*>/g, '').trim().length > 20) score += 0.1;
   } else {
     // Blog: excerpt, featured image
     if (data.excerpt) score += 0.1;
@@ -129,6 +149,12 @@ function scoreContentQuality(
     const content = data.content as Record<string, unknown> | undefined;
     const sections = (content?.contentSections as { body: string }[]) ?? [];
     textContent = sections.map((s) => s.body || '').join(' ');
+  } else if (templateType === 'area') {
+    const content = data.content as Record<string, unknown> | undefined;
+    const intro = content?.introSection as Record<string, string> | undefined;
+    const why = content?.whySection as Record<string, string> | undefined;
+    const closing = content?.closingSection as Record<string, string> | undefined;
+    textContent = [intro?.body, why?.body, closing?.body].filter(Boolean).join(' ');
   } else {
     textContent = String(data.body ?? '');
   }
@@ -151,7 +177,7 @@ function scoreContentQuality(
     notes.contentQuality = (notes.contentQuality ?? '') + ' Shortcode remnants detected.';
   }
 
-  // Check for empty sections (practice pages)
+  // Check for empty sections
   if (templateType === 'practice') {
     const content = data.content as Record<string, unknown> | undefined;
     const sections = (content?.contentSections as { body: string }[]) ?? [];

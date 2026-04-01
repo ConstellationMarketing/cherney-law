@@ -216,6 +216,100 @@ export const postFields: TemplateField[] = [
   },
 ];
 
+/** Areas We Serve page fields */
+export const areaFields: TemplateField[] = [
+  {
+    key: 'title',
+    label: 'Page Title',
+    type: 'text',
+    required: true,
+    isContentField: false,
+    aliases: ['title', 'page_title', 'name', 'heading', 'area_name', 'location', 'city'],
+  },
+  {
+    key: 'slug',
+    label: 'URL Slug',
+    type: 'slug',
+    required: true,
+    isContentField: false,
+    aliases: ['slug', 'url', 'url_path', 'permalink', 'path', 'page_url', 'post_name', 'url_slug'],
+  },
+  {
+    key: 'hero_tagline',
+    label: 'Hero Tagline',
+    type: 'text',
+    required: false,
+    isContentField: false,
+    aliases: ['tagline', 'hero_tagline', 'subtitle', 'subheading', 'hero_subtitle'],
+  },
+  {
+    key: 'body',
+    label: 'Introduction Content',
+    type: 'html',
+    required: false,
+    isContentField: true,
+    aliases: ['body', 'content', 'intro', 'introduction', 'main_content', 'page_content', 'post_content', 'text', 'html', 'description', 'full_content'],
+  },
+  {
+    key: 'why_body',
+    label: 'Why Choose Us Content',
+    type: 'html',
+    required: false,
+    isContentField: true,
+    aliases: ['why_body', 'why_content', 'why_us', 'why_choose', 'why_choose_us', 'reasons'],
+  },
+  {
+    key: 'closing_body',
+    label: 'Closing Section Content',
+    type: 'html',
+    required: false,
+    isContentField: true,
+    aliases: ['closing_body', 'closing_content', 'closing', 'contact_section', 'cta_body'],
+  },
+  {
+    key: 'meta_title',
+    label: 'Meta Title',
+    type: 'text',
+    required: false,
+    isContentField: false,
+    aliases: ['meta_title', 'seo_title', 'page_title_seo', 'title_tag', 'og_title'],
+  },
+  {
+    key: 'meta_description',
+    label: 'Meta Description',
+    type: 'text',
+    required: false,
+    isContentField: false,
+    aliases: ['meta_description', 'seo_description', 'page_description', 'description_tag', 'og_description', 'excerpt'],
+  },
+  {
+    key: 'canonical_url',
+    label: 'Canonical URL',
+    type: 'url',
+    required: false,
+    isContentField: false,
+    aliases: ['canonical_url', 'canonical', 'canonical_link'],
+  },
+  {
+    key: 'og_image',
+    label: 'OG Image',
+    type: 'url',
+    required: false,
+    isContentField: false,
+    aliases: ['og_image', 'social_image', 'share_image', 'twitter_image', 'featured_image', 'image'],
+  },
+  {
+    key: 'status',
+    label: 'Page Status',
+    type: 'select',
+    required: false,
+    isContentField: false,
+    aliases: ['status', 'page_status', 'state', 'published'],
+    defaultValue: 'draft',
+    options: ['draft', 'published'],
+  },
+];
+
 /**
  * Get the template field definitions for a given template type.
  */
@@ -225,6 +319,8 @@ export function getTemplateFields(templateType: TemplateType): TemplateField[] {
       return practiceFields;
     case 'post':
       return postFields;
+    case 'area':
+      return areaFields;
     default:
       return [];
   }

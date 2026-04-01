@@ -2,6 +2,7 @@
 // Split body on H2, extract FAQ, generate slug, build CMS record shape
 
 import type { ContentSection, FaqItem, MappedRecord, PreparedRecord, TemplateType } from './types';
+import { defaultAreaPageContent } from '../cms/areaPageTypes';
 
 /**
  * Prepare mapped records for import.
@@ -39,9 +40,14 @@ export function prepareRecord(
   const faqItems = extractFaqItems(body, contentSections);
 
   // Build CMS record shape
-  const data = templateType === 'practice'
-    ? buildPracticeRecord(mappedData, contentSections, faqItems, slug)
-    : buildPostRecord(mappedData, slug);
+  let data: Record<string, unknown>;
+  if (templateType === 'practice') {
+    data = buildPracticeRecord(mappedData, contentSections, faqItems, slug);
+  } else if (templateType === 'area') {
+    data = buildAreaRecord(mappedData, slug);
+  } else {
+    data = buildPostRecord(mappedData, slug);
+  }
 
   return {
     rowIndex: record.rowIndex,
@@ -79,10 +85,13 @@ export function normalizeUrlSlug(
       // Not a valid URL, continue
     }
 
-    // 2. Extract slug after /practice-areas/ if present
+    // 2. Extract slug after /practice-areas/ or /areas-we-serve/ if present
     const practiceMatch = slug.match(/\/practice-areas\/([^/]+)/);
+    const areaMatch = slug.match(/\/areas-we-serve\/([^/]+)/);
     if (practiceMatch) {
       slug = practiceMatch[1];
+    } else if (areaMatch) {
+      slug = areaMatch[1];
     } else {
       // 3. Take last segment from multi-segment paths
       const segments = slug.split('/').filter(Boolean);
@@ -100,7 +109,7 @@ export function normalizeUrlSlug(
     slug = slugify(title);
   }
 
-  // Ensure slug format: for posts, add trailing slash; for practice, no trailing slash
+  // Ensure slug format: for posts add trailing slash; for practice/area no trailing slash
   if (templateType === 'post') {
     slug = slug.replace(/\/$/, '') + '/';
   } else {
@@ -325,6 +334,56 @@ function buildPracticeRecord(
     og_image: data.og_image || data.hero_image || null,
     noindex: false,
     schema_type: data.schema_type || 'LegalService',
+    schema_data: null,
+    status: data.status === 'published' ? 'published' : 'draft',
+  };
+}
+
+/**
+ * Build an Areas We Serve page record for the CMS.
+ */
+function buildAreaRecord(
+  data: Record<string, string>,
+  slug: string
+): Record<string, unknown> {
+  const defaults = defaultAreaPageContent;
+
+  const content = {
+    hero: {
+      ...defaults.hero,
+      sectionLabel: data.title ? `\u2013 ${data.title}` : defaults.hero.sectionLabel,
+      tagline: data.hero_tagline || defaults.hero.tagline,
+    },
+    introSection: {
+      ...defaults.introSection,
+      body: data.body || defaults.introSection.body,
+    },
+    whySection: {
+      ...defaults.whySection,
+      body: data.why_body || defaults.whySection.body,
+    },
+    closingSection: {
+      ...defaults.closingSection,
+      body: data.closing_body || defaults.closingSection.body,
+    },
+    cta: defaults.cta,
+    locationsSection: defaults.locationsSection,
+    mapSection: defaults.mapSection,
+  };
+
+  return {
+    title: data.title || '',
+    url_path: `/areas-we-serve/${slug}/`,
+    page_type: 'area',
+    content,
+    meta_title: data.meta_title || data.title || '',
+    meta_description: data.meta_description || '',
+    canonical_url: data.canonical_url || null,
+    og_title: data.meta_title || data.title || null,
+    og_description: data.meta_description || null,
+    og_image: data.og_image || null,
+    noindex: false,
+    schema_type: 'LegalService',
     schema_data: null,
     status: data.status === 'published' ? 'published' : 'draft',
   };
