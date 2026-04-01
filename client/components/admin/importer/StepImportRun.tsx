@@ -21,6 +21,7 @@ export default function StepImportRun({ state, updateState, onBack }: Props) {
   const [statuses, setStatuses] = useState<RecordStatus[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [isDone, setIsDone] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
   const runStarted = useRef(false);
 
   const approvedRecords = state.transformedRecords.filter((r) => r.status === 'approved');
@@ -28,6 +29,10 @@ export default function StepImportRun({ state, updateState, onBack }: Props) {
   useEffect(() => {
     if (!runStarted.current) {
       runStarted.current = true;
+      if (approvedRecords.length === 0) {
+        setIsDone(true);
+        return;
+      }
       setStatuses(approvedRecords.map((r) => ({ rowIndex: r.rowIndex, status: 'pending' })));
       runImport();
     }
@@ -35,8 +40,9 @@ export default function StepImportRun({ state, updateState, onBack }: Props) {
 
   const runImport = useCallback(async () => {
     setIsRunning(true);
+    setImportError(null);
 
-    // Create import job
+    // Create import job record for tracking
     const { data: job, error: jobError } = await supabase
       .from('import_jobs')
       .insert({
@@ -54,13 +60,12 @@ export default function StepImportRun({ state, updateState, onBack }: Props) {
       .single();
 
     if (jobError || !job) {
-      console.error('Failed to create import job:', jobError);
-      setIsRunning(false);
-      return;
+      // import_jobs table may not exist yet — warn but continue without a job ID
+      console.warn('Could not create import_jobs record:', jobError?.message ?? 'no data');
     }
 
-    const jobId = job.id;
-    updateState({ importJobId: jobId });
+    const jobId = job?.id ?? null;
+    if (jobId) updateState({ importJobId: jobId });
 
     // Process in batches
     const batches: typeof approvedRecords[] = [];
@@ -90,18 +95,25 @@ export default function StepImportRun({ state, updateState, onBack }: Props) {
               sourceData: r.sourceData,
             })),
             templateType: state.templateType,
-            jobId,
+            // If import_jobs table is missing, pass a placeholder so the server
+            // doesn't hard-fail — the server already handles missing jobId gracefully.
+            jobId: jobId ?? '00000000-0000-0000-0000-000000000000',
             mode: state.importMode,
           }),
         });
 
         if (!response.ok) {
-          const text = await response.text();
-          // Mark all in batch as failed
+          let errText = `HTTP ${response.status}`;
+          try {
+            const body = await response.json();
+            errText = body.error ?? errText;
+          } catch {
+            errText = await response.text().catch(() => errText);
+          }
           setStatuses((prev) =>
             prev.map((s) =>
               batch.find((r) => r.rowIndex === s.rowIndex)
-                ? { ...s, status: 'failed', error: `HTTP ${response.status}: ${text}` }
+                ? { ...s, status: 'failed', error: errText }
                 : s
             )
           );
@@ -124,10 +136,11 @@ export default function StepImportRun({ state, updateState, onBack }: Props) {
           })
         );
       } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Network error';
         setStatuses((prev) =>
           prev.map((s) =>
             batch.find((r) => r.rowIndex === s.rowIndex)
-              ? { ...s, status: 'failed', error: err instanceof Error ? err.message : 'Network error' }
+              ? { ...s, status: 'failed', error: msg }
               : s
           )
         );
@@ -142,6 +155,31 @@ export default function StepImportRun({ state, updateState, onBack }: Props) {
   const failedCount = statuses.filter((s) => s.status === 'failed').length;
   const pendingCount = statuses.filter((s) => s.status === 'pending' || s.status === 'importing').length;
 
+  // Zero approved records — show a clear message rather than a false success
+  if (isDone && approvedRecords.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Import</h2>
+        </div>
+        <div className="rounded-lg p-6 bg-yellow-50 border border-yellow-200 text-center space-y-2">
+          <div className="text-lg font-semibold text-yellow-800">No records to import</div>
+          <p className="text-sm text-yellow-700">
+            No records were approved for import. Go back to the review or validation step and approve at least one record.
+          </p>
+        </div>
+        <div className="flex justify-start">
+          <button
+            onClick={onBack}
+            className="px-4 py-2 text-gray-600 hover:text-gray-900 text-sm font-medium"
+          >
+            Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -151,7 +189,18 @@ export default function StepImportRun({ state, updateState, onBack }: Props) {
         </p>
       </div>
 
-      {/* Progress */}
+      {/* import_jobs warning (non-fatal) */}
+      {importError && (
+        <div className="rounded-lg p-4 bg-red-50 border border-red-200 text-sm text-red-700">
+          <strong>Warning:</strong> {importError}
+          <br />
+          <span className="text-xs text-red-500">
+            Import tracking is unavailable. The actual records may still have been imported — check the Pages or Posts section.
+          </span>
+        </div>
+      )}
+
+      {/* Progress bar */}
       <div className="space-y-2">
         <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
           <div
@@ -200,6 +249,13 @@ export default function StepImportRun({ state, updateState, onBack }: Props) {
           <p className="text-sm text-gray-500 mt-1">
             Records were imported as drafts. Visit the {state.templateType === 'post' ? 'Blog Posts' : 'Pages'} section to review and publish.
           </p>
+          {failedCount > 0 && (
+            <p className="text-xs text-red-500 mt-2">
+              Failed records are shown above with their error messages. Common cause: the import tracking tables
+              (<code>import_jobs</code>, <code>import_job_items</code>) may not exist yet — run the SQL migration
+              in your Supabase dashboard.
+            </p>
+          )}
         </div>
       )}
 

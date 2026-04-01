@@ -14,6 +14,13 @@ import {
   handleAiSuggestMapping,
   handleAiSuggestRewrite,
 } from "./routes/ai-assist";
+import {
+  handleGetAdminPages,
+  handleDeleteAdminPage,
+  handlePatchAdminPage,
+  handleBulkPatchAdminPages,
+  handleBulkDeleteAdminPages,
+} from "./routes/admin-pages";
 
 export function createServer() {
   const app = express();
@@ -35,6 +42,13 @@ export function createServer() {
   app.post("/api/bulk-import-fetch", handleBulkImportFetch);
   app.post("/api/bulk-import-images", handleBulkImportImages);
   app.post("/api/ai-split-area-content", handleAiSplitAreaContent);
+
+  // Admin pages routes (service-role — returns ALL pages including drafts)
+  app.get("/api/admin/pages", handleGetAdminPages);
+  app.delete("/api/admin/pages/bulk", handleBulkDeleteAdminPages);
+  app.patch("/api/admin/pages/bulk", handleBulkPatchAdminPages);
+  app.delete("/api/admin/pages/:id", handleDeleteAdminPage);
+  app.patch("/api/admin/pages/:id", handlePatchAdminPage);
 
   // AI assist routes for bulk importer
   app.get("/api/ai-status", handleAiStatus);

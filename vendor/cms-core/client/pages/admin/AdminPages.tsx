@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
 import type { Page } from '@/lib/database.types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,34 +47,37 @@ export default function AdminPages() {
   }, []);
 
   const fetchPages = async () => {
-    const { data, error } = await supabase
-      .from('pages')
-      .select('*')
-      .order('updated_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching pages:', error);
-    } else {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/pages');
+      if (!res.ok) throw new Error(`Failed to fetch pages: ${res.status}`);
+      const data = await res.json();
       setPages(data || []);
+    } catch (err) {
+      console.error('Error fetching pages:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleDelete = async () => {
     if (!deleteId) return;
     setDeleting(true);
 
-    const { error } = await supabase.from('pages').delete().eq('id', deleteId);
-
-    if (error) {
-      console.error('Error deleting page:', error);
-      alert('Failed to delete page');
-    } else {
+    try {
+      const res = await fetch(`/api/admin/pages/${deleteId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
       setPages(pages.filter(p => p.id !== deleteId));
+    } catch (err) {
+      console.error('Error deleting page:', err);
+      alert('Failed to delete page');
+    } finally {
+      setDeleteId(null);
+      setDeleting(false);
     }
-
-    setDeleteId(null);
-    setDeleting(false);
   };
 
   const filteredPages = pages.filter(page => {
@@ -111,57 +113,47 @@ export default function AdminPages() {
 
   const handleBulkAction = async (action: BulkAction) => {
     const ids = Array.from(selectedIds);
-
     if (ids.length === 0) return;
 
-    let error = null;
+    try {
+      if (action === 'delete') {
+        const res = await fetch('/api/admin/pages/bulk', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(body.error || `HTTP ${res.status}`);
+        }
+      } else {
+        let updates: Record<string, unknown> = {};
+        switch (action) {
+          case 'publish':
+            updates = { status: 'published', published_at: new Date().toISOString() };
+            break;
+          case 'unpublish':
+            updates = { status: 'draft', published_at: null };
+            break;
+          case 'noindex':
+            updates = { noindex: true };
+            break;
+          case 'index':
+            updates = { noindex: false };
+            break;
+        }
 
-    switch (action) {
-      case 'publish':
-        const publishResult = await supabase
-          .from('pages')
-          .update({ status: 'published', published_at: new Date().toISOString() })
-          .in('id', ids);
-        error = publishResult.error;
-        break;
+        const res = await fetch('/api/admin/pages/bulk', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids, updates }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(body.error || `HTTP ${res.status}`);
+        }
+      }
 
-      case 'unpublish':
-        const unpublishResult = await supabase
-          .from('pages')
-          .update({ status: 'draft', published_at: null })
-          .in('id', ids);
-        error = unpublishResult.error;
-        break;
-
-      case 'noindex':
-        const noindexResult = await supabase
-          .from('pages')
-          .update({ noindex: true })
-          .in('id', ids);
-        error = noindexResult.error;
-        break;
-
-      case 'index':
-        const indexResult = await supabase
-          .from('pages')
-          .update({ noindex: false })
-          .in('id', ids);
-        error = indexResult.error;
-        break;
-
-      case 'delete':
-        const deleteResult = await supabase
-          .from('pages')
-          .delete()
-          .in('id', ids);
-        error = deleteResult.error;
-        break;
-    }
-
-    if (error) {
-      console.error(`Error performing ${action}:`, error);
-      alert(`Failed to ${action} pages: ${error.message}`);
-    } else {
       setSelectedIds(new Set());
       await fetchPages();
 
@@ -173,6 +165,9 @@ export default function AdminPages() {
         delete: 'deleted',
       };
       alert(`${ids.length} page(s) ${actionLabels[action]} successfully!`);
+    } catch (err) {
+      console.error(`Error performing ${action}:`, err);
+      alert(`Failed to ${action} pages: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
