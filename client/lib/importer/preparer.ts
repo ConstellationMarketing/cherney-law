@@ -49,9 +49,20 @@ export function prepareRecord(
     data = buildPostRecord(mappedData, slug);
   }
 
+  // Build full-path slug for display and logging (includes template prefix)
+  let fullSlug: string;
+  if (templateType === 'area') {
+    fullSlug = `/areas-we-serve/${slug}`;
+  } else if (templateType === 'practice') {
+    fullSlug = `/practice-areas/${slug}`;
+  } else {
+    // posts: slug already has trailing slash, just prepend /
+    fullSlug = `/${slug}`;
+  }
+
   return {
     rowIndex: record.rowIndex,
-    slug,
+    slug: fullSlug,
     data,
     contentSections,
     faqItems,
