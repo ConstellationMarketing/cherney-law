@@ -66,10 +66,86 @@ const COLUMN_SIZE_PATTERNS = [
 // ─── 5a: Extract Main Content ────────────────────────────────────────────────
 
 /**
+ * Extract the inner HTML of an element given its opening tag start position.
+ * Uses the depth-tracking findMatchingClose().
+ */
+function extractInnerContent(html: string, tagStart: number, tagName: string): string {
+  const closeEnd = findMatchingClose(html, tagStart, tagName);
+  if (closeEnd <= tagStart) return '';
+  const openTagEnd = html.indexOf('>', tagStart) + 1;
+  const closeTagStart = closeEnd - `</${tagName}>`.length;
+  if (openTagEnd > 0 && closeTagStart > openTagEnd) {
+    return html.substring(openTagEnd, closeTagStart);
+  }
+  return '';
+}
+
+/**
+ * Layer 1: Semantic content-area targeting.
+ * Tries to find the actual body content by looking for known semantic markers
+ * before falling back to column detection.
+ * Returns the inner HTML of the content area, or the original html if not found.
+ */
+function extractContentArea(html: string): string {
+  // Priority 1: Divi Theme Builder post content module.
+  // This is the module that injects page-builder content into the page body.
+  const diviPostContent = html.match(/<div[^>]*class="[^"]*et_pb_post_content[^"]*"[^>]*>/i);
+  if (diviPostContent && diviPostContent.index !== undefined) {
+    const inner = extractInnerContent(html, diviPostContent.index, 'div');
+    if (inner.trim().length > 100) return inner;
+  }
+
+  // Priority 2: Divi inner post layout wrapper (older Divi structures)
+  const diviPostLayout = html.match(/<div[^>]*class="[^"]*et-l--post[^"]*"[^>]*>/i);
+  if (diviPostLayout && diviPostLayout.index !== undefined) {
+    const inner = extractInnerContent(html, diviPostLayout.index, 'div');
+    if (inner.trim().length > 100) return inner;
+  }
+
+  // Priority 3: WordPress standard content wrappers
+  const wpContent = html.match(
+    /<(div|article|section)[^>]*class="[^"]*(?:entry-content|post-content|article-content)[^"]*"[^>]*>/i
+  );
+  if (wpContent && wpContent.index !== undefined) {
+    const tag = (wpContent[0].match(/^<(\w+)/) ?? [])[1] ?? 'div';
+    const inner = extractInnerContent(html, wpContent.index, tag);
+    if (inner.trim().length > 100) return inner;
+  }
+
+  // Priority 4: itemprop="articleBody"
+  const articleBody = html.match(/<[^>]+itemprop="articleBody"[^>]*>/i);
+  if (articleBody && articleBody.index !== undefined) {
+    const tag = (articleBody[0].match(/^<(\w+)/) ?? [])[1] ?? 'div';
+    const inner = extractInnerContent(html, articleBody.index, tag);
+    if (inner.trim().length > 100) return inner;
+  }
+
+  // Priority 5: role="main"
+  const roleMain = html.match(/<[^>]+role="main"[^>]*>/i);
+  if (roleMain && roleMain.index !== undefined) {
+    const tag = (roleMain[0].match(/^<(\w+)/) ?? [])[1] ?? 'div';
+    const inner = extractInnerContent(html, roleMain.index, tag);
+    if (inner.trim().length > 100) return inner;
+  }
+
+  // Priority 6: id="main-content" / id="content" / id="main"
+  const idContent = html.match(/<(div|main|section)[^>]*id="(?:main-content|content|main)"[^>]*>/i);
+  if (idContent && idContent.index !== undefined) {
+    const tag = (idContent[0].match(/^<(\w+)/) ?? [])[1] ?? 'div';
+    const inner = extractInnerContent(html, idContent.index, tag);
+    if (inner.trim().length > 100) return inner;
+  }
+
+  // No content area found — return original html for fallback column detection
+  return html;
+}
+
+/**
  * Extract the main content from a full HTML document or fragment.
- * Strips page shell, extracts main column from multi-column layouts,
- * unwraps layout containers, and strips non-semantic attributes.
- * 
+ * Strips page shell, tries semantic content-area targeting first (Layer 1),
+ * falls back to column detection (Layer 2), then unwraps layout containers
+ * and strips non-semantic attributes.
+ *
  * CRITICAL: Builder CSS classes are used HERE for identification,
  * then stripped AFTER unwrapping.
  */
@@ -79,8 +155,15 @@ export function extractMainContent(html: string): string {
   // Step 1: Strip page shell (DOCTYPE, html, head, body, script, style, nav, footer, header)
   result = stripPageShell(result);
 
-  // Step 2: Extract main column from multi-column layouts
-  result = extractMainColumn(result);
+  // Step 2a: Try semantic content-area targeting first (Layer 1)
+  const contentArea = extractContentArea(result);
+  if (contentArea !== result) {
+    // Successfully isolated the content area — skip column detection entirely
+    result = contentArea;
+  } else {
+    // Step 2b: Fall back to column detection with full-width skipping fix (Layer 2)
+    result = extractMainColumn(result);
+  }
 
   // Step 3: Unwrap layout containers (builder divs, generic wrappers)
   result = unwrapLayoutContainers(result);
@@ -207,8 +290,14 @@ function extractLargestColumn(html: string, patterns: RegExp[]): string {
 
   if (columns.length < 2) return html;
 
-  // Pick the largest column
-  const largest = columns.reduce((a, b) => (a.size >= b.size ? a : b));
+  // Skip full-width columns (size >= 0.99) when partial-width columns also exist.
+  // Full-width columns are header/hero wrappers, not the actual content column.
+  // Example: Divi 4/4 hero wrapper vs 2/3 content column vs 1/3 sidebar.
+  const partialCols = columns.filter((c) => c.size < 0.99);
+  const candidates = partialCols.length >= 1 ? partialCols : columns;
+
+  // Pick the largest among candidates
+  const largest = candidates.reduce((a, b) => (a.size >= b.size ? a : b));
 
   // Extract content inside the largest column div
   const openTagEnd = html.indexOf('>', largest.start) + 1;
