@@ -188,31 +188,35 @@ export interface FilterOptions {
 /** Default filter options by template type */
 export const defaultFilterOptions: Record<TemplateType, FilterOptions> = {
   practice: {
-    removeContactBlocks: true,
+    // Law firm pages: CTA/consultation language IS the main content, not sidebar junk.
+    removeContactBlocks: false,
     removePostListings: true,
     removeSidebarWidgets: true,
     removeNewsletterBlocks: true,
     removeCommentSections: true,
     removeFormBlocks: true,
-    linkDensityThreshold: 0.6,
+    // Law firm pages have inline links to related practice areas — raise threshold.
+    linkDensityThreshold: 0.85,
   },
   post: {
+    // Blog posts: sidebar CTAs are genuinely secondary content.
     removeContactBlocks: true,
     removePostListings: true,
     removeSidebarWidgets: true,
     removeNewsletterBlocks: true,
     removeCommentSections: true,
     removeFormBlocks: true,
-    linkDensityThreshold: 0.6,
+    linkDensityThreshold: 0.75,
   },
   area: {
-    removeContactBlocks: true,
+    // Same as practice — law firm area pages are law firm content.
+    removeContactBlocks: false,
     removePostListings: true,
     removeSidebarWidgets: true,
     removeNewsletterBlocks: true,
     removeCommentSections: true,
     removeFormBlocks: true,
-    linkDensityThreshold: 0.6,
+    linkDensityThreshold: 0.85,
   },
 };
 

@@ -525,6 +525,9 @@ function stripSecondarySubSections(block: string): string {
 }
 
 /** Headings that indicate secondary/widget content */
+// NOTE: Do NOT add law-firm headings like "free consultation", "contact us",
+// "about us", "our location", "office hours" — these are MAIN content on
+// law firm pages, not sidebar widgets.
 const SECONDARY_HEADING_PATTERNS = [
   /recent\s+posts?/i,
   /latest\s+posts?/i,
@@ -539,16 +542,8 @@ const SECONDARY_HEADING_PATTERNS = [
   /newsletter/i,
   /follow\s+us/i,
   /social\s+media/i,
-  /connect\s+with/i,
+  /connect\s+with\s+(us|me)/i,
   /about\s+the\s+author/i,
-  /about\s+us/i,
-  /contact\s+us/i,
-  /get\s+in\s+touch/i,
-  /free\s+consultation/i,
-  /free\s+case\s+(review|evaluation)/i,
-  /schedule\s+(a\s+)?consultation/i,
-  /our\s+location/i,
-  /office\s+(hours|location)/i,
   /share\s+this/i,
   /leave\s+a\s+(comment|reply)/i,
   /related\s+articles?/i,
@@ -578,7 +573,7 @@ function isSecondaryBlock(block: string, options: FilterOptions): boolean {
   const textContent = block.replace(/<[^>]*>/g, '').trim();
 
   // Very short blocks with no real content
-  if (textContent.length < 20 && !/<img/i.test(block)) return true;
+  if (textContent.length < 60 && !/<img/i.test(block)) return true;
 
   // Contact/CTA blocks
   if (options.removeContactBlocks && isContactBlock(block, textContent)) return true;
@@ -605,6 +600,11 @@ function isSecondaryBlock(block: string, options: FilterOptions): boolean {
 }
 
 function isContactBlock(html: string, text: string): boolean {
+  // Only remove if it's a very short standalone CTA widget.
+  // Longer text means it's legitimate content that happens to mention consultation.
+  // Law firm pages legitimately use CTA/consultation language throughout.
+  if (text.length > 120) return false;
+
   const contactPatterns = [
     /free\s+(consultation|case\s+(review|evaluation))/i,
     /call\s+(us|now|today)/i,
@@ -616,9 +616,9 @@ function isContactBlock(html: string, text: string): boolean {
 
   if (contactPatterns.some((p) => p.test(text))) return true;
 
-  // Phone number links
+  // Phone number links with very short surrounding text (pure CTA widget)
   const phoneLinks = (html.match(/href="tel:/gi) ?? []).length;
-  if (phoneLinks >= 1 && text.length < 200) return true;
+  if (phoneLinks >= 1 && text.length < 80) return true;
 
   return false;
 }
@@ -696,6 +696,11 @@ function isHighLinkDensity(html: string, text: string, threshold: number): boole
 
   // Count link text vs total text
   const links = html.match(/<a[^>]*>([\s\S]*?)<\/a>/gi) ?? [];
+
+  // Need at least 5 links to trigger — law firm pages have anchor links
+  // to related practice areas that should not be treated as nav blocks.
+  if (links.length < 5) return false;
+
   let linkTextLength = 0;
   for (const link of links) {
     const lt = link.replace(/<[^>]*>/g, '').trim();
@@ -703,7 +708,7 @@ function isHighLinkDensity(html: string, text: string, threshold: number): boole
   }
 
   const density = linkTextLength / text.length;
-  return density > threshold && links.length >= 3;
+  return density > threshold;
 }
 
 // ─── Utility ─────────────────────────────────────────────────────────────────
