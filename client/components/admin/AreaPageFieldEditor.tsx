@@ -1,12 +1,11 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Plus, Trash2 } from "lucide-react";
-import type { AreaPageContent, AreaFaqItem, LocationItem } from "@/lib/cms/areaPageTypes";
+import type { AreaPageContent, AreaFaqItem } from "@/lib/cms/areaPageTypes";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import ImageUploader from "@/components/admin/ImageUploader";
 
@@ -135,17 +134,6 @@ export default function AreaPageFieldEditor({ content, onChange }: Props) {
     set("faq", { items });
   };
 
-  const addLocation = () =>
-    set("locationsSection", { items: [...content.locationsSection.items, { name: "", description: "", href: "" }] });
-  const removeLocation = (i: number) =>
-    set("locationsSection", { items: content.locationsSection.items.filter((_, idx) => idx !== i) });
-  const updateLocation = (i: number, k: keyof LocationItem, v: string) => {
-    const items = content.locationsSection.items.map((item, idx) =>
-      idx === i ? { ...item, [k]: v } : item
-    );
-    set("locationsSection", { items });
-  };
-
   return (
     <Accordion type="multiple" defaultValue={["hero"]} className="space-y-2">
       {/* HERO */}
@@ -231,11 +219,10 @@ export default function AreaPageFieldEditor({ content, onChange }: Props) {
                     />
                   </Field>
                   <Field label="Answer">
-                    <Textarea
+                    <RichTextEditor
                       value={item.answer}
-                      onChange={(e) => updateFaqItem(i, 'answer', e.target.value)}
-                      placeholder="Enter the answer..."
-                      rows={3}
+                      onChange={(v) => updateFaqItem(i, 'answer', v)}
+                      minHeight="120px"
                     />
                   </Field>
                 </ArrayCard>
@@ -311,47 +298,19 @@ export default function AreaPageFieldEditor({ content, onChange }: Props) {
         </AccordionContent>
       </AccordionItem>
 
-      {/* LOCATIONS SECTION */}
+      {/* LOCATIONS SECTION — Global (managed from hub page) */}
       <AccordionItem value="locationsSection" className="border rounded-lg px-4">
-        <AccordionTrigger className="text-sm font-semibold">Locations Section (Full Width)</AccordionTrigger>
-        <AccordionContent className="space-y-4 pb-4">
-          <Field label="Heading">
-            <Input
-              value={content.locationsSection.heading}
-              onChange={(e) => set("locationsSection", { heading: e.target.value })}
-              placeholder="Areas We Serve"
-            />
-          </Field>
-          <Field label="Intro Text">
-            <Textarea
-              value={content.locationsSection.introText}
-              onChange={(e) => set("locationsSection", { introText: e.target.value })}
-              placeholder="Intro text before locations list"
-              rows={3}
-            />
-          </Field>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Locations</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addLocation}>
-                <Plus className="w-3 h-3 mr-1" /> Add Location
-              </Button>
-            </div>
-            <div className="space-y-3">
-              {content.locationsSection.items.map((item, i) => (
-                <ArrayCard key={i} onRemove={() => removeLocation(i)}>
-                  <Field label="Location Name">
-                    <Input value={item.name} onChange={(e) => updateLocation(i, "name", e.target.value)} placeholder="e.g., Atlanta" />
-                  </Field>
-                  <Field label="Description (Optional)">
-                    <Textarea value={item.description || ""} onChange={(e) => updateLocation(i, "description", e.target.value)} placeholder="Optional location description" rows={2} />
-                  </Field>
-                  <Field label="Link (Optional)">
-                    <Input value={item.href || ""} onChange={(e) => updateLocation(i, "href", e.target.value)} placeholder="/atlanta/" />
-                  </Field>
-                </ArrayCard>
-              ))}
-            </div>
+        <AccordionTrigger className="text-sm font-semibold">Locations Section (Global)</AccordionTrigger>
+        <AccordionContent className="pb-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+            <p className="font-semibold mb-1">This section is managed globally.</p>
+            <p>
+              The locations grid shown on all area pages is sourced from the{" "}
+              <a href="/admin/pages" className="underline font-medium hover:text-blue-900">
+                Areas We Serve hub page
+              </a>
+              . Edit it there and the change will apply to every area page automatically.
+            </p>
           </div>
         </AccordionContent>
       </AccordionItem>

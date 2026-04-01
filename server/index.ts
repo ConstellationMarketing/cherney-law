@@ -7,6 +7,7 @@ import { handleBulkImport } from "./routes/bulk-import";
 import { handleBulkImportFetch } from "./routes/bulk-import-fetch";
 import { handleBulkImportImages } from "./routes/bulk-import-images";
 import { handleAiSplitAreaContent } from "./routes/ai-split-area-content";
+import { handleAiSplitAreaBatch } from "./routes/ai-split-area-batch";
 import {
   handleAiStatus,
   handleAiGenerateMeta,
@@ -42,6 +43,7 @@ export function createServer() {
   app.post("/api/bulk-import-fetch", handleBulkImportFetch);
   app.post("/api/bulk-import-images", handleBulkImportImages);
   app.post("/api/ai-split-area-content", handleAiSplitAreaContent);
+  app.post("/api/ai-split-area-batch", handleAiSplitAreaBatch);
 
   // Admin pages routes (service-role — returns ALL pages including drafts)
   app.get("/api/admin/pages", handleGetAdminPages);

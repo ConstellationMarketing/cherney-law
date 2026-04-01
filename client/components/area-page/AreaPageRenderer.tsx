@@ -1,5 +1,6 @@
 import type { AreaPageContent } from "@site/lib/cms/areaPageTypes";
 import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
+import { useHubPageLocations } from "@site/hooks/useHubPageLocations";
 import AboutHero from "@site/components/about/AboutHero";
 import LocationsGrid from "@site/components/areas-we-serve/LocationsGrid";
 import PracticeAreaDetailFaq from "@site/components/practice-detail/PracticeAreaDetailFaq";
@@ -44,6 +45,9 @@ interface AreaPageRendererProps {
 
 export default function AreaPageRenderer({ content }: AreaPageRendererProps) {
   const { phoneDisplay } = useGlobalPhone();
+  const { locationsSection: hubLocations } = useHubPageLocations();
+  // Use hub page locations as source of truth; fall back to page's own data
+  const effectiveLocations = hubLocations ?? content.locationsSection;
 
   return (
     <>
@@ -149,19 +153,19 @@ export default function AreaPageRenderer({ content }: AreaPageRendererProps) {
         />
       )}
 
-      {/* Locations Section — Full Width */}
-      {content.locationsSection.items.length > 0 && (
+      {/* Locations Section — Full Width (sourced from hub page /areas-we-serve/) */}
+      {effectiveLocations.items.length > 0 && (
         <div className="bg-gray-50 py-[40px] md:py-[60px]">
           <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%] lg:w-[80%]">
             <h3 className="font-playfair text-[28px] md:text-[36px] lg:text-[42px] leading-tight text-black pb-[20px]">
-              {content.locationsSection.heading}
+              {effectiveLocations.heading}
             </h3>
-            {content.locationsSection.introText && (
+            {effectiveLocations.introText && (
               <p className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black pb-[30px]">
-                {content.locationsSection.introText}
+                {effectiveLocations.introText}
               </p>
             )}
-            <LocationsGrid items={content.locationsSection.items} />
+            <LocationsGrid items={effectiveLocations.items} />
           </div>
         </div>
       )}

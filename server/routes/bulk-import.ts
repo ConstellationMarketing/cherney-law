@@ -1,5 +1,7 @@
 import { RequestHandler } from "express";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { randomUUID } from "crypto";
+import { extname } from "path";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ServiceClient = SupabaseClient<any, "public", any>;
@@ -9,6 +11,63 @@ function getServiceClient(): ServiceClient {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error("Missing Supabase env vars");
   return createClient(url, key);
+}
+
+/**
+ * Download an external image URL and upload it to Supabase Storage.
+ * Returns the new public URL, or the original URL on failure.
+ */
+async function uploadSingleImage(supabase: ServiceClient, imageUrl: string): Promise<string> {
+  if (!imageUrl || !imageUrl.startsWith("http")) return imageUrl;
+
+  try {
+    const response = await fetch(imageUrl, {
+      signal: AbortSignal.timeout(15_000),
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; BulkImporter/1.0)" },
+    });
+
+    if (!response.ok) return imageUrl;
+
+    const contentType = response.headers.get("content-type") ?? "image/jpeg";
+    const mimeType = contentType.split(";")[0].trim();
+    const urlExt = extname(new URL(imageUrl).pathname).toLowerCase() || ".jpg";
+    const mimeExtMap: Record<string, string> = {
+      "image/jpeg": ".jpg",
+      "image/png": ".png",
+      "image/gif": ".gif",
+      "image/webp": ".webp",
+      "image/svg+xml": ".svg",
+      "image/avif": ".avif",
+    };
+    const ext = mimeExtMap[mimeType] ?? urlExt;
+    const uid = randomUUID().split("-")[0];
+    const fileName = `imported-${Date.now()}-${uid}${ext}`;
+    const storagePath = `uploads/imported/${fileName}`;
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    const { error: uploadError } = await supabase.storage
+      .from("media")
+      .upload(storagePath, buffer, { contentType: mimeType, upsert: false });
+
+    if (uploadError) return imageUrl;
+
+    const { data: publicData } = supabase.storage.from("media").getPublicUrl(storagePath);
+    const newUrl = publicData.publicUrl;
+
+    await supabase.from("media").insert({
+      file_name: fileName,
+      file_path: storagePath,
+      public_url: newUrl,
+      file_size: buffer.length,
+      mime_type: mimeType,
+      uploaded_by: null,
+    });
+
+    return newUrl;
+  } catch {
+    return imageUrl;
+  }
 }
 
 interface ImportRecord {
@@ -131,6 +190,10 @@ async function importPracticePage(
   record: ImportRecord,
   mode: string
 ): Promise<string> {
+  // Upload og_image to media library
+  let ogImage = (record.data.og_image as string) || null;
+  if (ogImage) ogImage = await uploadSingleImage(supabase, ogImage).catch(() => ogImage);
+
   const pageData = {
     title: record.data.title as string,
     url_path: record.data.url_path as string,
@@ -141,7 +204,7 @@ async function importPracticePage(
     canonical_url: record.data.canonical_url || null,
     og_title: record.data.og_title || null,
     og_description: record.data.og_description || null,
-    og_image: record.data.og_image || null,
+    og_image: ogImage,
     noindex: record.data.noindex || false,
     status: record.data.status || "draft",
   };
@@ -183,6 +246,10 @@ async function importAreaPage(
   record: ImportRecord,
   mode: string
 ): Promise<string> {
+  // Upload og_image to media library
+  let ogImage = (record.data.og_image as string) || null;
+  if (ogImage) ogImage = await uploadSingleImage(supabase, ogImage).catch(() => ogImage);
+
   const pageData = {
     title: record.data.title as string,
     url_path: record.data.url_path as string,
@@ -193,7 +260,7 @@ async function importAreaPage(
     canonical_url: record.data.canonical_url || null,
     og_title: record.data.og_title || null,
     og_description: record.data.og_description || null,
-    og_image: record.data.og_image || null,
+    og_image: ogImage,
     noindex: record.data.noindex || false,
     status: record.data.status || "draft",
   };
@@ -249,19 +316,26 @@ async function importPost(
     }
   }
 
+  // Upload featured_image and og_image to media library
+  let featuredImage = (record.data.featured_image as string) || null;
+  if (featuredImage) featuredImage = await uploadSingleImage(supabase, featuredImage).catch(() => featuredImage);
+
+  let ogImage = (record.data.og_image as string) || null;
+  if (ogImage) ogImage = await uploadSingleImage(supabase, ogImage).catch(() => ogImage);
+
   const postData = {
     title: record.data.title as string,
     slug: record.data.slug as string,
     body: record.data.body || null,
     excerpt: record.data.excerpt || null,
-    featured_image: record.data.featured_image || null,
+    featured_image: featuredImage,
     category_id: categoryId,
     meta_title: record.data.meta_title || null,
     meta_description: record.data.meta_description || null,
     canonical_url: record.data.canonical_url || null,
     og_title: record.data.og_title || null,
     og_description: record.data.og_description || null,
-    og_image: record.data.og_image || null,
+    og_image: ogImage,
     noindex: record.data.noindex || false,
     status: record.data.status || "draft",
     published_at: record.data.published_at || null,

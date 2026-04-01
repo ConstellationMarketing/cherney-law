@@ -358,6 +358,31 @@ function buildPracticeRecord(
 }
 
 /**
+ * Extract plain text of first H2 from an HTML string.
+ * Returns empty string if no H2 found.
+ */
+function extractFirstH2Text(html: string): string {
+  if (!html) return '';
+  const match = html.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i);
+  if (!match) return '';
+  return match[1].replace(/<[^>]+>/g, '').trim();
+}
+
+/**
+ * Extract first image src + alt from HTML, returning {src, alt}.
+ */
+function extractFirstImage(html: string): { src: string; alt: string } {
+  if (!html) return { src: '', alt: '' };
+  const match = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*(alt=["']([^"']*)["'])?/i)
+    ?? html.match(/<img[^>]+(alt=["']([^"']*)["'])[^>]*src=["']([^"']+)["']/i);
+  if (!match) return { src: '', alt: '' };
+  // Group positions differ by pattern variant — handle both
+  const src = match[1] || match[3] || '';
+  const alt = match[3] || match[2] || '';
+  return { src, alt };
+}
+
+/**
  * Build an Areas We Serve page record for the CMS.
  */
 function buildAreaRecord(
@@ -385,6 +410,22 @@ function buildAreaRecord(
     }
   }
 
+  // Extract first H2 from each section for its heading
+  const introHeading = extractFirstH2Text(data.body) || defaults.introSection.heading;
+  const whyHeading = extractFirstH2Text(data.why_body) || defaults.whySection.heading;
+  const closingHeading = extractFirstH2Text(data.closing_body) || defaults.closingSection.heading;
+
+  // Extract section images — prefer explicitly passed fields, then first <img> in body
+  const introImg = data.body_image
+    ? { src: data.body_image, alt: data.body_image_alt || '' }
+    : extractFirstImage(data.body);
+  const whyImg = data.why_image
+    ? { src: data.why_image, alt: data.why_image_alt || '' }
+    : extractFirstImage(data.why_body);
+  const closingImg = data.closing_image
+    ? { src: data.closing_image, alt: data.closing_image_alt || '' }
+    : extractFirstImage(data.closing_body);
+
   const content = {
     hero: {
       ...defaults.hero,
@@ -393,15 +434,24 @@ function buildAreaRecord(
     },
     introSection: {
       ...defaults.introSection,
+      heading: introHeading,
       body: data.body || defaults.introSection.body,
+      image: introImg.src,
+      imageAlt: introImg.alt,
     },
     whySection: {
       ...defaults.whySection,
+      heading: whyHeading,
       body: data.why_body || defaults.whySection.body,
+      image: whyImg.src,
+      imageAlt: whyImg.alt,
     },
     closingSection: {
       ...defaults.closingSection,
+      heading: closingHeading,
       body: data.closing_body || defaults.closingSection.body,
+      image: closingImg.src,
+      imageAlt: closingImg.alt,
     },
     faq: {
       enabled: resolvedFaqItems.length > 0,
