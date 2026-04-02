@@ -60,6 +60,16 @@ function extractFaqZones(html: string): string {
 export function normalizeHtml(html: string, options: FilterOptions): string {
   if (!html?.trim()) return '';
 
+  const debug = !!(options as any).debug;
+  const faqBefore = hasFaqHeading(html);
+
+  function debugCheck(stepName: string, content: string) {
+    if (!debug || !faqBefore) return;
+    if (!hasFaqHeading(content)) {
+      console.warn(`[normalizeHtml] FAQ heading LOST after step: ${stepName} (length: ${content.length})`);
+    }
+  }
+
   let result = html;
 
   // 5a: Extract main content (strip shell, extract main column, unwrap wrappers)
@@ -73,11 +83,13 @@ export function normalizeHtml(html: string, options: FilterOptions): string {
     const faqZones = extractFaqZones(preExtract);
     if (faqZones) result = result + '\n' + faqZones;
   }
+  debugCheck('extractMainContent', result);
 
   // 5a (second pass): After extractMainContent strips classes, newly-bare divs
   // (elements that had non-layout classes which are now gone) need another unwrap
   // pass. Rule 2: bare wrapper divs ARE layout wrappers.
   result = unwrapLayoutContainers(result);
+  debugCheck('unwrapLayoutContainers', result);
 
   // 5b: Filter secondary content (sidebar widgets, CTAs, etc.)
   // Skipped for law-firm templates (practice, area) — the page shell/nav/sidebar is
@@ -86,6 +98,7 @@ export function normalizeHtml(html: string, options: FilterOptions): string {
   // law-firm content (CTAs, contact sections, etc.).
   if (!options.skipSecondaryFilter) {
     result = filterSecondaryContent(result, options);
+    debugCheck('filterSecondaryContent', result);
   }
 
   // 5c: Normalize URLs (relative → absolute)
@@ -95,15 +108,19 @@ export function normalizeHtml(html: string, options: FilterOptions): string {
 
   // 5d: Clean inline markup
   result = cleanInlineMarkup(result);
+  debugCheck('cleanInlineMarkup', result);
 
   // 5e: Normalize headings
   result = normalizeHeadings(result);
+  debugCheck('normalizeHeadings', result);
 
   // 5f: Remove duplicate blocks
   result = removeDuplicateBlocks(result);
+  debugCheck('removeDuplicateBlocks', result);
 
   // 5g: Remove empty elements — FINAL pass, iterative (Rule 7)
   result = removeEmptyElements(result);
+  debugCheck('removeEmptyElements', result);
 
   return result.trim();
 }

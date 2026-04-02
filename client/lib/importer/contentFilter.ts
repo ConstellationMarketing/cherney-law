@@ -638,6 +638,12 @@ const SECONDARY_HEADING_PATTERNS = [
   /related\s+articles?/i,
   /you\s+may\s+also\s+like/i,
   /more\s+from/i,
+  /resource\s+links?/i,
+  /helpful\s+links?/i,
+  /additional\s+resources?/i,
+  /useful\s+links?/i,
+  /external\s+links?/i,
+  /related\s+links?/i,
 ];
 
 function isSecondaryHeading(text: string): boolean {

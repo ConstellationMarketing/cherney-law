@@ -73,7 +73,34 @@ function detectQaStructure(html: string): boolean {
     if (qaCount >= 2) return true;
   }
 
+  // Pattern 3: Bold/strong paragraph Q&A format
+  // <p><b>Question?</b></p> followed by <p>Answer text...</p>
+  const boldQPattern = /<p[^>]*>\s*<(?:strong|b)>([\s\S]*?)<\/(?:strong|b)>\s*<\/p>\s*<p[^>]*>([\s\S]*?)<\/p>/gi;
+  let bm: RegExpExecArray | null;
+  let boldQaCount = 0;
+  while ((bm = boldQPattern.exec(html)) !== null) {
+    const q = stripTags(bm[1]).trim();
+    const a = stripTags(bm[2]).trim();
+    if (q.endsWith('?') && a.length > 30) boldQaCount++;
+    if (boldQaCount >= 2) return true;
+  }
+
   return false;
+}
+
+/**
+ * Strip resource/link sub-sections (H3-H6) from HTML before FAQ extraction.
+ * Removes headings like "Resource Links", "Helpful Links", etc. and their content.
+ */
+function stripResourceSubSections(html: string): string {
+  const resourcePattern = /\b(resource\s+links?|helpful\s+links?|additional\s+resources?|useful\s+links?|external\s+links?|related\s+links?)\b/i;
+  return html.replace(
+    /<h([3-6])[^>]*>([\s\S]*?)<\/h\1>([\s\S]*?)(?=<h[1-6]|$)/gi,
+    (match, _level, headingContent) => {
+      const text = stripTags(headingContent).trim();
+      return resourcePattern.test(text) ? '' : match;
+    }
+  );
 }
 
 // Fix 2 — H2Section includes hasQaStructure
@@ -387,7 +414,7 @@ function smartFallbackSplit(sections: H2Section[]): SplitResult {
     }
   }
 
-  const faqHtml = joinSections(faqSections);
+  const faqHtml = faqSections.length ? stripResourceSubSections(joinSections(faqSections)) : '';
   const faqItems = faqHtml ? extractFaqItems(faqHtml) : [];
   const faqJson = JSON.stringify(faqItems);
   const n = contentSections.length;
@@ -460,7 +487,7 @@ async function processRecord(
       else introSections.push(sections[i]);
     }
 
-    const faqHtml = joinSections(faqSections);
+    const faqHtml = faqSections.length ? stripResourceSubSections(joinSections(faqSections)) : '';
     const faqItems = faqHtml ? extractFaqItems(faqHtml) : [];
 
     split = {
