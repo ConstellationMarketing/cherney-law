@@ -33,7 +33,19 @@ function FullWidthImage({ src, alt }: { src?: string; alt?: string }) {
 function BodyContent({ html }: { html: string }) {
   return (
     <div
-      className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black prose prose-sm max-w-none [&_a]:text-law-accent [&_a]:underline pb-[30px]"
+      className={[
+        "prose prose-neutral max-w-none pb-[30px]",
+        // Font overrides
+        "prose-p:font-outfit prose-p:text-[16px] md:prose-p:text-[18px] prose-p:leading-[1.7] prose-p:text-black prose-p:my-4",
+        // Heading overrides
+        "prose-headings:font-playfair prose-headings:text-black prose-headings:mt-6 prose-headings:mb-3",
+        // Link overrides
+        "prose-a:text-law-accent prose-a:underline prose-a:font-normal",
+        // List overrides
+        "prose-li:font-outfit prose-li:text-[16px] prose-li:text-black",
+        // Ensure images are responsive
+        "prose-img:rounded prose-img:my-4",
+      ].join(" ")}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

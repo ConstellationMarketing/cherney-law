@@ -129,10 +129,20 @@ export const handleBulkPatchAdminPages: RequestHandler = async (req, res) => {
  * Bulk-deletes multiple pages using the service-role key.
  */
 export const handleBulkDeleteAdminPages: RequestHandler = async (req, res) => {
+  // Always respond with JSON — set header first before any other logic
   res.setHeader('Content-Type', 'application/json');
+
   try {
-    const ids: string[] = req.body?.ids;
+    // Body may be in req.body (parsed by global express.json) or needs manual extraction
+    let ids: string[] = req.body?.ids;
+
+    // Fallback: if body wasn't parsed (e.g. double-middleware edge case), try parsing raw
+    if (!ids && req.body && typeof req.body === 'string') {
+      try { ids = JSON.parse(req.body).ids; } catch { /* ignore */ }
+    }
+
     if (!Array.isArray(ids) || ids.length === 0) {
+      console.warn('[bulk-delete] Bad request — ids:', ids, '| body:', JSON.stringify(req.body));
       res.status(400).json({ error: "Missing or empty ids array" });
       return;
     }
@@ -141,12 +151,16 @@ export const handleBulkDeleteAdminPages: RequestHandler = async (req, res) => {
     const { error } = await supabase.from("pages").delete().in("id", ids);
 
     if (error) {
+      console.error('[bulk-delete] Supabase error:', error.message);
       res.status(500).json({ error: error.message });
       return;
     }
 
+    console.log(`[bulk-delete] Deleted ${ids.length} pages`);
     res.json({ success: true, count: ids.length });
   } catch (err) {
-    res.status(500).json({ error: err instanceof Error ? err.message : "Internal server error" });
+    const msg = err instanceof Error ? err.message : "Internal server error";
+    console.error('[bulk-delete] Caught exception:', msg);
+    res.status(500).json({ error: msg });
   }
 };
