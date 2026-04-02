@@ -6,7 +6,6 @@ import { computeFieldDiffs, inferRulesFromDiff } from '@site/lib/importer/recipe
 import { getTemplateFields, getContentFieldKeys } from '@site/lib/importer/templateFields';
 import { cleanSourceRecords } from '@site/lib/importer/sourceCleaner';
 import { normalizeHtml } from '@site/lib/importer/htmlNormalizer';
-import { normalizeUrlSlug } from '@site/lib/importer/preparer';
 
 interface Props {
   state: WizardState;
@@ -73,9 +72,16 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
   const [corrections, setCorrections] = useState<Record<string, string>>(() => {
     if (!mappedSample?.mappedData) return {};
     const initial = { ...mappedSample.mappedData };
-    // Normalize slug: strip domain so full URLs become just the slug segment
-    if (initial.slug && state.templateType) {
-      initial.slug = normalizeUrlSlug(initial.slug, initial.title ?? '', state.templateType);
+    // Strip domain from slug but keep the full path (e.g. /areas-we-serve/atlanta/)
+    if (initial.slug) {
+      try {
+        if (/^https?:\/\//i.test(initial.slug)) {
+          const url = new URL(initial.slug);
+          initial.slug = url.pathname;
+        }
+      } catch {
+        // Not a valid URL, leave as-is
+      }
     }
     return initial;
   });
