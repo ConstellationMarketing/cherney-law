@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
-import type { WizardState } from '@site/lib/importer/recipeTypes';
+import type { WizardState, RecipePreset } from '@site/lib/importer/recipeTypes';
 import { createDefaultRecipe } from '@site/lib/importer/recipeEngine';
+import { supabase } from '@/lib/supabase';
 import { applyFieldMappingSingle } from '@site/lib/importer/fieldMapping';
 import { computeFieldDiffs, inferRulesFromDiff } from '@site/lib/importer/recipeInference';
 import { getTemplateFields, getContentFieldKeys } from '@site/lib/importer/templateFields';
@@ -97,6 +98,75 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
   // AI split state (only relevant for 'area' template)
   const [aiSplitting, setAiSplitting] = useState(false);
   const [aiSplitError, setAiSplitError] = useState<string | null>(null);
+
+  // --- Load recipe state ---
+  const [savedRecipes, setSavedRecipes] = useState<RecipePreset[]>([]);
+  const [selectedRecipeId, setSelectedRecipeId] = useState<string>('');
+  const [loadingRecipes, setLoadingRecipes] = useState(false);
+  const [recipeBannerDismissed, setRecipeBannerDismissed] = useState(false);
+
+  // --- Save recipe state ---
+  const [showSaveForm, setShowSaveForm] = useState(false);
+  const [saveName, setSaveName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Load available recipes for this template type
+  useEffect(() => {
+    if (!state.templateType) return;
+    setLoadingRecipes(true);
+    supabase
+      .from('import_recipes')
+      .select('*')
+      .eq('template_type', state.templateType)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        setSavedRecipes((data as RecipePreset[]) ?? []);
+        if (data && data.length > 0) {
+          setSelectedRecipeId(data[0].id);
+        }
+        setLoadingRecipes(false);
+      });
+  }, [state.templateType]);
+
+  const handleLoadRecipe = () => {
+    const preset = savedRecipes.find((r) => r.id === selectedRecipeId);
+    if (!preset) return;
+    updateState({ recipe: preset.recipe_json });
+    setRecipeBannerDismissed(true);
+  };
+
+  const handleSaveRecipe = async () => {
+    if (!recipe || recipe.rules.length === 0) return;
+    setSaving(true);
+    const name =
+      saveName.trim() ||
+      `${state.templateType} recipe — ${new Date().toLocaleDateString()}`;
+    await supabase.from('import_recipes').insert({
+      name,
+      template_type: state.templateType,
+      source_type: state.sourceType,
+      recipe_json: recipe,
+      ai_settings_json: state.aiSettings,
+      confidence_threshold: recipe.confidenceThreshold,
+      version: recipe.version,
+      is_active: true,
+    });
+    setSaving(false);
+    setSaveSuccess(true);
+    setShowSaveForm(false);
+    setSaveName('');
+    // Refresh recipes list
+    const { data } = await supabase
+      .from('import_recipes')
+      .select('*')
+      .eq('template_type', state.templateType)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+    setSavedRecipes((data as RecipePreset[]) ?? []);
+    setTimeout(() => setSaveSuccess(false), 3000);
+  };
 
   // Reinitialize corrections whenever the chosen sample record changes
   useEffect(() => {
@@ -282,6 +352,39 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
         </p>
       </div>
 
+      {/* Load recipe banner */}
+      {!loadingRecipes && savedRecipes.length > 0 && !recipeBannerDismissed && (
+        <div className="flex items-center gap-3 bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-3">
+          <span className="text-sm font-medium text-indigo-800 whitespace-nowrap">
+            Saved recipe available:
+          </span>
+          <select
+            value={selectedRecipeId}
+            onChange={(e) => setSelectedRecipeId(e.target.value)}
+            className="flex-1 rounded border border-indigo-300 bg-white px-2 py-1 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          >
+            {savedRecipes.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name} ({r.recipe_json.rules?.length ?? 0} rules, v{r.version})
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleLoadRecipe}
+            className="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm font-medium hover:bg-indigo-700"
+          >
+            Load
+          </button>
+          <button
+            onClick={() => setRecipeBannerDismissed(true)}
+            className="text-indigo-400 hover:text-indigo-600 text-lg leading-none"
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Sample record selector */}
       {state.sourceRecords.length > 1 && (
         <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
@@ -402,11 +505,53 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
         </div>
       )}
 
-      <div className="flex justify-between">
+      <div className="flex justify-between items-center">
         <button onClick={onBack} className="px-4 py-2 text-gray-600 hover:text-gray-900 text-sm font-medium">
           Back
         </button>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          {/* Save recipe */}
+          {recipe.rules.length > 0 && (
+            showSaveForm ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={saveName}
+                  onChange={(e) => setSaveName(e.target.value)}
+                  placeholder={`${state.templateType} recipe — ${new Date().toLocaleDateString()}`}
+                  className="rounded border border-gray-300 px-3 py-1.5 text-sm w-64 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveRecipe();
+                    if (e.key === 'Escape') { setShowSaveForm(false); setSaveName(''); }
+                  }}
+                />
+                <button
+                  onClick={handleSaveRecipe}
+                  disabled={saving}
+                  className="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {saving ? 'Saving…' : 'Save'}
+                </button>
+                <button
+                  onClick={() => { setShowSaveForm(false); setSaveName(''); }}
+                  className="px-3 py-1.5 text-gray-500 hover:text-gray-700 text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowSaveForm(true)}
+                className="px-3 py-1.5 border border-indigo-300 text-indigo-700 rounded text-sm font-medium hover:bg-indigo-50"
+              >
+                Save Recipe
+              </button>
+            )
+          )}
+          {saveSuccess && (
+            <span className="text-sm text-green-600 font-medium">Recipe saved!</span>
+          )}
           {hasChanges && (
             <button
               onClick={handleInferRules}
