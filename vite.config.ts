@@ -22,6 +22,12 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: "dist/spa",
   },
+  optimizeDeps: {
+    // Explicitly listing core deps ensures the configHash (and therefore
+    // browserHash) changes when this list is modified — useful for busting
+    // stale browser-cached dep bundles after server restarts.
+    include: ["react", "react-dom", "react-dom/client", "react-router-dom"],
+  },
   plugins: [react(), expressPlugin()],
   resolve: {
   alias: {
