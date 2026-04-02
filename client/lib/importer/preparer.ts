@@ -415,16 +415,32 @@ function buildAreaRecord(
   const whyHeading = extractFirstH2Text(data.why_body) || defaults.whySection.heading;
   const closingHeading = extractFirstH2Text(data.closing_body) || defaults.closingSection.heading;
 
-  // Extract section images — prefer explicitly passed fields, then first <img> in body
-  const introImg = data.body_image
-    ? { src: data.body_image, alt: data.body_image_alt || '' }
-    : extractFirstImage(data.body);
-  const whyImg = data.why_image
-    ? { src: data.why_image, alt: data.why_image_alt || '' }
-    : extractFirstImage(data.why_body);
-  const closingImg = data.closing_image
-    ? { src: data.closing_image, alt: data.closing_image_alt || '' }
-    : extractFirstImage(data.closing_body);
+  // Extract section images — prefer explicitly passed fields, then first <img> in body.
+  // Deduplicate: once a URL is used in a section it won't be reused in later sections.
+  const usedImageUrls = new Set<string>();
+
+  function pickSectionImage(
+    explicitSrc: string | undefined,
+    explicitAlt: string | undefined,
+    bodyHtml: string | undefined,
+  ): { src: string; alt: string } {
+    // Try explicit field first
+    if (explicitSrc && !usedImageUrls.has(explicitSrc)) {
+      usedImageUrls.add(explicitSrc);
+      return { src: explicitSrc, alt: explicitAlt || '' };
+    }
+    // Fall back to first image found in body HTML
+    const found = extractFirstImage(bodyHtml ?? '');
+    if (found.src && !usedImageUrls.has(found.src)) {
+      usedImageUrls.add(found.src);
+      return found;
+    }
+    return { src: '', alt: '' };
+  }
+
+  const introImg = pickSectionImage(data.body_image, data.body_image_alt, data.body);
+  const whyImg = pickSectionImage(data.why_image, data.why_image_alt, data.why_body);
+  const closingImg = pickSectionImage(data.closing_image, data.closing_image_alt, data.closing_body);
 
   const content = {
     hero: {

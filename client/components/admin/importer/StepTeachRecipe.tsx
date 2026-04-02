@@ -94,11 +94,23 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
     setCorrections((prev) => ({ ...prev, [key]: value }));
   };
 
+  // Fields populated by the AI batch splitter — must never generate recipe rules
+  // because they are computed fresh per-page during auto-transform.
+  // Allowing them would bake the recipe-page's HTML as a default_value for every page.
+  const AI_SPLIT_FIELDS = new Set([
+    'why_body', 'closing_body', 'faq',
+    'body_image', 'body_image_alt',
+    'why_image', 'why_image_alt',
+    'closing_image', 'closing_image_alt',
+  ]);
+
   const handleInferRules = () => {
     if (!mappedSample) return;
 
     const diffs = computeFieldDiffs(mappedSample.mappedData, corrections);
-    const newRules = inferRulesFromDiff(diffs);
+    // Strip AI-split fields so their content never becomes a recipe rule
+    const filteredDiffs = diffs.filter((d) => !AI_SPLIT_FIELDS.has(d.field));
+    const newRules = inferRulesFromDiff(filteredDiffs);
 
     const updatedRecipe = {
       ...recipe,
@@ -204,6 +216,12 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
   };
 
   const handleContinue = () => {
+    // Always flush any pending corrections as rules before moving on,
+    // so edits the user made (e.g. stripping the firm name from the title)
+    // are saved even if they didn't click "Learn from Corrections" first.
+    if (hasChanges) {
+      handleInferRules();
+    }
     if (!state.recipe) {
       updateState({ recipe });
     }
