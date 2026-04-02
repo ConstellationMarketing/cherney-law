@@ -392,16 +392,25 @@ function buildAreaRecord(
 ): Record<string, unknown> {
   const defaults = defaultAreaPageContent;
 
-  // Parse explicit faq JSON if provided
-  let resolvedFaqItems = faqItems;
-  if (data.faq && resolvedFaqItems.length === 0) {
+  // FAQ resolution: always try data.faq JSON first (highest fidelity, set by AI split)
+  let resolvedFaqItems: FaqItem[] = [];
+
+  // 1. AI-split FAQ JSON (most reliable — comes from ai-split-area-content endpoint)
+  if (data.faq) {
     try {
       const parsed = JSON.parse(data.faq);
-      if (Array.isArray(parsed)) resolvedFaqItems = parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        resolvedFaqItems = parsed;
+      }
     } catch { /* ignore */ }
   }
 
-  // Fallback: extract FAQ from body content if not already found
+  // 2. Fall back to FAQ extracted by preparer from intro body scan
+  if (resolvedFaqItems.length === 0 && faqItems.length > 0) {
+    resolvedFaqItems = faqItems;
+  }
+
+  // 3. Last resort: scan all section bodies together
   if (resolvedFaqItems.length === 0) {
     const allBody = [data.body, data.why_body, data.closing_body].filter(Boolean).join('\n');
     if (allBody) {
@@ -442,6 +451,15 @@ function buildAreaRecord(
   const whyImg = pickSectionImage(data.why_image, data.why_image_alt, data.why_body);
   const closingImg = pickSectionImage(data.closing_image, data.closing_image_alt, data.closing_body);
 
+  // Build why/closing sections without placeholders when content is empty
+  const whySectionContent = data.why_body
+    ? { heading: whyHeading, headingLevel: defaults.whySection.headingLevel, body: data.why_body, image: whyImg.src, imageAlt: whyImg.alt }
+    : { heading: '', headingLevel: defaults.whySection.headingLevel, body: '', image: '', imageAlt: '' };
+
+  const closingSectionContent = data.closing_body
+    ? { heading: closingHeading, headingLevel: defaults.closingSection.headingLevel, body: data.closing_body, image: closingImg.src, imageAlt: closingImg.alt }
+    : { heading: '', headingLevel: defaults.closingSection.headingLevel, body: '', image: '', imageAlt: '' };
+
   const content = {
     hero: {
       ...defaults.hero,
@@ -455,20 +473,8 @@ function buildAreaRecord(
       image: introImg.src,
       imageAlt: introImg.alt,
     },
-    whySection: {
-      ...defaults.whySection,
-      heading: whyHeading,
-      body: data.why_body || defaults.whySection.body,
-      image: whyImg.src,
-      imageAlt: whyImg.alt,
-    },
-    closingSection: {
-      ...defaults.closingSection,
-      heading: closingHeading,
-      body: data.closing_body || defaults.closingSection.body,
-      image: closingImg.src,
-      imageAlt: closingImg.alt,
-    },
+    whySection: whySectionContent,
+    closingSection: closingSectionContent,
     faq: {
       enabled: resolvedFaqItems.length > 0,
       heading: 'Frequently Asked Questions',

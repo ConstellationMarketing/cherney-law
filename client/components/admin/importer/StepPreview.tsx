@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { WizardState } from '@site/lib/importer/recipeTypes';
+import type { TransformedRecord, TemplateType } from '@site/lib/importer/types';
 
 interface Props {
   state: WizardState;
@@ -7,6 +8,229 @@ interface Props {
   onNext: () => void;
   onBack: () => void;
 }
+
+// ─── Helper: strip HTML tags to plain text ───────────────────────────────────
+
+function stripTags(html: string): string {
+  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function truncate(text: string, maxLen: number): string {
+  if (text.length <= maxLen) return text;
+  return text.substring(0, maxLen).trimEnd() + '…';
+}
+
+// ─── Section type helpers ────────────────────────────────────────────────────
+
+interface SectionPreview {
+  label: string;
+  heading?: string;
+  bodyPreview?: string;
+  empty: boolean;
+  itemCount?: number;
+  firstItem?: string;
+}
+
+function getAreaSections(content: Record<string, unknown>): SectionPreview[] {
+  const hero = content.hero as Record<string, unknown> | undefined;
+  const intro = content.introSection as Record<string, unknown> | undefined;
+  const why = content.whySection as Record<string, unknown> | undefined;
+  const closing = content.closingSection as Record<string, unknown> | undefined;
+  const faq = content.faq as { enabled?: boolean; items?: { question: string }[] } | undefined;
+
+  const sections: SectionPreview[] = [];
+
+  // Hero
+  sections.push({
+    label: 'Hero',
+    heading: String(hero?.sectionLabel ?? hero?.tagline ?? ''),
+    empty: !hero?.sectionLabel && !hero?.tagline,
+  });
+
+  // Intro
+  const introBody = stripTags(String(intro?.body ?? ''));
+  sections.push({
+    label: 'Intro',
+    heading: String(intro?.heading ?? ''),
+    bodyPreview: truncate(introBody, 300),
+    empty: !introBody,
+  });
+
+  // Why
+  const whyBody = stripTags(String(why?.body ?? ''));
+  sections.push({
+    label: 'Why',
+    heading: String(why?.heading ?? ''),
+    bodyPreview: whyBody ? truncate(whyBody, 200) : undefined,
+    empty: !whyBody,
+  });
+
+  // Closing
+  const closingBody = stripTags(String(closing?.body ?? ''));
+  sections.push({
+    label: 'Closing',
+    heading: String(closing?.heading ?? ''),
+    bodyPreview: closingBody ? truncate(closingBody, 200) : undefined,
+    empty: !closingBody,
+  });
+
+  // FAQ
+  const faqItems = faq?.items ?? [];
+  sections.push({
+    label: 'FAQ',
+    itemCount: faqItems.length,
+    firstItem: faqItems[0]?.question,
+    empty: !faqItems.length,
+  });
+
+  return sections;
+}
+
+function getPracticeSections(content: Record<string, unknown>): SectionPreview[] {
+  const hero = content.hero as Record<string, unknown> | undefined;
+  const contentSections = content.contentSections as Record<string, unknown>[] | undefined;
+  const faq = content.faq as { enabled?: boolean; items?: { question: string }[] } | undefined;
+
+  const sections: SectionPreview[] = [];
+
+  // Hero
+  sections.push({
+    label: 'Hero',
+    heading: String(hero?.tagline ?? ''),
+    empty: !hero?.tagline,
+  });
+
+  // Content Sections
+  const cs = contentSections ?? [];
+  if (cs.length === 0) {
+    sections.push({ label: 'Content', empty: true });
+  } else {
+    cs.slice(0, 3).forEach((s, i) => {
+      const body = stripTags(String(s.body ?? ''));
+      sections.push({
+        label: `Content ${i + 1}`,
+        bodyPreview: truncate(body, 200),
+        empty: !body,
+      });
+    });
+    if (cs.length > 3) {
+      sections.push({ label: `+${cs.length - 3} more sections`, empty: false });
+    }
+  }
+
+  // FAQ
+  const faqItems = faq?.items ?? [];
+  sections.push({
+    label: 'FAQ',
+    itemCount: faqItems.length,
+    firstItem: faqItems[0]?.question,
+    empty: !faqItems.length,
+  });
+
+  return sections;
+}
+
+function getPostSections(preparedData: Record<string, unknown>): SectionPreview[] {
+  const body = stripTags(String(preparedData.body ?? ''));
+  const excerpt = String(preparedData.excerpt ?? '');
+  return [
+    {
+      label: 'Excerpt',
+      bodyPreview: excerpt ? truncate(excerpt, 200) : undefined,
+      empty: !excerpt,
+    },
+    {
+      label: 'Body',
+      bodyPreview: body ? truncate(body, 300) : undefined,
+      empty: !body,
+    },
+  ];
+}
+
+// ─── ContentPreviewCard ───────────────────────────────────────────────────────
+
+interface ContentPreviewCardProps {
+  record: TransformedRecord;
+  templateType: TemplateType;
+}
+
+function ContentPreviewCard({ record, templateType }: ContentPreviewCardProps) {
+  const [expanded, setExpanded] = useState(false);
+
+  const title = String(record.preparedData.title ?? record.mappedData.title ?? '');
+  const slug = record.slug;
+
+  const content = record.preparedData.content as Record<string, unknown> | undefined;
+
+  const sections: SectionPreview[] = useMemo(() => {
+    if (templateType === 'area' && content) return getAreaSections(content);
+    if (templateType === 'practice' && content) return getPracticeSections(content);
+    return getPostSections(record.preparedData);
+  }, [templateType, content, record.preparedData]);
+
+  function sectionBorderClass(s: SectionPreview): string {
+    if (s.empty) return 'border-dashed border-gray-300 bg-gray-50';
+    const hasContent = s.bodyPreview || s.itemCount || s.heading;
+    if (hasContent && (s.bodyPreview?.length ?? 0) < 60 && !s.itemCount) {
+      return 'border-yellow-300 bg-yellow-50';
+    }
+    return 'border-green-300 bg-green-50';
+  }
+
+  return (
+    <div className="border border-gray-200 rounded-lg overflow-hidden">
+      {/* Card header */}
+      <button
+        className="w-full flex items-start justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-gray-900 truncate">{title}</p>
+          <p className="text-xs text-gray-500 font-mono truncate mt-0.5">{slug}</p>
+        </div>
+        <span className="text-gray-400 text-xs ml-3 mt-0.5 shrink-0">
+          {expanded ? '▲ hide' : '▼ preview'}
+        </span>
+      </button>
+
+      {/* Sections grid */}
+      {expanded && (
+        <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white">
+          {sections.map((s, i) => (
+            <div
+              key={i}
+              className={`border rounded p-2 text-xs ${sectionBorderClass(s)}`}
+            >
+              <p className="font-semibold text-gray-700 mb-1">{s.label}</p>
+              {s.empty ? (
+                <p className="text-gray-400 italic">Empty — not imported</p>
+              ) : (
+                <>
+                  {s.heading && (
+                    <p className="text-gray-800 font-medium mb-1 truncate">{s.heading}</p>
+                  )}
+                  {s.bodyPreview && (
+                    <p className="text-gray-600 leading-snug">{s.bodyPreview}</p>
+                  )}
+                  {s.itemCount !== undefined && (
+                    <p className="text-gray-700">
+                      {s.itemCount} item{s.itemCount !== 1 ? 's' : ''}
+                      {s.firstItem && (
+                        <span className="text-gray-500"> — {truncate(s.firstItem, 80)}</span>
+                      )}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function StepPreview({ state, updateState, onNext, onBack }: Props) {
   const importReady = useMemo(
@@ -16,6 +240,13 @@ export default function StepPreview({ state, updateState, onNext, onBack }: Prop
 
   const skipped = state.transformedRecords.filter((r) => r.status === 'skipped').length;
   const excluded = state.transformedRecords.filter((r) => r.status === 'excluded' as string).length;
+
+  // Pick up to 3 random sample records (skip row 0 — that was the Build Recipe page)
+  const sampleRecords = useMemo(() => {
+    const pool = importReady.filter((r) => r.rowIndex !== 0);
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(3, shuffled.length));
+  }, [importReady]);
 
   function handleExclude(rowIndex: number) {
     const updated = state.transformedRecords.map((r) =>
@@ -46,6 +277,25 @@ export default function StepPreview({ state, updateState, onNext, onBack }: Prop
           )}
         </p>
       </div>
+
+      {/* Content sample cards */}
+      {sampleRecords.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-gray-700">
+            Content Sample ({sampleRecords.length} of {importReady.length} page{importReady.length !== 1 ? 's' : ''})
+          </h3>
+          <p className="text-xs text-gray-500">
+            Click a card to expand and verify sections before importing.
+          </p>
+          {sampleRecords.map((record) => (
+            <ContentPreviewCard
+              key={record.rowIndex}
+              record={record}
+              templateType={state.templateType}
+            />
+          ))}
+        </div>
+      )}
 
       <div className="overflow-x-auto border border-gray-200 rounded-lg">
         <table className="min-w-full text-xs">

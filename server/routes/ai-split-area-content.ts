@@ -81,12 +81,18 @@ function splitIntoH2Sections(html: string): H2Section[] {
 
 /**
  * Detect if an HTML section has Q&A structure:
- * - 2+ H3/H4 subheadings (question-style subheadings), OR
+ * - 2+ H3/H4 subheadings that actually end with '?', OR
  * - <dt>/<dd> definition list elements
  */
 function detectQaStructure(html: string): boolean {
-  const h3h4Matches = html.match(/<h[34][^>]*>/gi) ?? [];
-  if (h3h4Matches.length >= 2) return true;
+  const headingPattern = /<h[34][^>]*>([\/\S\s]*?)<\/h[34]>/gi;
+  let m: RegExpExecArray | null;
+  let questionCount = 0;
+  while ((m = headingPattern.exec(html)) !== null) {
+    const text = stripTags(m[1]).trim();
+    if (text.endsWith('?')) questionCount++;
+    if (questionCount >= 2) return true;
+  }
   if (/<dt[^>]*>/i.test(html) && /<dd[^>]*>/i.test(html)) return true;
   return false;
 }
@@ -127,6 +133,17 @@ function extractFirstImage(html: string): { src: string; alt: string; cleanedHtm
   return { src, alt, cleanedHtml };
 }
 
+/**
+ * Return the index of the next heading tag (<h2>, <h3>, or <h4>) at or after `from`.
+ * Returns -1 if none found. Uses a regex to avoid false matches on <header> etc.
+ */
+function indexOfNextHeading(html: string, from: number): number {
+  const pattern = /<h[2-4][^>]*>/gi;
+  pattern.lastIndex = from;
+  const m = pattern.exec(html);
+  return m ? m.index : -1;
+}
+
 /** Extract FAQ items from HTML sections classified as "faq" */
 function extractFaqItems(html: string): { question: string; answer: string }[] {
   const items: { question: string; answer: string }[] = [];
@@ -145,10 +162,9 @@ function extractFaqItems(html: string): { question: string; answer: string }[] {
 
   for (let i = 0; i < qaPositions.length; i++) {
     const start = qaPositions[i].start;
-    const end = i + 1 < qaPositions.length
-      ? html.indexOf('<h', start)
-      : html.length;
-    const answerHtml = html.substring(start, end > start ? end : html.length).trim();
+    const nextHeading = i + 1 < qaPositions.length ? indexOfNextHeading(html, start) : -1;
+    const end = nextHeading > start ? nextHeading : html.length;
+    const answerHtml = html.substring(start, end).trim();
     const answerText = stripTags(answerHtml).trim();
     if (answerText) {
       items.push({ question: qaPositions[i].question, answer: answerHtml });
@@ -162,6 +178,17 @@ function extractFaqItems(html: string): { question: string; answer: string }[] {
       const q = stripTags(match[1]).trim();
       const a = match[2].trim();
       if (q && a) items.push({ question: q, answer: a });
+    }
+  }
+
+  // Pattern 3: Bold/strong paragraphs as question + following paragraph as answer
+  if (items.length === 0) {
+    const boldPattern = /<p[^>]*>\s*<(?:strong|b)>([\s\S]*?)<\/(?:strong|b)>\s*<\/p>\s*<p[^>]*>([\s\S]*?)<\/p>/gi;
+    while ((match = boldPattern.exec(html)) !== null) {
+      const q = stripTags(match[1]).trim();
+      if (q.endsWith('?')) {
+        items.push({ question: q, answer: match[2].trim() });
+      }
     }
   }
 
@@ -328,7 +355,7 @@ export const handleAiSplitAreaContent: RequestHandler = async (req, res) => {
           content: `You are classifying H2 sections of a law firm "Areas We Serve" page.
 
 RULES:
-- "faq": ALWAYS use this for any section whose heading contains words like "FAQ", "Questions", "Frequently Asked", OR whose content is marked "[Contains Q&A structure]". This MUST take priority over all other categories — never assign a Q&A section to "why" or "closing".
+- "faq": Use for ANY section whose heading contains words like "FAQ", "Frequently Asked Questions", "Questions", "Q&A", or similar FAQ-related phrases. This takes ABSOLUTE priority — never assign such a section to intro/why/closing regardless of its body content. Also classify as "faq" any section marked [Contains Q&A structure - likely FAQ].
 - "intro": Use for the FIRST meaningful content section (location intro, firm overview, welcome). Assign AT MOST 1–2 sections as "intro".
 - "why": Use for sections about attorney credentials, experience, firm benefits, client stories, types of debts handled. Assign AT MOST 2 sections as "why".
 - "closing": Use for calls-to-action, contact us, consultation offers, resource links, map/location info, office addresses. Typically the last 1–2 sections.

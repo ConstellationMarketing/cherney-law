@@ -85,26 +85,34 @@ export default function AreaPageRenderer({ content }: AreaPageRendererProps) {
                 <FullWidthImage src={content.introSection.image} alt={content.introSection.imageAlt} />
               )}
 
-              {/* Why Section */}
-              <div className="pt-[20px]">
-                <HeadingRenderer text={content.whySection.heading} level={content.whySection.headingLevel} />
-                <BodyContent html={content.whySection.body} />
-              </div>
-
-              {/* Why Section Image (full-width) */}
-              {content.whySection.image && (
-                <FullWidthImage src={content.whySection.image} alt={content.whySection.imageAlt} />
+              {/* Why Section — only render when there is actual body content */}
+              {content.whySection.body?.trim() && (
+                <>
+                  <div className="pt-[20px]">
+                    {content.whySection.heading && (
+                      <HeadingRenderer text={content.whySection.heading} level={content.whySection.headingLevel} />
+                    )}
+                    <BodyContent html={content.whySection.body} />
+                  </div>
+                  {content.whySection.image && (
+                    <FullWidthImage src={content.whySection.image} alt={content.whySection.imageAlt} />
+                  )}
+                </>
               )}
 
-              {/* Closing Section */}
-              <div className="pt-[20px]">
-                <HeadingRenderer text={content.closingSection.heading} level={content.closingSection.headingLevel} />
-                <BodyContent html={content.closingSection.body} />
-              </div>
-
-              {/* Closing Section Image (full-width) */}
-              {content.closingSection.image && (
-                <FullWidthImage src={content.closingSection.image} alt={content.closingSection.imageAlt} />
+              {/* Closing Section — only render when there is actual body content */}
+              {content.closingSection.body?.trim() && (
+                <>
+                  <div className="pt-[20px]">
+                    {content.closingSection.heading && (
+                      <HeadingRenderer text={content.closingSection.heading} level={content.closingSection.headingLevel} />
+                    )}
+                    <BodyContent html={content.closingSection.body} />
+                  </div>
+                  {content.closingSection.image && (
+                    <FullWidthImage src={content.closingSection.image} alt={content.closingSection.imageAlt} />
+                  )}
+                </>
               )}
             </div>
 
