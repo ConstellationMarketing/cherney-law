@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import type { AreaLocationsSection, AreaCTAContent } from '@/lib/cms/areaPageTypes';
+import type { AreaLocationsSection, AreaCTAContent } from '@site/lib/cms/areaPageTypes';
 
 function getSupabaseClient() {
   const url = import.meta.env.VITE_SUPABASE_URL;
