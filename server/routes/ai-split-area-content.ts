@@ -85,25 +85,30 @@ function joinSections(sections: H2Section[]): string {
   return sections.map((s) => s.html).join("\n\n");
 }
 
-/** Fallback: divide sections evenly into thirds */
-function evenSplit(sections: H2Section[]): {
-  body: string;
-  why_body: string;
-  closing_body: string;
-  faq: string;
-} {
-  const total = sections.length;
-  if (total === 0) return { body: "", why_body: "", closing_body: "", faq: "[]" };
-  if (total === 1) return { body: sections[0].html, why_body: "", closing_body: "", faq: "[]" };
-  if (total === 2) return { body: sections[0].html, why_body: "", closing_body: sections[1].html, faq: "[]" };
+/**
+ * Extract the first image from an HTML string.
+ * Returns the image src, alt text, and HTML with the image removed.
+ */
+function extractFirstImage(html: string): { src: string; alt: string; cleanedHtml: string } {
+  const imgRegex = /<img([^>]*)>/i;
+  const match = html.match(imgRegex);
+  if (!match) return { src: '', alt: '', cleanedHtml: html };
 
-  const third = Math.ceil(total / 3);
-  return {
-    body: joinSections(sections.slice(0, third)),
-    why_body: joinSections(sections.slice(third, third * 2)),
-    closing_body: joinSections(sections.slice(third * 2)),
-    faq: "[]",
-  };
+  const attrs = match[1];
+  // Prefer data-lazy-src over src (common in WordPress/Divi lazy-loaded images)
+  const src =
+    attrs.match(/data-lazy-src=["']([^"']+)["']/i)?.[1] ??
+    attrs.match(/src=["']([^"']+)["']/i)?.[1] ??
+    '';
+  const alt = attrs.match(/alt=["']([^"']*)["']/i)?.[1] ?? '';
+
+  // Remove the img tag and any resulting empty <p> wrappers
+  const cleanedHtml = html
+    .replace(match[0], '')
+    .replace(/^\s*<p>\s*<\/p>/gm, '')
+    .trim();
+
+  return { src, alt, cleanedHtml };
 }
 
 /** Extract FAQ items from HTML sections classified as "faq" */
@@ -148,15 +153,109 @@ function extractFaqItems(html: string): { question: string; answer: string }[] {
 }
 
 /**
+ * Smart fallback split when AI is unavailable or fails.
+ * Detects FAQ sections by heading keyword, then distributes:
+ *   - 1 section → intro (body)
+ *   - middle sections → why_body
+ *   - last section → closing_body
+ *   - FAQ sections → faq
+ */
+function smartFallbackSplit(sections: H2Section[]): {
+  body: string;
+  why_body: string;
+  closing_body: string;
+  faq: string;
+  body_image: string;
+  body_image_alt: string;
+  why_image: string;
+  why_image_alt: string;
+  closing_image: string;
+  closing_image_alt: string;
+} {
+  const empty = {
+    body: '', why_body: '', closing_body: '', faq: '[]',
+    body_image: '', body_image_alt: '',
+    why_image: '', why_image_alt: '',
+    closing_image: '', closing_image_alt: '',
+  };
+
+  const faqSections: H2Section[] = [];
+  const contentSections: H2Section[] = [];
+
+  for (const s of sections) {
+    if (/faq|frequent|question/i.test(s.heading)) {
+      faqSections.push(s);
+    } else {
+      contentSections.push(s);
+    }
+  }
+
+  const faqHtml = joinSections(faqSections);
+  const faqItems = faqHtml ? extractFaqItems(faqHtml) : [];
+
+  const n = contentSections.length;
+  if (n === 0) return { ...empty, faq: JSON.stringify(faqItems) };
+
+  if (n === 1) {
+    const bodyImg = extractFirstImage(contentSections[0].html);
+    return {
+      ...empty,
+      body: bodyImg.cleanedHtml,
+      body_image: bodyImg.src,
+      body_image_alt: bodyImg.alt,
+      faq: JSON.stringify(faqItems),
+    };
+  }
+
+  if (n === 2) {
+    const bodyImg = extractFirstImage(contentSections[0].html);
+    const closingImg = extractFirstImage(contentSections[1].html);
+    return {
+      ...empty,
+      body: bodyImg.cleanedHtml,
+      body_image: bodyImg.src,
+      body_image_alt: bodyImg.alt,
+      closing_body: closingImg.cleanedHtml,
+      closing_image: closingImg.src,
+      closing_image_alt: closingImg.alt,
+      faq: JSON.stringify(faqItems),
+    };
+  }
+
+  // 3+: 1 in intro, last in closing, middle in why
+  const introSection = contentSections[0];
+  const closingSection = contentSections[n - 1];
+  const whySectionsList = contentSections.slice(1, n - 1);
+
+  const bodyImg = extractFirstImage(introSection.html);
+  const closingImg = extractFirstImage(closingSection.html);
+  const whyHtml = joinSections(whySectionsList);
+  const whyImg = extractFirstImage(whyHtml);
+
+  return {
+    body: bodyImg.cleanedHtml,
+    why_body: whyImg.cleanedHtml,
+    closing_body: closingImg.cleanedHtml,
+    faq: JSON.stringify(faqItems),
+    body_image: bodyImg.src,
+    body_image_alt: bodyImg.alt,
+    why_image: whyImg.src,
+    why_image_alt: whyImg.alt,
+    closing_image: closingImg.src,
+    closing_image_alt: closingImg.alt,
+  };
+}
+
+/**
  * POST /api/ai-split-area-content
  * Input:  { html: string, model?: string }
- * Output: { body: string, why_body: string, closing_body: string }
+ * Output: { body, why_body, closing_body, faq, body_image, body_image_alt, why_image, why_image_alt, closing_image, closing_image_alt }
  *
  * Strategy:
  * 1. Split HTML into H2-delimited sections
- * 2. Ask OpenAI to classify each section as "intro" | "why" | "closing"
- * 3. Reassemble the full HTML per group
- * 4. Fallback to even split if AI is unavailable or classification fails
+ * 2. Ask OpenAI to classify each section as "intro" | "why" | "closing" | "faq"
+ * 3. Reassemble the full HTML per group, extract first image from each group
+ * 4. Fallback to smart split if AI is unavailable or classification fails
  */
 export const handleAiSplitAreaContent: RequestHandler = async (req, res) => {
   const { html, model } = req.body ?? {};
@@ -170,8 +269,7 @@ export const handleAiSplitAreaContent: RequestHandler = async (req, res) => {
 
   const client = getOpenAIClient();
   if (!client) {
-    // No AI — fall back to even split
-    res.json(evenSplit(sections));
+    res.json(smartFallbackSplit(sections));
     return;
   }
 
@@ -188,15 +286,22 @@ export const handleAiSplitAreaContent: RequestHandler = async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `You are classifying sections of a law firm's "Areas We Serve" page for a bankruptcy law firm. Each section starts at an H2 heading. Classify each section as one of:
-- "intro": introduction to the firm's services in this location, general overview
-- "why": why choose this firm — credentials, experience, testimonials, benefits, qualifications
-- "closing": call to action, contact info, next steps, consultation offers
-- "faq": frequently asked questions — heading mentions FAQ or "Questions", contains H3/H4 question+answer pairs or <dl>/<dt>/<dd> structure
+          content: `You are classifying H2 sections of a law firm "Areas We Serve" page.
+
+RULES:
+- "faq": ALWAYS use this for any section whose heading contains words like "FAQ", "Questions", "Frequently Asked", OR whose content is primarily H3/H4 question+answer pairs or <dl>/<dt>/<dd> lists. This MUST take priority over all other categories.
+- "intro": Use for the FIRST meaningful content section (location intro, firm overview, welcome). Assign AT MOST 1–2 sections as "intro".
+- "why": Use for sections about attorney credentials, experience, firm benefits, client stories, types of debts handled. Assign AT MOST 2 sections as "why".
+- "closing": Use for calls-to-action, contact us, consultation offers, resource links, map/location info, office addresses. Typically the last 1–2 sections.
+
+Assignment strategy:
+- If there are N sections total, try to distribute roughly: 1–2 intro, 1–2 why, 1–2 closing, any number faq.
+- If a section could be either "closing" or "why", prefer "closing" for the last section and "why" for earlier ones.
+- Never assign FAQ-style content to "closing".
+- The FIRST section should almost always be "intro" unless it is clearly a FAQ.
 
 Return JSON: { "classifications": ["intro"|"why"|"closing"|"faq", ...] }
-The array must have exactly ${sections.length} entries, one per section, in order.
-If unsure, assign "intro" to earlier sections and "closing" to the final section.`,
+The array must have exactly ${sections.length} entries, one per section, in order.`,
         },
         {
           role: "user",
@@ -213,8 +318,7 @@ If unsure, assign "intro" to earlier sections and "closing" to the final section
       !Array.isArray(classifications) ||
       classifications.length !== sections.length
     ) {
-      // Malformed response — fall back to even split
-      res.json(evenSplit(sections));
+      res.json(smartFallbackSplit(sections));
       return;
     }
 
@@ -234,15 +338,30 @@ If unsure, assign "intro" to earlier sections and "closing" to the final section
     const faqHtml = joinSections(faqSections);
     const faqItems = faqHtml ? extractFaqItems(faqHtml) : [];
 
+    // Assemble grouped HTML strings
+    const bodyHtml = joinSections(introSections);
+    const whyHtml = joinSections(whySections);
+    const closingHtml = joinSections(closingSections);
+
+    // Extract first image from each group, removing it from the HTML
+    const bodyImg = extractFirstImage(bodyHtml);
+    const whyImg = extractFirstImage(whyHtml);
+    const closingImg = extractFirstImage(closingHtml);
+
     res.json({
-      body: joinSections(introSections),
-      why_body: joinSections(whySections),
-      closing_body: joinSections(closingSections),
+      body: bodyImg.cleanedHtml,
+      why_body: whyImg.cleanedHtml,
+      closing_body: closingImg.cleanedHtml,
       faq: JSON.stringify(faqItems),
+      body_image: bodyImg.src,
+      body_image_alt: bodyImg.alt,
+      why_image: whyImg.src,
+      why_image_alt: whyImg.alt,
+      closing_image: closingImg.src,
+      closing_image_alt: closingImg.alt,
     });
   } catch (err) {
     console.error("ai-split-area-content error:", err);
-    // Fall back to even split on any AI error
-    res.json(evenSplit(sections));
+    res.json(smartFallbackSplit(sections));
   }
 };

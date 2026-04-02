@@ -6,6 +6,7 @@ import { computeFieldDiffs, inferRulesFromDiff } from '@site/lib/importer/recipe
 import { getTemplateFields, getContentFieldKeys } from '@site/lib/importer/templateFields';
 import { cleanSourceRecords } from '@site/lib/importer/sourceCleaner';
 import { normalizeHtml } from '@site/lib/importer/htmlNormalizer';
+import { normalizeUrlSlug } from '@site/lib/importer/preparer';
 
 interface Props {
   state: WizardState;
@@ -69,9 +70,15 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
     return { ...mapped, mappedData: normalizedMappedData };
   }, [sampleRecord, state.mappingConfig, state.filterOptions, state.templateType]);
 
-  const [corrections, setCorrections] = useState<Record<string, string>>(
-    () => mappedSample?.mappedData ? { ...mappedSample.mappedData } : {}
-  );
+  const [corrections, setCorrections] = useState<Record<string, string>>(() => {
+    if (!mappedSample?.mappedData) return {};
+    const initial = { ...mappedSample.mappedData };
+    // Normalize slug: strip domain so full URLs become just the slug segment
+    if (initial.slug && state.templateType) {
+      initial.slug = normalizeUrlSlug(initial.slug, initial.title ?? '', state.templateType);
+    }
+    return initial;
+  });
 
   // AI split state (only relevant for 'area' template)
   const [aiSplitting, setAiSplitting] = useState(false);
@@ -143,6 +150,12 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
         why_body: string;
         closing_body: string;
         faq?: string;
+        body_image?: string;
+        body_image_alt?: string;
+        why_image?: string;
+        why_image_alt?: string;
+        closing_image?: string;
+        closing_image_alt?: string;
       };
 
       setCorrections((prev) => ({
@@ -151,7 +164,31 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
         why_body: splitData.why_body,
         closing_body: splitData.closing_body,
         ...(splitData.faq !== undefined ? { faq: splitData.faq } : {}),
+        ...(splitData.body_image    ? { body_image: splitData.body_image, body_image_alt: splitData.body_image_alt ?? '' } : {}),
+        ...(splitData.why_image     ? { why_image:  splitData.why_image,  why_image_alt:  splitData.why_image_alt  ?? '' } : {}),
+        ...(splitData.closing_image ? { closing_image: splitData.closing_image, closing_image_alt: splitData.closing_image_alt ?? '' } : {}),
       }));
+
+      // Rehost OG image if it's an external URL
+      const ogImage = corrections.og_image ?? '';
+      if (ogImage.startsWith('http')) {
+        try {
+          const ogRes = await fetch('/api/bulk-import-images', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageUrls: [ogImage] }),
+          });
+          if (ogRes.ok) {
+            const ogData = await ogRes.json() as { mappings: { originalUrl: string; newUrl: string }[] };
+            const newOg = ogData.mappings.find((m) => m.originalUrl === ogImage)?.newUrl;
+            if (newOg) {
+              setCorrections((prev) => ({ ...prev, og_image: newOg }));
+            }
+          }
+        } catch {
+          // Non-fatal: OG image rehosting failed, keep original URL
+        }
+      }
     } catch (err) {
       console.error('AI split error:', err);
       setAiSplitError(err instanceof Error ? err.message : 'AI split failed');
