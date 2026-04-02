@@ -234,4 +234,6 @@ export interface WizardState {
   aiSettings: AiSettings;
   /** Whether AI is available */
   aiAvailable: boolean;
+  /** Row index of the record chosen as the Build Recipe sample (defaults to 0) */
+  sampleRowIndex?: number;
 }

@@ -10,7 +10,7 @@
  *        body_image, body_image_alt, why_image, why_image_alt,
  *        closing_image, closing_image_alt }
  *
- * Falls back to even split if AI unavailable or classification fails.
+ * Falls back to smart keyword split if AI unavailable or classification fails.
  */
 
 import { RequestHandler } from "express";
@@ -40,10 +40,44 @@ function stripTags(html: string): string {
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+// Fix 1 — detectQaStructure: only flag when 2+ H3/H4 headings end with '?'
+// A single question-phrased heading (like "What Are Your Options?") is NOT enough.
+function detectQaStructure(html: string): boolean {
+  const headingPattern = /<h[34][^>]*>([\s\S]*?)<\/h[34]>/gi;
+  let m: RegExpExecArray | null;
+  let questionCount = 0;
+  while ((m = headingPattern.exec(html)) !== null) {
+    const text = stripTags(m[1]).trim();
+    if (text.endsWith("?")) questionCount++;
+    if (questionCount >= 2) return true;
+  }
+  if (/<dt[^>]*>/i.test(html) && /<dd[^>]*>/i.test(html)) return true;
+  return false;
+}
+
+// Fix 2 — H2Section includes hasQaStructure
 interface H2Section {
   heading: string;
   html: string;
   preview: string;
+  hasQaStructure: boolean;
+}
+
+// Fix 8 — Junk section filter: "Recent Posts", link-heavy list sections, etc.
+const JUNK_HEADING_PATTERNS = [
+  /^recent\s+posts?$/i,
+  /^latest\s+posts?$/i,
+  /^related\s+posts?$/i,
+  /^popular\s+posts?$/i,
+];
+
+function isJunkSection(section: H2Section): boolean {
+  if (JUNK_HEADING_PATTERNS.some((p) => p.test(section.heading.trim()))) return true;
+  // Reject sections that are mostly link lists (navigation noise)
+  const liCount = (section.html.match(/<li[^>]*>/gi) ?? []).length;
+  const linkLiCount = (section.html.match(/<li[^>]*>\s*<a\s/gi) ?? []).length;
+  if (liCount >= 3 && linkLiCount / liCount > 0.6) return true;
+  return false;
 }
 
 function splitIntoH2Sections(html: string): H2Section[] {
@@ -57,13 +91,24 @@ function splitIntoH2Sections(html: string): H2Section[] {
   }
 
   if (positions.length === 0) {
-    return [{ heading: "(no h2)", html, preview: stripTags(html).substring(0, 200) }];
+    const sec: H2Section = {
+      heading: "(no h2)",
+      html,
+      preview: stripTags(html).substring(0, 200),
+      hasQaStructure: detectQaStructure(html),
+    };
+    return [sec];
   }
 
   if (positions[0] > 0) {
     const preambleHtml = html.substring(0, positions[0]).trim();
     if (preambleHtml) {
-      sections.push({ heading: "(preamble)", html: preambleHtml, preview: stripTags(preambleHtml).substring(0, 200) });
+      sections.push({
+        heading: "(preamble)",
+        html: preambleHtml,
+        preview: stripTags(preambleHtml).substring(0, 200),
+        hasQaStructure: detectQaStructure(preambleHtml),
+      });
     }
   }
 
@@ -73,32 +118,35 @@ function splitIntoH2Sections(html: string): H2Section[] {
     const sectionHtml = html.substring(start, end).trim();
     const headingMatch = sectionHtml.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i);
     const heading = headingMatch ? stripTags(headingMatch[1]).trim() : "(untitled)";
-    sections.push({ heading, html: sectionHtml, preview: stripTags(sectionHtml).substring(0, 200) });
+    sections.push({
+      heading,
+      html: sectionHtml,
+      preview: stripTags(sectionHtml).substring(0, 200),
+      hasQaStructure: detectQaStructure(sectionHtml),
+    });
   }
 
-  return sections;
+  // Fix 8 — Filter out junk sections before returning
+  return sections.filter((s) => !isJunkSection(s));
 }
 
 function joinSections(sections: H2Section[]): string {
   return sections.map((s) => s.html).join("\n\n");
 }
 
-function evenSplit(sections: H2Section[]): { body: string; why_body: string; closing_body: string; faq: string } {
-  const total = sections.length;
-  if (total === 0) return { body: "", why_body: "", closing_body: "", faq: "[]" };
-  if (total === 1) return { body: sections[0].html, why_body: "", closing_body: "", faq: "[]" };
-  if (total === 2) return { body: sections[0].html, why_body: "", closing_body: sections[1].html, faq: "[]" };
-  const third = Math.ceil(total / 3);
-  return {
-    body: joinSections(sections.slice(0, third)),
-    why_body: joinSections(sections.slice(third, third * 2)),
-    closing_body: joinSections(sections.slice(third * 2)),
-    faq: "[]",
-  };
+// Fix 3 — Proper heading boundary finder (avoids matching <header>, <hr>, etc.)
+function indexOfNextHeading(html: string, from: number): number {
+  const pattern = /<h[2-4][^>]*>/gi;
+  pattern.lastIndex = from;
+  const m = pattern.exec(html);
+  return m ? m.index : -1;
 }
 
+// Fix 3 + Fix 4 — extractFaqItems with correct boundary and bold/strong fallback
 function extractFaqItems(html: string): { question: string; answer: string }[] {
   const items: { question: string; answer: string }[] = [];
+
+  // Pattern 1: H3/H4 headings as questions
   const headingPattern = /<h[3-4][^>]*>([\s\S]*?)<\/h[3-4]>/gi;
   let match: RegExpExecArray | null;
   const qaPositions: { question: string; start: number }[] = [];
@@ -110,7 +158,8 @@ function extractFaqItems(html: string): { question: string; answer: string }[] {
 
   for (let i = 0; i < qaPositions.length; i++) {
     const start = qaPositions[i].start;
-    const nextHeadingPos = html.indexOf("<h", start);
+    // Fix 3: use indexOfNextHeading instead of indexOf('<h', start)
+    const nextHeadingPos = indexOfNextHeading(html, start);
     const end = nextHeadingPos > start ? nextHeadingPos : html.length;
     const answerHtml = html.substring(start, end).trim();
     if (stripTags(answerHtml).trim()) {
@@ -118,12 +167,26 @@ function extractFaqItems(html: string): { question: string; answer: string }[] {
     }
   }
 
+  // Pattern 2: <dt>/<dd> definition lists
   if (items.length === 0) {
     const dlPattern = /<dt[^>]*>([\s\S]*?)<\/dt>\s*<dd[^>]*>([\s\S]*?)<\/dd>/gi;
     while ((match = dlPattern.exec(html)) !== null) {
       const q = stripTags(match[1]).trim();
       const a = match[2].trim();
       if (q && a) items.push({ question: q, answer: a });
+    }
+  }
+
+  // Fix 4 — Pattern 3: bold/strong paragraphs as questions
+  // Handles: <p><strong>Question?</strong></p><p>Answer text.</p>
+  if (items.length === 0) {
+    const boldPattern =
+      /<p[^>]*>\s*<(?:strong|b)>([\s\S]*?)<\/(?:strong|b)>\s*<\/p>\s*<p[^>]*>([\s\S]*?)<\/p>/gi;
+    while ((match = boldPattern.exec(html)) !== null) {
+      const q = stripTags(match[1]).trim();
+      if (q.endsWith("?")) {
+        items.push({ question: q, answer: match[2].trim() });
+      }
     }
   }
 
@@ -208,16 +271,22 @@ async function rehostInlineImages(
   return result;
 }
 
-// ─── AI Classification (same logic as ai-split-area-content.ts) ─────────────
+// ─── AI Classification ───────────────────────────────────────────────────────
 
+// Fix 5 — Annotate sections with Q&A structure hint for the AI prompt
+// Fix 6 — Strengthened prompt: FAQ takes absolute priority, question-phrased headings go to "why"
 async function aiClassifySections(
   sections: H2Section[],
   client: OpenAI
 ): Promise<string[] | null> {
   if (sections.length === 0) return [];
 
+  // Fix 5: include [Contains Q&A structure] hint in section list
   const sectionList = sections
-    .map((s, i) => `Section ${i + 1}: "${s.heading}"\nPreview: ${s.preview}`)
+    .map((s, i) => {
+      const qaHint = s.hasQaStructure ? "\n[Contains Q&A structure - likely FAQ]" : "";
+      return `Section ${i + 1}: "${s.heading}"\nPreview: ${s.preview}${qaHint}`;
+    })
     .join("\n\n");
 
   try {
@@ -228,15 +297,17 @@ async function aiClassifySections(
       messages: [
         {
           role: "system",
-          content: `You are classifying sections of a law firm's "Areas We Serve" page for a bankruptcy law firm. Each section starts at an H2 heading. Classify each section as one of:
-- "intro": introduction to the firm's services in this location, general overview
-- "why": why choose this firm — credentials, experience, testimonials, benefits, qualifications
-- "closing": call to action, contact info, next steps, consultation offers
-- "faq": frequently asked questions — heading mentions FAQ or "Questions", contains H3/H4 question+answer pairs or <dl>/<dt>/<dd> structure
+          // Fix 6: strengthened prompt with absolute FAQ priority and clear disambiguation
+          content: `You are classifying sections of a law firm's "Areas We Serve" page for a bankruptcy law firm. Each section starts at an H2 heading. Classify each section as one of: "intro", "why", "closing", or "faq".
+
+RULES:
+- "faq": Use for ANY section whose heading contains the words "FAQ", "Frequently Asked Questions", "FAQs", "Q&A", "Common Questions", or similar explicit FAQ labels. This takes ABSOLUTE priority — never assign such a section to intro/why/closing. ALSO classify as "faq" any section marked [Contains Q&A structure - likely FAQ]. IMPORTANT: A heading that is merely phrased as a question (e.g. "What Are Your Options?", "Why File for Bankruptcy?") is NOT an FAQ section — only use "faq" when the heading explicitly references FAQs or when the [Contains Q&A structure] hint is present.
+- "intro": Use for the FIRST meaningful content section (location intro, firm overview, welcome). Assign AT MOST 1–2 sections as "intro".
+- "why": Use for sections about attorney credentials, experience, firm benefits, client stories, types of debts handled, legal process explanations, or any section whose heading is phrased as a question about the topic (e.g. "What Are Your Options?", "How Does Bankruptcy Work?", "Why File for Bankruptcy?").
+- "closing": Use for calls-to-action, contact us, consultation offers, resource links, map/location info, office addresses. Typically the last 1–2 sections.
 
 Return JSON: { "classifications": ["intro"|"why"|"closing"|"faq", ...] }
-The array must have exactly ${sections.length} entries, one per section, in order.
-If unsure, assign "intro" to earlier sections and "closing" to the final section.`,
+The array must have exactly ${sections.length} entries, one per section, in order.`,
         },
         {
           role: "user",
@@ -254,6 +325,57 @@ If unsure, assign "intro" to earlier sections and "closing" to the final section
   } catch {
     return null;
   }
+}
+
+// ─── Fallback split ──────────────────────────────────────────────────────────
+
+interface SplitResult {
+  body: string;
+  why_body: string;
+  closing_body: string;
+  faq: string;
+}
+
+function emptyImages(): {
+  body_image: string; body_image_alt: string;
+  why_image: string; why_image_alt: string;
+  closing_image: string; closing_image_alt: string;
+} {
+  return {
+    body_image: "", body_image_alt: "",
+    why_image: "", why_image_alt: "",
+    closing_image: "", closing_image_alt: "",
+  };
+}
+
+// Fix 7 — Smart fallback that does FAQ keyword detection and reasonable section assignment
+function smartFallbackSplit(sections: H2Section[]): SplitResult {
+  const faqSections: H2Section[] = [];
+  const contentSections: H2Section[] = [];
+
+  for (const s of sections) {
+    if (/faq|frequent|frequently\s+asked|q\s*&\s*a|common\s+question/i.test(s.heading) || s.hasQaStructure) {
+      faqSections.push(s);
+    } else {
+      contentSections.push(s);
+    }
+  }
+
+  const faqHtml = joinSections(faqSections);
+  const faqItems = faqHtml ? extractFaqItems(faqHtml) : [];
+  const faqJson = JSON.stringify(faqItems);
+  const n = contentSections.length;
+
+  if (n === 0) return { body: "", why_body: "", closing_body: "", faq: faqJson };
+  if (n === 1) return { body: contentSections[0].html, why_body: "", closing_body: "", faq: faqJson };
+  if (n === 2) return { body: contentSections[0].html, why_body: "", closing_body: contentSections[1].html, faq: faqJson };
+
+  return {
+    body: contentSections[0].html,
+    why_body: contentSections.slice(1, n - 1).map((s) => s.html).join("\n\n"),
+    closing_body: contentSections[n - 1].html,
+    faq: faqJson,
+  };
 }
 
 // ─── Per-record processing ───────────────────────────────────────────────────
@@ -287,16 +409,16 @@ async function processRecord(
     ? await rehostInlineImages(record.bodyHtml, supabase)
     : record.bodyHtml;
 
-  // Step 2: Split into H2 sections
+  // Step 2: Split into H2 sections (Fix 8: junk sections filtered inside splitIntoH2Sections)
   const sections = splitIntoH2Sections(rehostedHtml);
 
-  // Step 3: Classify with AI (or fall back to even split)
+  // Step 3: Classify with AI (or fall back to smart split)
   let classifications: string[] | null = null;
   if (client && sections.length > 0) {
     classifications = await aiClassifySections(sections, client);
   }
 
-  let split: { body: string; why_body: string; closing_body: string; faq: string };
+  let split: SplitResult;
 
   if (classifications) {
     const introSections: H2Section[] = [];
@@ -322,7 +444,8 @@ async function processRecord(
       faq: JSON.stringify(faqItems),
     };
   } else {
-    split = evenSplit(sections);
+    // Fix 7: use smartFallbackSplit instead of evenSplit
+    split = smartFallbackSplit(sections);
   }
 
   // Step 4: Extract first image from each section

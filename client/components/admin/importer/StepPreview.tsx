@@ -241,9 +241,10 @@ export default function StepPreview({ state, updateState, onNext, onBack }: Prop
   const skipped = state.transformedRecords.filter((r) => r.status === 'skipped').length;
   const excluded = state.transformedRecords.filter((r) => r.status === 'excluded' as string).length;
 
-  // Pick up to 3 random sample records (skip row 0 — that was the Build Recipe page)
+  // Pick up to 3 random sample records (skip the Build Recipe sample page)
   const sampleRecords = useMemo(() => {
-    const pool = importReady.filter((r) => r.rowIndex !== 0);
+    const chosenSampleIndex = state.sampleRowIndex ?? 0;
+    const pool = importReady.filter((r) => r.rowIndex !== chosenSampleIndex);
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, Math.min(3, shuffled.length));
   }, [importReady]);

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { WizardState } from '@site/lib/importer/recipeTypes';
 import { createDefaultRecipe } from '@site/lib/importer/recipeEngine';
 import { applyFieldMappingSingle } from '@site/lib/importer/fieldMapping';
@@ -40,8 +40,11 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
   const templateFields = getTemplateFields(state.templateType!);
   const recipe = state.recipe ?? createDefaultRecipe(state.templateType!);
 
-  // Get first record as sample
-  const sampleRecord = state.sourceRecords[0];
+  // Get chosen sample record (defaults to first record)
+  const chosenSampleIndex = state.sampleRowIndex ?? 0;
+  const sampleRecord =
+    state.sourceRecords.find((r) => r.rowIndex === chosenSampleIndex) ??
+    state.sourceRecords[0];
 
   // CRITICAL (Rule 3): Run the same pipeline stages 1-5 that auto-transform uses,
   // so the Build Recipe step always shows cleaned HTML — not raw source.
@@ -69,6 +72,11 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
     return { ...mapped, mappedData: normalizedMappedData };
   }, [sampleRecord, state.mappingConfig, state.filterOptions, state.templateType]);
 
+  // When the user picks a different sample record, reinitialize corrections from that record
+  const handleSampleChange = (newRowIndex: number) => {
+    updateState({ sampleRowIndex: newRowIndex });
+  };
+
   const [corrections, setCorrections] = useState<Record<string, string>>(() => {
     if (!mappedSample?.mappedData) return {};
     const initial = { ...mappedSample.mappedData };
@@ -89,6 +97,25 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
   // AI split state (only relevant for 'area' template)
   const [aiSplitting, setAiSplitting] = useState(false);
   const [aiSplitError, setAiSplitError] = useState<string | null>(null);
+
+  // Reinitialize corrections whenever the chosen sample record changes
+  useEffect(() => {
+    if (!mappedSample?.mappedData) return;
+    const initial = { ...mappedSample.mappedData };
+    if (initial.slug) {
+      try {
+        if (/^https?:\/\//i.test(initial.slug)) {
+          const url = new URL(initial.slug);
+          initial.slug = url.pathname;
+        }
+      } catch {
+        // Not a valid URL, leave as-is
+      }
+    }
+    setCorrections(initial);
+    setAiSplitError(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chosenSampleIndex]);
 
   const handleFieldChange = (key: string, value: string) => {
     setCorrections((prev) => ({ ...prev, [key]: value }));
@@ -251,9 +278,39 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
       <div>
         <h2 className="text-lg font-semibold text-gray-900">Build Recipe</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Review the first record's auto-mapped output (HTML has been cleaned). Correct any fields to teach the importer reusable transformation rules.
+          Review a record's auto-mapped output (HTML has been cleaned). Correct any fields to teach the importer reusable transformation rules.
         </p>
       </div>
+
+      {/* Sample record selector */}
+      {state.sourceRecords.length > 1 && (
+        <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+          <label className="text-sm font-medium text-blue-800 whitespace-nowrap">
+            Build Recipe Sample:
+          </label>
+          <select
+            value={chosenSampleIndex}
+            onChange={(e) => handleSampleChange(Number(e.target.value))}
+            className="flex-1 rounded border border-blue-300 bg-white px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          >
+            {state.sourceRecords.map((r, i) => {
+              const label =
+                (r.data.title as string | undefined) ??
+                (r.data.name as string | undefined) ??
+                (r.data.url as string | undefined) ??
+                `Row ${r.rowIndex + 1}`;
+              return (
+                <option key={r.rowIndex} value={r.rowIndex}>
+                  Row {r.rowIndex + 1} — {String(label).substring(0, 60)}
+                </option>
+              );
+            })}
+          </select>
+          <span className="text-xs text-blue-600 whitespace-nowrap">
+            Pick a record with varied content (e.g. one that has FAQs)
+          </span>
+        </div>
+      )}
 
       <div className="space-y-4">
         {templateFields.map((field) => {
