@@ -117,8 +117,8 @@ export default function AdminPages() {
 
     try {
       if (action === 'delete') {
-        const res = await fetch('/api/admin/pages/bulk', {
-          method: 'DELETE',
+        const res = await fetch('/api/admin/pages/bulk-delete', {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ids }),
         });

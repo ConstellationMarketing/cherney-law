@@ -74,6 +74,7 @@ export function createServer() {
   // Admin pages routes (service-role — returns ALL pages including drafts)
   app.get("/api/admin/pages", handleGetAdminPages);
   app.delete("/api/admin/pages/bulk", handleBulkDeleteAdminPages);
+  app.post("/api/admin/pages/bulk-delete", handleBulkDeleteAdminPages);
   app.patch("/api/admin/pages/bulk", handleBulkPatchAdminPages);
   app.delete("/api/admin/pages/:id", handleDeleteAdminPage);
   app.patch("/api/admin/pages/:id", handlePatchAdminPage);

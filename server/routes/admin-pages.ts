@@ -125,32 +125,15 @@ export const handleBulkPatchAdminPages: RequestHandler = async (req, res) => {
 };
 
 /**
- * DELETE /api/admin/pages/bulk
+ * POST /api/admin/pages/bulk-delete
  * Bulk-deletes multiple pages using the service-role key.
+ * Uses POST instead of DELETE to ensure body parsing works reliably.
  */
 export const handleBulkDeleteAdminPages: RequestHandler = async (req, res) => {
-  // Always respond with JSON — set header first before any other logic
-  res.setHeader('Content-Type', 'application/json');
-
   try {
-    // Primary: use body parsed by global express.json()
-    let ids: string[] = req.body?.ids;
-
-    // Fallback: if global express.json() skipped parsing the DELETE body (stream still open)
-    if (!Array.isArray(ids) && (req as NodeJS.ReadableStream).readable) {
-      const raw = await new Promise<string>((resolve) => {
-        let data = '';
-        req.on('data', (chunk: Buffer) => { data += chunk.toString(); });
-        req.on('end', () => resolve(data));
-        req.on('error', () => resolve(''));
-      });
-      if (raw) {
-        try { ids = JSON.parse(raw)?.ids; } catch { /* ignore */ }
-      }
-    }
+    const { ids } = req.body as { ids: string[] };
 
     if (!Array.isArray(ids) || ids.length === 0) {
-      console.warn('[bulk-delete] Bad request — ids:', ids, '| body:', JSON.stringify(req.body));
       res.status(400).json({ error: "Missing or empty ids array" });
       return;
     }
@@ -159,16 +142,12 @@ export const handleBulkDeleteAdminPages: RequestHandler = async (req, res) => {
     const { error } = await supabase.from("pages").delete().in("id", ids);
 
     if (error) {
-      console.error('[bulk-delete] Supabase error:', error.message);
       res.status(500).json({ error: error.message });
       return;
     }
 
-    console.log(`[bulk-delete] Deleted ${ids.length} pages`);
     res.json({ success: true, count: ids.length });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Internal server error";
-    console.error('[bulk-delete] Caught exception:', msg);
-    res.status(500).json({ error: msg });
+    res.status(500).json({ error: err instanceof Error ? err.message : "Internal server error" });
   }
 };
