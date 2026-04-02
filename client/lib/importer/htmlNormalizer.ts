@@ -18,13 +18,61 @@ import type { FilterOptions } from './types';
  * CRITICAL Rule 1: Builder CSS classes are available here — they were
  * NOT stripped in stages 1-4.
  */
+/**
+ * Check if html contains an explicit FAQ H2 heading.
+ */
+function hasFaqHeading(html: string): boolean {
+  const h2Pattern = /<h2[^>]*>([\s\S]*?)<\/h2>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = h2Pattern.exec(html)) !== null) {
+    const text = m[1].replace(/<[^>]*>/g, '').trim();
+    if (/\b(faq|faqs|frequently\s+asked|q\s*&\s*a|common\s+questions?)\b/i.test(text)) return true;
+  }
+  return false;
+}
+
+/**
+ * Extract all H2 sections whose heading is an explicit FAQ heading.
+ * Used to recover FAQ zones that may have been dropped by extractContentArea.
+ */
+function extractFaqZones(html: string): string {
+  const h2Pattern = /<h2[^>]*>/gi;
+  const positions: number[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = h2Pattern.exec(html)) !== null) positions.push(m.index);
+
+  const parts: string[] = [];
+  for (let i = 0; i < positions.length; i++) {
+    const start = positions[i];
+    const end = i + 1 < positions.length ? positions[i + 1] : html.length;
+    const section = html.substring(start, end);
+    const headingMatch = section.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i);
+    if (headingMatch) {
+      const text = headingMatch[1].replace(/<[^>]*>/g, '').trim();
+      if (/\b(faq|faqs|frequently\s+asked|q\s*&\s*a|common\s+questions?)\b/i.test(text)) {
+        parts.push(section);
+      }
+    }
+  }
+  return parts.join('\n');
+}
+
 export function normalizeHtml(html: string, options: FilterOptions): string {
   if (!html?.trim()) return '';
 
   let result = html;
 
   // 5a: Extract main content (strip shell, extract main column, unwrap wrappers)
+  // Keep a stripped-shell copy to recover FAQ zones if they get dropped.
+  const preExtract = result;
   result = extractMainContent(result);
+
+  // If the original (post-shell-strip) had FAQ headings but the extracted area lost them,
+  // append the FAQ zones so they are never silently discarded.
+  if (hasFaqHeading(preExtract) && !hasFaqHeading(result)) {
+    const faqZones = extractFaqZones(preExtract);
+    if (faqZones) result = result + '\n' + faqZones;
+  }
 
   // 5a (second pass): After extractMainContent strips classes, newly-bare divs
   // (elements that had non-layout classes which are now gone) need another unwrap

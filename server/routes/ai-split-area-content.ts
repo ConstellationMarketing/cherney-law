@@ -80,20 +80,44 @@ function splitIntoH2Sections(html: string): H2Section[] {
 }
 
 /**
- * Detect if an HTML section has Q&A structure:
- * - 2+ H3/H4 subheadings that actually end with '?', OR
- * - <dt>/<dd> definition list elements
+ * Detect if an HTML section has REAL Q&A structure:
+ * - <dt>/<dd> definition list elements, OR
+ * - 2+ H3/H4 headings ending with '?' where each is followed by a substantive
+ *   answer paragraph (>30 chars of text — not just links or another heading).
+ *
+ * A single question-phrased heading ("What Are Your Options?") is NOT enough.
+ * Link-only content after a question heading does NOT count as Q&A.
  */
 function detectQaStructure(html: string): boolean {
-  const headingPattern = /<h[34][^>]*>([\/\S\s]*?)<\/h[34]>/gi;
-  let m: RegExpExecArray | null;
-  let questionCount = 0;
-  while ((m = headingPattern.exec(html)) !== null) {
-    const text = stripTags(m[1]).trim();
-    if (text.endsWith('?')) questionCount++;
-    if (questionCount >= 2) return true;
-  }
+  // dl/dd is always real Q&A
   if (/<dt[^>]*>/i.test(html) && /<dd[^>]*>/i.test(html)) return true;
+
+  // Collect all H3/H4 heading positions
+  const headingRegex = /<h[34][^>]*>([\s\S]*?)<\/h[34]>/gi;
+  const headings: { text: string; tagEnd: number }[] = [];
+  let m: RegExpExecArray | null;
+
+  while ((m = headingRegex.exec(html)) !== null) {
+    headings.push({ text: stripTags(m[1]).trim(), tagEnd: m.index + m[0].length });
+  }
+
+  let qaCount = 0;
+  for (let i = 0; i < headings.length; i++) {
+    const { text, tagEnd } = headings[i];
+    if (!text.endsWith('?')) continue;
+
+    // Find the start of the next h3/h4 tag (so we know where this answer ends)
+    let nextStart = html.length;
+    const nextMatch = /<h[34][^>]*>/i.exec(html.substring(tagEnd));
+    if (nextMatch) nextStart = tagEnd + nextMatch.index;
+
+    const following = html.substring(tagEnd, nextStart).trim();
+    const textOnly = stripTags(following).trim();
+    // Must have substantive answer text (not just links or empty)
+    if (textOnly.length > 30) qaCount++;
+    if (qaCount >= 2) return true;
+  }
+
   return false;
 }
 
@@ -355,17 +379,16 @@ export const handleAiSplitAreaContent: RequestHandler = async (req, res) => {
           content: `You are classifying H2 sections of a law firm "Areas We Serve" page.
 
 RULES:
-- "faq": Use for ANY section whose heading contains words like "FAQ", "Frequently Asked Questions", "Questions", "Q&A", or similar FAQ-related phrases. This takes ABSOLUTE priority — never assign such a section to intro/why/closing regardless of its body content. Also classify as "faq" any section marked [Contains Q&A structure - likely FAQ].
+- "faq": Use ONLY for sections whose heading EXPLICITLY references FAQ / FAQs / Frequently Asked Questions / Q&A / Common Questions (or very close synonyms). Also prefer "faq" for sections marked [Contains Q&A structure - likely FAQ], UNLESS the heading contains words like Resources, Links, Related, More Information, Helpful Links, Additional Resources — in that case use "closing" instead.
 - "intro": Use for the FIRST meaningful content section (location intro, firm overview, welcome). Assign AT MOST 1–2 sections as "intro".
-- "why": Use for sections about attorney credentials, experience, firm benefits, client stories, types of debts handled. Assign AT MOST 2 sections as "why".
-- "closing": Use for calls-to-action, contact us, consultation offers, resource links, map/location info, office addresses. Typically the last 1–2 sections.
+- "why": Use for sections about attorney credentials, experience, firm benefits, client stories, types of debts handled, legal process explanations. Question-phrased headings like "What Are Your Options?", "How Does Bankruptcy Work?", "Why File for Bankruptcy?" belong HERE, NOT in "faq".
+- "closing": Use for calls-to-action, contact us, consultation offers, resource/link lists, map/location info, office addresses. Typically the last 1–2 sections.
 
 Assignment strategy:
-- If there are N sections total, try to distribute roughly: 1–2 intro, 1–2 why, 1–2 closing, any number faq.
+- Distribute roughly: 1–2 intro, 1–2 why, 1–2 closing, any number faq.
 - If a section could be either "closing" or "why", prefer "closing" for the last section and "why" for earlier ones.
-- Never assign FAQ-style content to "closing" or "why".
 - The FIRST section should almost always be "intro" unless it is clearly a FAQ.
-- Any section marked "[Contains Q&A structure - likely FAQ]" MUST be classified as "faq".
+- A heading merely phrased as a question ("What Are Your Options?") is NOT an FAQ section — assign to "why".
 
 Return JSON: { "classifications": ["intro"|"why"|"closing"|"faq", ...] }
 The array must have exactly ${sections.length} entries, one per section, in order.`,

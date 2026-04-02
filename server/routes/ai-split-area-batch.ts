@@ -40,18 +40,39 @@ function stripTags(html: string): string {
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-// Fix 1 — detectQaStructure: only flag when 2+ H3/H4 headings end with '?'
-// A single question-phrased heading (like "What Are Your Options?") is NOT enough.
+// detectQaStructure: require REAL Q&A structure — not just question-phrased headings.
+// Each H3/H4 question heading must be followed by substantive answer text (>30 chars),
+// not just links or another heading. A single question heading is never enough.
 function detectQaStructure(html: string): boolean {
-  const headingPattern = /<h[34][^>]*>([\s\S]*?)<\/h[34]>/gi;
-  let m: RegExpExecArray | null;
-  let questionCount = 0;
-  while ((m = headingPattern.exec(html)) !== null) {
-    const text = stripTags(m[1]).trim();
-    if (text.endsWith("?")) questionCount++;
-    if (questionCount >= 2) return true;
-  }
+  // dl/dd is always real Q&A
   if (/<dt[^>]*>/i.test(html) && /<dd[^>]*>/i.test(html)) return true;
+
+  // Collect all H3/H4 heading positions
+  const headingRegex = /<h[34][^>]*>([\s\S]*?)<\/h[34]>/gi;
+  const headings: { text: string; tagEnd: number }[] = [];
+  let m: RegExpExecArray | null;
+
+  while ((m = headingRegex.exec(html)) !== null) {
+    headings.push({ text: stripTags(m[1]).trim(), tagEnd: m.index + m[0].length });
+  }
+
+  let qaCount = 0;
+  for (let i = 0; i < headings.length; i++) {
+    const { text, tagEnd } = headings[i];
+    if (!text.endsWith("?")) continue;
+
+    // Find the start of the next h3/h4 tag (so we know where this answer ends)
+    let nextStart = html.length;
+    const nextMatch = /<h[34][^>]*>/i.exec(html.substring(tagEnd));
+    if (nextMatch) nextStart = tagEnd + nextMatch.index;
+
+    const following = html.substring(tagEnd, nextStart).trim();
+    const textOnly = stripTags(following).trim();
+    // Must have substantive answer text (not just links or empty)
+    if (textOnly.length > 30) qaCount++;
+    if (qaCount >= 2) return true;
+  }
+
   return false;
 }
 
@@ -297,14 +318,19 @@ async function aiClassifySections(
       messages: [
         {
           role: "system",
-          // Fix 6: strengthened prompt with absolute FAQ priority and clear disambiguation
           content: `You are classifying sections of a law firm's "Areas We Serve" page for a bankruptcy law firm. Each section starts at an H2 heading. Classify each section as one of: "intro", "why", "closing", or "faq".
 
 RULES:
-- "faq": Use for ANY section whose heading contains the words "FAQ", "Frequently Asked Questions", "FAQs", "Q&A", "Common Questions", or similar explicit FAQ labels. This takes ABSOLUTE priority — never assign such a section to intro/why/closing. ALSO classify as "faq" any section marked [Contains Q&A structure - likely FAQ]. IMPORTANT: A heading that is merely phrased as a question (e.g. "What Are Your Options?", "Why File for Bankruptcy?") is NOT an FAQ section — only use "faq" when the heading explicitly references FAQs or when the [Contains Q&A structure] hint is present.
+- "faq": Use ONLY for sections whose heading EXPLICITLY references FAQ / FAQs / Frequently Asked Questions / Q&A / Common Questions (or very close synonyms). Also prefer "faq" for sections marked [Contains Q&A structure - likely FAQ], UNLESS the heading contains words like Resources, Links, Related, More Information, Helpful Links, Additional Resources — in that case use "closing" instead.
 - "intro": Use for the FIRST meaningful content section (location intro, firm overview, welcome). Assign AT MOST 1–2 sections as "intro".
-- "why": Use for sections about attorney credentials, experience, firm benefits, client stories, types of debts handled, legal process explanations, or any section whose heading is phrased as a question about the topic (e.g. "What Are Your Options?", "How Does Bankruptcy Work?", "Why File for Bankruptcy?").
-- "closing": Use for calls-to-action, contact us, consultation offers, resource links, map/location info, office addresses. Typically the last 1–2 sections.
+- "why": Use for sections about attorney credentials, experience, firm benefits, client stories, types of debts handled, legal process explanations. Question-phrased headings like "What Are Your Options?", "How Does Bankruptcy Work?", "Why File for Bankruptcy?" belong HERE, NOT in "faq".
+- "closing": Use for calls-to-action, contact us, consultation offers, resource/link lists, map/location info, office addresses. Typically the last 1–2 sections.
+
+Assignment strategy:
+- Distribute roughly: 1–2 intro, 1–2 why, 1–2 closing, any number faq.
+- If a section could be either "closing" or "why", prefer "closing" for the last section and "why" for earlier ones.
+- The FIRST section should almost always be "intro" unless it is clearly a FAQ.
+- A heading merely phrased as a question ("What Are Your Options?") is NOT an FAQ section — assign to "why".
 
 Return JSON: { "classifications": ["intro"|"why"|"closing"|"faq", ...] }
 The array must have exactly ${sections.length} entries, one per section, in order.`,

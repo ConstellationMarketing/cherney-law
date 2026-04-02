@@ -656,9 +656,23 @@ function findSubSectionEnd(html: string, startIdx: number, level: number): numbe
 }
 
 /**
+ * Check if a block's H2 heading is an explicit FAQ heading.
+ * FAQ blocks must NEVER be removed regardless of other heuristics.
+ */
+function isFaqHeading(block: string): boolean {
+  const headingMatch = block.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i);
+  if (!headingMatch) return false;
+  const text = headingMatch[1].replace(/<[^>]*>/g, '').trim();
+  return /\b(faq|faqs|frequently\s+asked|q\s*&\s*a|common\s+questions?)\b/i.test(text);
+}
+
+/**
  * Determine if a block is secondary content that should be removed.
  */
 function isSecondaryBlock(block: string, options: FilterOptions): boolean {
+  // FAQ blocks are NEVER secondary — protect them unconditionally.
+  if (isFaqHeading(block)) return false;
+
   const textContent = block.replace(/<[^>]*>/g, '').trim();
 
   // Very short blocks with no real content
