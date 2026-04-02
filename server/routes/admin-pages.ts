@@ -133,12 +133,20 @@ export const handleBulkDeleteAdminPages: RequestHandler = async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
 
   try {
-    // Body may be in req.body (parsed by global express.json) or needs manual extraction
+    // Primary: use body parsed by global express.json()
     let ids: string[] = req.body?.ids;
 
-    // Fallback: if body wasn't parsed (e.g. double-middleware edge case), try parsing raw
-    if (!ids && req.body && typeof req.body === 'string') {
-      try { ids = JSON.parse(req.body).ids; } catch { /* ignore */ }
+    // Fallback: if global express.json() skipped parsing the DELETE body (stream still open)
+    if (!Array.isArray(ids) && (req as NodeJS.ReadableStream).readable) {
+      const raw = await new Promise<string>((resolve) => {
+        let data = '';
+        req.on('data', (chunk: Buffer) => { data += chunk.toString(); });
+        req.on('end', () => resolve(data));
+        req.on('error', () => resolve(''));
+      });
+      if (raw) {
+        try { ids = JSON.parse(raw)?.ids; } catch { /* ignore */ }
+      }
     }
 
     if (!Array.isArray(ids) || ids.length === 0) {

@@ -12,6 +12,12 @@ export default defineConfig(({ mode }) => ({
       allow: ["./client", "./shared", "./vendor"],
       deny: [".env", ".env.*", "*.{crt,pem}", "**/.git/**", "server/**"],
     },
+    // Prevent the browser from caching the dev HTML so that after a server
+    // restart the fresh script hashes are always picked up (avoids the
+    // stale ?v=xxxx SyntaxError on react-dom_client.js).
+    headers: {
+      'Cache-Control': 'no-store',
+    },
   },
   build: {
     outDir: "dist/spa",
