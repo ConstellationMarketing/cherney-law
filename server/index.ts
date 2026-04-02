@@ -28,6 +28,32 @@ export function createServer() {
 
   // Middleware
   app.use(cors());
+
+  // Express 5 + Vite Connect integration: DELETE request bodies are consumed by
+  // express.json() but the parsed result is always {} (empty). Pre-read DELETE
+  // bodies manually BEFORE express.json() runs, then mark req._body = true so
+  // express.json() skips re-parsing and leaves req.body intact.
+  app.use((req, _res, next) => {
+    if (
+      req.method !== 'DELETE' ||
+      !req.headers['content-type']?.includes('application/json')
+    ) {
+      return next();
+    }
+    let raw = '';
+    req.on('data', (chunk: Buffer) => { raw += chunk.toString('utf8'); });
+    req.on('end', () => {
+      if (raw) {
+        try {
+          req.body = JSON.parse(raw);
+          (req as Record<string, unknown>)._body = true;
+        } catch { /* leave body as-is, express.json() will handle the error */ }
+      }
+      next();
+    });
+    req.on('error', next);
+  });
+
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
