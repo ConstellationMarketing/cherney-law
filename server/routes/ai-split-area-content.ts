@@ -10,9 +10,10 @@ function getOpenAIClient(): OpenAI | null {
 }
 
 interface H2Section {
-  heading: string; // h2 inner text (plain)
-  html: string;    // full HTML including the <h2> tag and following content
-  preview: string; // plain-text preview for AI (~200 chars)
+  heading: string;       // h2 inner text (plain)
+  html: string;          // full HTML including the <h2> tag and following content
+  preview: string;       // plain-text preview for AI (~200 chars)
+  hasQaStructure: boolean; // true if section contains H3/H4 Q&A pairs or <dt>/<dd> elements
 }
 
 /**
@@ -39,6 +40,7 @@ function splitIntoH2Sections(html: string): H2Section[] {
         heading: "(no h2)",
         html: html,
         preview: stripTags(html).substring(0, 200),
+        hasQaStructure: detectQaStructure(html),
       },
     ];
   }
@@ -51,6 +53,7 @@ function splitIntoH2Sections(html: string): H2Section[] {
         heading: "(preamble)",
         html: preambleHtml,
         preview: stripTags(preambleHtml).substring(0, 200),
+        hasQaStructure: detectQaStructure(preambleHtml),
       });
     }
   }
@@ -69,10 +72,23 @@ function splitIntoH2Sections(html: string): H2Section[] {
       heading,
       html: sectionHtml,
       preview: stripTags(sectionHtml).substring(0, 200),
+      hasQaStructure: detectQaStructure(sectionHtml),
     });
   }
 
   return sections;
+}
+
+/**
+ * Detect if an HTML section has Q&A structure:
+ * - 2+ H3/H4 subheadings (question-style subheadings), OR
+ * - <dt>/<dd> definition list elements
+ */
+function detectQaStructure(html: string): boolean {
+  const h3h4Matches = html.match(/<h[34][^>]*>/gi) ?? [];
+  if (h3h4Matches.length >= 2) return true;
+  if (/<dt[^>]*>/i.test(html) && /<dd[^>]*>/i.test(html)) return true;
+  return false;
 }
 
 /** Strip HTML tags from a string */
@@ -265,7 +281,27 @@ export const handleAiSplitAreaContent: RequestHandler = async (req, res) => {
     return;
   }
 
-  const sections = splitIntoH2Sections(html);
+  const allSections = splitIntoH2Sections(html);
+
+  // Fix 3c: Pre-filter sections that are clearly "Recent Posts" / post listings
+  // so they never reach the AI and don't pollute classified content.
+  const knownJunkHeadings = [
+    /^recent\s+posts?$/i,
+    /^latest\s+posts?$/i,
+    /^related\s+posts?$/i,
+    /^popular\s+posts?$/i,
+    /^more\s+(posts?|articles?|stories)$/i,
+  ];
+
+  const sections = allSections.filter((s) => {
+    // Remove by heading pattern
+    if (knownJunkHeadings.some((p) => p.test(s.heading.trim()))) return false;
+    // Remove post link-list blocks: mostly <li><a> items
+    const liCount = (s.html.match(/<li[^>]*>/gi) ?? []).length;
+    const linkLiCount = (s.html.match(/<li[^>]*>\s*<a\s/gi) ?? []).length;
+    if (liCount >= 3 && linkLiCount / liCount > 0.6) return false;
+    return true;
+  });
 
   const client = getOpenAIClient();
   if (!client) {
@@ -273,9 +309,12 @@ export const handleAiSplitAreaContent: RequestHandler = async (req, res) => {
     return;
   }
 
-  // Build compact section list for AI
+  // Build compact section list for AI (Fix 3a/3b: include Q&A hint)
   const sectionList = sections
-    .map((s, i) => `Section ${i + 1}: "${s.heading}"\nPreview: ${s.preview}`)
+    .map((s, i) => {
+      const qaHint = s.hasQaStructure ? "\n[Contains Q&A structure - likely FAQ]" : "";
+      return `Section ${i + 1}: "${s.heading}"\nPreview: ${s.preview}${qaHint}`;
+    })
     .join("\n\n");
 
   try {
@@ -289,7 +328,7 @@ export const handleAiSplitAreaContent: RequestHandler = async (req, res) => {
           content: `You are classifying H2 sections of a law firm "Areas We Serve" page.
 
 RULES:
-- "faq": ALWAYS use this for any section whose heading contains words like "FAQ", "Questions", "Frequently Asked", OR whose content is primarily H3/H4 question+answer pairs or <dl>/<dt>/<dd> lists. This MUST take priority over all other categories.
+- "faq": ALWAYS use this for any section whose heading contains words like "FAQ", "Questions", "Frequently Asked", OR whose content is marked "[Contains Q&A structure]". This MUST take priority over all other categories — never assign a Q&A section to "why" or "closing".
 - "intro": Use for the FIRST meaningful content section (location intro, firm overview, welcome). Assign AT MOST 1–2 sections as "intro".
 - "why": Use for sections about attorney credentials, experience, firm benefits, client stories, types of debts handled. Assign AT MOST 2 sections as "why".
 - "closing": Use for calls-to-action, contact us, consultation offers, resource links, map/location info, office addresses. Typically the last 1–2 sections.
@@ -297,8 +336,9 @@ RULES:
 Assignment strategy:
 - If there are N sections total, try to distribute roughly: 1–2 intro, 1–2 why, 1–2 closing, any number faq.
 - If a section could be either "closing" or "why", prefer "closing" for the last section and "why" for earlier ones.
-- Never assign FAQ-style content to "closing".
+- Never assign FAQ-style content to "closing" or "why".
 - The FIRST section should almost always be "intro" unless it is clearly a FAQ.
+- Any section marked "[Contains Q&A structure - likely FAQ]" MUST be classified as "faq".
 
 Return JSON: { "classifications": ["intro"|"why"|"closing"|"faq", ...] }
 The array must have exactly ${sections.length} entries, one per section, in order.`,
@@ -314,10 +354,7 @@ The array must have exactly ${sections.length} entries, one per section, in orde
     const parsed = JSON.parse(raw) as { classifications?: string[] };
     const classifications = parsed.classifications;
 
-    if (
-      !Array.isArray(classifications) ||
-      classifications.length !== sections.length
-    ) {
+    if (!Array.isArray(classifications) || classifications.length !== sections.length) {
       res.json(smartFallbackSplit(sections));
       return;
     }

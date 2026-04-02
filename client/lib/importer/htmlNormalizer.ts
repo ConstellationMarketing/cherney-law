@@ -161,15 +161,15 @@ function cleanInlineMarkup(html: string): string {
 
 /**
  * Normalize heading hierarchy:
- * - Convert extra H1 tags to H2 (only one H1 should exist, but it's usually the title)
+ * - Strip H1 tags entirely (page title H1 is mapped to the hero field, never body content)
  * - Fix heading hierarchy jumps (H2 → H5 becomes H2 → H3)
  */
 function normalizeHeadings(html: string): string {
   let result = html;
 
-  // Convert all H1 to H2 (the page title H1 comes from elsewhere)
-  result = result.replace(/<h1([^>]*)>/gi, '<h2$1>');
-  result = result.replace(/<\/h1>/gi, '</h2>');
+  // Remove H1 entirely — the page title comes from the `title` field and belongs in the hero,
+  // never in body content. Keeping it (or converting to H2) causes duplicate titles.
+  result = result.replace(/<h1[^>]*>[\s\S]*?<\/h1>/gi, '');
 
   // Fix heading hierarchy: ensure no jumps > 1 level
   const headingPattern = /<h([2-6])([^>]*)>([\s\S]*?)<\/h\1>/gi;

@@ -216,16 +216,17 @@ export const defaultFilterOptions: Record<TemplateType, FilterOptions> = {
     skipSecondaryFilter: false,
   },
   area: {
-    // Same as practice — law firm area pages are law firm content.
-    removeContactBlocks: false,
-    removePostListings: true,
+    // Law firm area pages: keep CTA/contact content, strip sidebar junk and post listings.
+    removeContactBlocks: false,   // preserve free-consultation / call-us content
+    removePostListings: true,     // strip post link-list H2 blocks
     removeSidebarWidgets: true,
     removeNewsletterBlocks: true,
     removeCommentSections: true,
     removeFormBlocks: true,
     linkDensityThreshold: 0.85,
-    // Skip secondary content filter — same reasoning as practice template.
-    skipSecondaryFilter: true,
+    // Enable secondary filter so "Recent Posts" subsections and post listings are stripped
+    // before reaching Build Recipe. removeContactBlocks:false means CTA content is preserved.
+    skipSecondaryFilter: false,
   },
 };
 
