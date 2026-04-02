@@ -4,6 +4,42 @@ import type { FieldMapping, MappingConfig, SourceColumn, TemplateField, Template
 import { getTemplateFields } from './templateFields';
 
 /**
+ * Columns that should always be skipped — they carry no useful CMS content.
+ * Normalized column names (dots/colons → underscores, lowercase).
+ */
+const ALWAYS_SKIP = new Set([
+  // OG / metadata fields that aren't page content
+  'metadata_og_locale',
+  'metadata_og_type',
+  'metadata_og_site_name',
+  'metadata_og_sitename',
+  'metadata_article_publisher',
+  'metadata_article_modified_time',
+  'metadata_article_published_time',
+  'og_locale',
+  'og_type',
+  'og_site_name',
+  'locale',
+  'language',
+  // Twitter card metadata that adds no CMS value
+  'metadata_twitter_card',
+  'metadata_twitter_site',
+  'metadata_twitter_creator',
+  'twitter_card',
+  'twitter_site',
+]);
+
+/**
+ * Fields that should prefer metadata.url / metadata.sourceURL over metadata.og:url
+ * for the slug mapping. We score source-URL columns higher when there are multiple
+ * URL candidates competing for the slug slot.
+ */
+const PREFERRED_SLUG_COLUMNS = [
+  'metadata_url', 'metadata_sourceurl', 'metadata_source_url', 'source_url', 'sourceurl',
+  'url', 'slug', 'permalink', 'path', 'url_path', 'url_slug',
+];
+
+/**
  * Auto-map source columns to template fields using fuzzy name matching.
  * Returns a MappingConfig with all mappings, unmapped columns, and unmapped fields.
  */
@@ -16,8 +52,14 @@ export function autoMapFields(
   const usedColumns = new Set<string>();
   const usedFields = new Set<string>();
 
+  // Pass 0: Skip columns that are globally blocklisted
+  const filteredColumns = columns.filter((col) => {
+    const norm = normalize(col.name);
+    return !ALWAYS_SKIP.has(norm);
+  });
+
   // Pass 1: Exact matches (column name matches field key or alias exactly)
-  for (const col of columns) {
+  for (const col of filteredColumns) {
     const normalizedCol = normalize(col.name);
 
     for (const field of fields) {
@@ -40,15 +82,19 @@ export function autoMapFields(
   }
 
   // Pass 2: Fuzzy matches for remaining columns
-  for (const col of columns) {
+  for (const col of filteredColumns) {
     if (usedColumns.has(col.name)) continue;
 
     let bestField: TemplateField | null = null;
     let bestScore = 0;
 
-    // Determine if this column is clearly an image/media column
     const colLower = col.name.toLowerCase();
+    const colNorm = normalize(col.name);
+
+    // Determine column characteristics for guard rules
     const isImageColumn = /image|img|photo|thumb|banner|cover|avatar|icon|picture/.test(colLower);
+    const isSocialMetaColumn = /twitter|facebook|instagram|linkedin/.test(colLower);
+    const isOgPrefixed = colNorm.startsWith('metadata_og') || colNorm.startsWith('og_');
 
     for (const field of fields) {
       if (usedFields.has(field.key)) continue;
@@ -57,7 +103,24 @@ export function autoMapFields(
       // Guard: never map an image-named column to the slug field
       if (isImageColumn && field.key === 'slug') continue;
 
-      const score = fuzzyMatchScore(col.name, field, col);
+      // Guard: social/twitter columns (twitter:title, twitter:description, og:title, og:description)
+      // should only land on meta_title / meta_description, never on the main title or body fields
+      if ((isSocialMetaColumn || isOgPrefixed) && ['title', 'body', 'why_body', 'closing_body'].includes(field.key)) continue;
+
+      let score = fuzzyMatchScore(col.name, field, col);
+
+      // Boost preferred slug columns when scoring against the slug field
+      if (field.key === 'slug' && PREFERRED_SLUG_COLUMNS.includes(colNorm)) {
+        score = Math.min(1, score + 0.2);
+      }
+      // Penalise og:url / metadata.og:url for slug when metadata.url-style columns exist
+      if (field.key === 'slug' && (colNorm === 'metadata_og_url' || colNorm === 'og_url')) {
+        const hasPreferredSlugCol = filteredColumns.some(
+          (c) => !usedColumns.has(c.name) && PREFERRED_SLUG_COLUMNS.includes(normalize(c.name))
+        );
+        if (hasPreferredSlugCol) score = Math.max(0, score - 0.3);
+      }
+
       if (score > bestScore && score >= 0.4) {
         bestScore = score;
         bestField = field;
@@ -76,9 +139,9 @@ export function autoMapFields(
     }
   }
 
-  const unmappedColumns = columns
-    .map((c) => c.name)
-    .filter((n) => !usedColumns.has(n));
+  // Include the originally-skipped columns as unmapped (no mapping created for them)
+  const allColumnNames = columns.map((c) => c.name);
+  const unmappedColumns = allColumnNames.filter((n) => !usedColumns.has(n));
 
   const unmappedFields = fields
     .map((f) => f.key)

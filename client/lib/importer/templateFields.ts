@@ -181,7 +181,11 @@ export const postFields: TemplateField[] = [
     type: 'text',
     required: false,
     isContentField: false,
-    aliases: ['meta_title', 'seo_title', 'title_tag', 'og_title'],
+    aliases: [
+      'meta_title', 'seo_title', 'title_tag',
+      'og_title', 'metadata_og_title', 'metadata_ogtitle', 'ogtitle',
+      'twitter_title', 'metadata_twitter_title', 'metadata_twittertitle',
+    ],
   },
   {
     key: 'meta_description',
@@ -189,7 +193,11 @@ export const postFields: TemplateField[] = [
     type: 'text',
     required: false,
     isContentField: false,
-    aliases: ['meta_description', 'seo_description', 'description_tag', 'og_description'],
+    aliases: [
+      'meta_description', 'seo_description', 'description_tag', 'excerpt',
+      'og_description', 'metadata_og_description', 'metadata_ogdescription',
+      'twitter_description', 'metadata_twitter_description',
+    ],
   },
   {
     key: 'canonical_url',
