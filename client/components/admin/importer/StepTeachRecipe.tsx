@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { WizardState, RecipePreset } from '@site/lib/importer/recipeTypes';
 import { createDefaultRecipe } from '@site/lib/importer/recipeEngine';
 import { supabase } from '@/lib/supabase';
@@ -7,6 +7,9 @@ import { computeFieldDiffs, inferRulesFromDiff } from '@site/lib/importer/recipe
 import { getTemplateFields, getContentFieldKeys } from '@site/lib/importer/templateFields';
 import { cleanSourceRecords } from '@site/lib/importer/sourceCleaner';
 import { normalizeHtml } from '@site/lib/importer/htmlNormalizer';
+import { buildNormalizedContent } from '@site/lib/importer/normalizedContent';
+import { allocateForTemplate } from '@site/lib/importer/templateAllocators';
+import { normalizeUrlSlug } from '@site/lib/importer/preparer';
 
 interface Props {
   state: WizardState;
@@ -195,6 +198,10 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
   // because they are computed fresh per-page during auto-transform.
   // Allowing them would bake the recipe-page's HTML as a default_value for every page.
   const AI_SPLIT_FIELDS = new Set([
+    // For area template, body is also an AI-split field — after AI Split Content,
+    // the body field becomes intro-only. Without this, the diff would generate a
+    // recipe rule that embeds the sample page's body as a default_value for all pages.
+    ...(state.templateType === 'area' ? ['body'] : []),
     'why_body', 'closing_body', 'faq',
     'body_image', 'body_image_alt',
     'why_image', 'why_image_alt',
@@ -207,7 +214,9 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
     const diffs = computeFieldDiffs(mappedSample.mappedData, corrections);
     // Strip AI-split fields so their content never becomes a recipe rule
     const filteredDiffs = diffs.filter((d) => !AI_SPLIT_FIELDS.has(d.field));
-    const newRules = inferRulesFromDiff(filteredDiffs);
+    // Pass content field keys so inferRulesFromDiff guards against literal-content rules
+    const contentFieldKeys = getContentFieldKeys(state.templateType!);
+    const newRules = inferRulesFromDiff(filteredDiffs, contentFieldKeys);
 
     const updatedRecipe = {
       ...recipe,
@@ -505,6 +514,9 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
         </div>
       )}
 
+      {/* Preview Allocated Output */}
+      <AllocatedPreviewPanel corrections={corrections} templateType={state.templateType!} />
+
       <div className="flex justify-between items-center">
         <button onClick={onBack} className="px-4 py-2 text-gray-600 hover:text-gray-900 text-sm font-medium">
           Back
@@ -568,6 +580,141 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Allocated Preview Panel ─────────────────────────────────────────────────
+
+function AllocatedPreviewPanel({
+  corrections,
+  templateType,
+}: {
+  corrections: Record<string, string>;
+  templateType: import('@site/lib/importer/types').TemplateType;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const preview = useMemo(() => {
+    if (!open) return null;
+    const slug = normalizeUrlSlug(
+      corrections.slug || corrections.title || '',
+      corrections.title || '',
+      templateType
+    );
+    const normalized = buildNormalizedContent(corrections, templateType);
+    const allocated = allocateForTemplate(normalized, templateType, slug);
+    return { normalized, allocated };
+  }, [open, corrections, templateType]);
+
+  const strip = (html: string) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const trunc = (text: string, max: number) => text.length > max ? text.substring(0, max).trimEnd() + '\u2026' : text;
+
+  return (
+    <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 hover:bg-gray-100 text-left text-sm"
+      >
+        <span className="font-medium text-gray-700">Preview Allocated Output</span>
+        <span className="text-gray-400 text-xs">{open ? '\u25B2 hide' : '\u25BC show'}</span>
+      </button>
+
+      {open && preview && (
+        <div className="p-4 space-y-3 bg-white">
+          {/* Stats bar */}
+          <div className="flex gap-3 text-xs text-gray-500">
+            <span>Method: <strong className="text-gray-700">{preview.normalized.segmentation.method}</strong></span>
+            <span>Blocks: <strong className="text-gray-700">{preview.normalized.stats.sectionBlockCount}</strong></span>
+            <span>FAQ: <strong className="text-gray-700">{preview.normalized.stats.faqItemCount}</strong></span>
+            <span>Images: <strong className="text-gray-700">{preview.normalized.stats.imageCount}</strong></span>
+          </div>
+
+          {/* Template-specific preview */}
+          {templateType === 'area' && (() => {
+            const content = preview.allocated.content as Record<string, unknown>;
+            const intro = content.introSection as Record<string, unknown>;
+            const why = content.whySection as Record<string, unknown>;
+            const closing = content.closingSection as Record<string, unknown>;
+            const faq = content.faq as { items?: { question: string }[] };
+            const sections = [
+              { label: 'Intro', heading: String(intro?.heading ?? ''), body: String(intro?.body ?? ''), hasImg: !!intro?.image },
+              { label: 'Why', heading: String(why?.heading ?? ''), body: String(why?.body ?? ''), hasImg: !!why?.image },
+              { label: 'Closing', heading: String(closing?.heading ?? ''), body: String(closing?.body ?? ''), hasImg: !!closing?.image },
+            ];
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {sections.map((s) => {
+                  const text = strip(s.body);
+                  const words = text ? text.split(/\s+/).length : 0;
+                  return (
+                    <div key={s.label} className={`border rounded p-2 text-xs ${text ? 'border-green-300 bg-green-50' : 'border-dashed border-gray-300 bg-gray-50'}`}>
+                      <p className="font-semibold text-gray-700">{s.label} {s.hasImg && <span className="text-blue-500">[img]</span>}</p>
+                      {s.heading && <p className="text-gray-600 font-medium truncate">{s.heading}</p>}
+                      <p className="text-gray-500">{words > 0 ? `${words} words` : 'Empty'}</p>
+                      {text && <p className="text-gray-600 mt-1 leading-snug">{trunc(text, 120)}</p>}
+                    </div>
+                  );
+                })}
+                <div className={`border rounded p-2 text-xs ${(faq.items?.length ?? 0) > 0 ? 'border-green-300 bg-green-50' : 'border-dashed border-gray-300 bg-gray-50'}`}>
+                  <p className="font-semibold text-gray-700">FAQ</p>
+                  <p className="text-gray-500">{faq.items?.length ?? 0} items</p>
+                  {faq.items?.[0] && <p className="text-gray-600 mt-1">{trunc(faq.items[0].question, 80)}</p>}
+                </div>
+              </div>
+            );
+          })()}
+
+          {templateType === 'practice' && (() => {
+            const content = preview.allocated.content as Record<string, unknown>;
+            const cs = (content.contentSections as Record<string, unknown>[]) ?? [];
+            const faq = content.faq as { items?: { question: string }[] };
+            return (
+              <div className="space-y-2">
+                <p className="text-xs text-gray-500">{cs.length} content section{cs.length !== 1 ? 's' : ''}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {cs.slice(0, 4).map((s, i) => {
+                    const text = strip(String(s.body ?? ''));
+                    const words = text ? text.split(/\s+/).length : 0;
+                    return (
+                      <div key={i} className="border border-green-300 bg-green-50 rounded p-2 text-xs">
+                        <p className="font-semibold text-gray-700">Section {i + 1} {s.image && <span className="text-blue-500">[img]</span>}</p>
+                        <p className="text-gray-500">{words} words</p>
+                        <p className="text-gray-600 mt-1 leading-snug">{trunc(text, 100)}</p>
+                      </div>
+                    );
+                  })}
+                  {cs.length > 4 && <div className="text-xs text-gray-500 p-2">+{cs.length - 4} more</div>}
+                </div>
+                <div className={`border rounded p-2 text-xs ${(faq.items?.length ?? 0) > 0 ? 'border-green-300 bg-green-50' : 'border-dashed border-gray-300 bg-gray-50'}`}>
+                  <p className="font-semibold text-gray-700">FAQ: {faq.items?.length ?? 0} items</p>
+                </div>
+              </div>
+            );
+          })()}
+
+          {templateType === 'post' && (() => {
+            const body = String(preview.allocated.body ?? '');
+            const text = strip(body);
+            const words = text ? text.split(/\s+/).length : 0;
+            const excerpt = String(preview.allocated.excerpt ?? '');
+            return (
+              <div className="space-y-2">
+                {excerpt && (
+                  <div className="border border-green-300 bg-green-50 rounded p-2 text-xs">
+                    <p className="font-semibold text-gray-700">Excerpt</p>
+                    <p className="text-gray-600">{trunc(excerpt, 160)}</p>
+                  </div>
+                )}
+                <div className={`border rounded p-2 text-xs ${words > 0 ? 'border-green-300 bg-green-50' : 'border-dashed border-gray-300 bg-gray-50'}`}>
+                  <p className="font-semibold text-gray-700">Body: {words} words</p>
+                  {text && <p className="text-gray-600 mt-1 leading-snug">{trunc(text, 200)}</p>}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
     </div>
   );
 }

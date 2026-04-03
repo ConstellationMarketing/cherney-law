@@ -25,6 +25,8 @@ export interface TransformOptions {
   recipe: Recipe;
   filterOptions: FilterOptions;
   confidenceThreshold: number;
+  /** Keys to skip HTML normalization for (e.g. AI-split fields already cleaned server-side) */
+  skipNormalizationKeys?: string[];
   onProgress?: (current: number, total: number) => void;
 }
 
@@ -51,6 +53,7 @@ export function transformRecords(
     recipe,
     filterOptions,
     confidenceThreshold,
+    skipNormalizationKeys,
     onProgress,
   } = options;
 
@@ -66,9 +69,10 @@ export function transformRecords(
   onProgress?.(Math.floor(total * 0.3), total);
 
   // Stage 5: Normalize HTML for content fields (now keys match template field keys)
+  // Skip normalization for AI-split fields that were already cleaned server-side
   const normalized = mapped.map((record) => ({
     ...record,
-    mappedData: normalizeContentFields(record.mappedData, contentFieldKeys, filterOptions),
+    mappedData: normalizeContentFields(record.mappedData, contentFieldKeys, filterOptions, skipNormalizationKeys),
   }));
   onProgress?.(Math.floor(total * 0.4), total);
 
@@ -100,6 +104,64 @@ export function transformRecords(
 
     onProgress?.(Math.floor(total * 0.8 + (i / total) * total * 0.2), total);
 
+    // Build transformation debug log
+    const transformationLog: import('./types').TransformationLogEntry[] = [];
+
+    // Log field mapping
+    transformationLog.push({
+      stage: 'field_mapping',
+      field: 'slug',
+      action: `Source URL: ${record.sourceData.url || record.sourceData.slug || record.slug}`,
+    });
+
+    // Log prepare stage info
+    const title = String(record.data.title ?? '');
+    if (title) {
+      transformationLog.push({ stage: 'prepare_records', field: 'title', action: `Title: ${title}` });
+    }
+
+    const sections = record.contentSections ?? [];
+    if (sections.length > 0) {
+      transformationLog.push({ stage: 'prepare_records', field: 'body', action: `Section blocks: ${sections.length}` });
+    }
+
+    const faqItems = record.faqItems ?? [];
+    if (faqItems.length > 0) {
+      transformationLog.push({ stage: 'prepare_records', field: 'faq', action: `FAQ items: ${faqItems.length}` });
+    }
+
+    // Log word counts for area template sections
+    if (templateType === 'area') {
+      const content = record.data.content as Record<string, unknown> | undefined;
+      if (content) {
+        const countWords = (html: string) => html.replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+        const introBody = String((content.introSection as Record<string, unknown>)?.body ?? '');
+        const whyBody = String((content.whySection as Record<string, unknown>)?.body ?? '');
+        const closingBody = String((content.closingSection as Record<string, unknown>)?.body ?? '');
+        transformationLog.push({
+          stage: 'prepare_records',
+          action: `Intro: ${countWords(introBody)} words, Why: ${countWords(whyBody)} words, Closing: ${countWords(closingBody)} words`,
+        });
+      }
+    }
+
+    // Log recipe rules that affected this record's content fields
+    if (recipe.rules.length > 0) {
+      const mappedBefore = mapped[i]?.mappedData ?? {};
+      const mappedAfter = reciped[i]?.mappedData ?? {};
+      for (const rule of recipe.rules) {
+        if (!rule.enabled) continue;
+        const field = rule.targetField;
+        if (mappedBefore[field] !== mappedAfter[field]) {
+          transformationLog.push({
+            stage: 'recipe_rules',
+            field,
+            action: `Rule "${rule.description || rule.type}" affected field ${field}`,
+          });
+        }
+      }
+    }
+
     return {
       rowIndex: record.rowIndex,
       slug: record.slug,
@@ -112,7 +174,9 @@ export function transformRecords(
       confidence,
       validation: recordValidation,
       status: status as 'approved' | 'flagged',
-      transformationLog: [],
+      transformationLog,
+      // Store Layer 2 normalized content for debug visibility
+      normalizedContent: (record as unknown as Record<string, unknown>).normalizedContent as TransformedRecord['normalizedContent'],
     };
   });
 
@@ -127,12 +191,16 @@ export function transformRecords(
 function normalizeContentFields(
   data: Record<string, string>,
   contentFieldKeys: string[],
-  filterOptions: FilterOptions
+  filterOptions: FilterOptions,
+  skipNormalizationKeys?: string[]
 ): Record<string, string> {
   const result: Record<string, string> = {};
 
   for (const [key, value] of Object.entries(data)) {
-    if (contentFieldKeys.includes(key) && value) {
+    if (skipNormalizationKeys?.includes(key)) {
+      // Already cleaned server-side (e.g. AI-split fields) — pass through
+      result[key] = value;
+    } else if (contentFieldKeys.includes(key) && value) {
       result[key] = normalizeHtml(value, filterOptions);
     } else {
       result[key] = value;

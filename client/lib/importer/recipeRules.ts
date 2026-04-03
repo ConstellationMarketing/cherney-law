@@ -2,7 +2,8 @@
 // Each rule transforms a single field value
 
 import type { RecipeRuleType } from './recipeTypes';
-import { normalizeUrlSlug, splitBodyOnH2 } from './preparer';
+import { normalizeUrlSlug } from './preparer';
+import { splitBodyOnH2 } from './splitBodyOnH2';
 
 /** Rule executor function */
 type RuleExecutor = (

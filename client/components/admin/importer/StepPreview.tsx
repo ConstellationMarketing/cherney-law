@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { WizardState } from '@site/lib/importer/recipeTypes';
 import type { TransformedRecord, TemplateType } from '@site/lib/importer/types';
+import ImportDebugPanel from './ImportDebugPanel';
 
 interface Props {
   state: WizardState;
@@ -195,36 +196,39 @@ function ContentPreviewCard({ record, templateType }: ContentPreviewCardProps) {
 
       {/* Sections grid */}
       {expanded && (
-        <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white">
-          {sections.map((s, i) => (
-            <div
-              key={i}
-              className={`border rounded p-2 text-xs ${sectionBorderClass(s)}`}
-            >
-              <p className="font-semibold text-gray-700 mb-1">{s.label}</p>
-              {s.empty ? (
-                <p className="text-gray-400 italic">Empty — not imported</p>
-              ) : (
-                <>
-                  {s.heading && (
-                    <p className="text-gray-800 font-medium mb-1 truncate">{s.heading}</p>
-                  )}
-                  {s.bodyPreview && (
-                    <p className="text-gray-600 leading-snug">{s.bodyPreview}</p>
-                  )}
-                  {s.itemCount !== undefined && (
-                    <p className="text-gray-700">
-                      {s.itemCount} item{s.itemCount !== 1 ? 's' : ''}
-                      {s.firstItem && (
-                        <span className="text-gray-500"> — {truncate(s.firstItem, 80)}</span>
-                      )}
-                    </p>
-                  )}
-                </>
-              )}
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white">
+            {sections.map((s, i) => (
+              <div
+                key={i}
+                className={`border rounded p-2 text-xs ${sectionBorderClass(s)}`}
+              >
+                <p className="font-semibold text-gray-700 mb-1">{s.label}</p>
+                {s.empty ? (
+                  <p className="text-gray-400 italic">Empty — not imported</p>
+                ) : (
+                  <>
+                    {s.heading && (
+                      <p className="text-gray-800 font-medium mb-1 truncate">{s.heading}</p>
+                    )}
+                    {s.bodyPreview && (
+                      <p className="text-gray-600 leading-snug">{s.bodyPreview}</p>
+                    )}
+                    {s.itemCount !== undefined && (
+                      <p className="text-gray-700">
+                        {s.itemCount} item{s.itemCount !== 1 ? 's' : ''}
+                        {s.firstItem && (
+                          <span className="text-gray-500"> — {truncate(s.firstItem, 80)}</span>
+                        )}
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+          <ImportDebugPanel record={record} templateType={templateType} />
+        </>
       )}
     </div>
   );

@@ -6,15 +6,20 @@ import type { FieldDiff } from './recipeTypes';
 /**
  * Infer recipe rules from the differences between auto-generated output
  * and the user's corrected output.
+ *
+ * @param contentFieldKeys - Fields that carry HTML body content (e.g. 'body', 'why_body').
+ *   Rules for these fields are restricted to structural transforms only — no default_value
+ *   or full text_replace rules that would embed sample-page content into every page.
  */
-export function inferRulesFromDiff(diffs: FieldDiff[]): RecipeRule[] {
+export function inferRulesFromDiff(diffs: FieldDiff[], contentFieldKeys?: string[]): RecipeRule[] {
   const rules: RecipeRule[] = [];
   let order = 100; // Start after default rules
 
   for (const diff of diffs) {
     if (diff.diffType === 'unchanged') continue;
 
-    const inferred = inferRuleForField(diff, order);
+    const isContentField = contentFieldKeys?.includes(diff.field) ?? false;
+    const inferred = inferRuleForField(diff, order, isContentField);
     if (inferred) {
       rules.push(...inferred);
       order += inferred.length;
@@ -58,12 +63,19 @@ export function computeFieldDiffs(
 
 /**
  * Infer rules for a single field diff.
+ * When isContentField is true, only structural transforms are allowed (trim, strip_tags,
+ * prefix, suffix, case changes). No default_value or full text_replace rules.
  */
-function inferRuleForField(diff: FieldDiff, startOrder: number): RecipeRule[] | null {
+function inferRuleForField(diff: FieldDiff, startOrder: number, isContentField = false): RecipeRule[] | null {
   const rules: RecipeRule[] = [];
   const { field, autoValue, correctedValue } = diff;
 
   if (diff.diffType === 'added') {
+    // For content fields: skip default_value if the value contains HTML and is long
+    // (it would embed sample-page content as a literal into every record)
+    if (isContentField && correctedValue.length > 50 && /<[a-z][\s\S]*>/i.test(correctedValue)) {
+      return null;
+    }
     // User added a value that didn't exist — create a default_value rule
     rules.push({
       id: `inferred-${startOrder}`,
@@ -194,8 +206,13 @@ function inferRuleForField(diff: FieldDiff, startOrder: number): RecipeRule[] | 
     return rules;
   }
 
-  // Fallback: create a regex replace rule with the full before/after
-  // This is a last resort and may not generalize well
+  // Fallback: create a regex replace rule with the full before/after.
+  // For content fields, skip this — it would embed the entire sample page's
+  // content as a literal search/replace applied to every other page.
+  if (isContentField) {
+    return null;
+  }
+
   rules.push({
     id: `inferred-${startOrder}`,
     type: 'text_replace',

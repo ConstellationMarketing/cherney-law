@@ -334,4 +334,6 @@ export interface TransformedRecord {
   validation: RecordValidation;
   status: 'approved' | 'flagged' | 'skipped';
   transformationLog: TransformationLogEntry[];
+  /** Layer 2 normalized content model — for debug visibility */
+  normalizedContent?: import('./normalizedContent').NormalizedContent;
 }

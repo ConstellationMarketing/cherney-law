@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { WizardState, ReviewDecision } from '@site/lib/importer/recipeTypes';
 import type { TransformedRecord } from '@site/lib/importer/types';
 import { getTemplateFields } from '@site/lib/importer/templateFields';
+import ImportDebugPanel from './ImportDebugPanel';
 
 interface Props {
   state: WizardState;
@@ -130,6 +131,9 @@ export default function StepExceptionReview({ state, updateState, onNext, onBack
           ))}
         </div>
       )}
+
+      {/* Debug panel */}
+      <ImportDebugPanel record={currentRecord} templateType={state.templateType!} />
 
       {/* Decision buttons */}
       <div className="flex items-center gap-3">

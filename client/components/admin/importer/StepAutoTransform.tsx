@@ -165,12 +165,19 @@ export default function StepAutoTransform({ state, updateState, onNext, onBack }
       const recipe = state.recipe ?? createDefaultRecipe(state.templateType!);
       const threshold = recipe.confidenceThreshold;
 
+      // For area template: skip re-normalization on AI-split fields that were
+      // already cleaned server-side to avoid double HTML normalization stripping content
+      const skipNormalizationKeys = state.templateType === 'area'
+        ? ['body', 'why_body', 'closing_body']
+        : undefined;
+
       const results = transformRecords(sourceRecords, {
         templateType: state.templateType!,
         mappingConfig,
         recipe,
         filterOptions: state.filterOptions,
         confidenceThreshold: threshold,
+        skipNormalizationKeys,
         onProgress: (current, total) => {
           setProgress(current);
           setTotal(total);

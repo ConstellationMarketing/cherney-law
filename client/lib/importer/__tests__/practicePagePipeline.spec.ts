@@ -6,7 +6,8 @@ import { extractMainContent, filterSecondaryContent } from '../contentFilter';
 import { normalizeHtml } from '../htmlNormalizer';
 import { autoMapFields } from '../autoMapper';
 import { applyFieldMapping } from '../fieldMapping';
-import { prepareRecord, normalizeUrlSlug, splitBodyOnH2 } from '../preparer';
+import { prepareRecord, normalizeUrlSlug } from '../preparer';
+import { splitBodyOnH2 } from '../splitBodyOnH2';
 import { validateRecord } from '../validator';
 import type { FilterOptions, SourceRecord } from '../types';
 
@@ -434,7 +435,7 @@ describe('Full pipeline integration', () => {
     const prepared = prepareRecord(mappedRecord, 'practice');
 
     // Slug should be normalized
-    expect(prepared.slug).toBe('car-accident');
+    expect(prepared.slug).toBe('/practice-areas/car-accident/');
 
     // Should have content sections
     expect(prepared.contentSections).toBeDefined();
