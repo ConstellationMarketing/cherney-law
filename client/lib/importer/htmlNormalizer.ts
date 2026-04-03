@@ -159,6 +159,18 @@ function stripForEarlyHeadingCapture(html: string): string {
   return result;
 }
 
+function looksLikeStandaloneHeading(text: string): boolean {
+  const normalizedText = stripTagsToText(text);
+  if (!normalizedText) return false;
+  if (/[.!?:;]/.test(normalizedText)) return false;
+
+  const words = normalizedText.split(/\s+/).filter(Boolean);
+  if (words.length < 2 || words.length > 10) return false;
+
+  const titleCaseWords = words.filter((word) => /^[A-Z][a-z0-9'’-]*$/.test(word)).length;
+  return titleCaseWords / words.length >= 0.7;
+}
+
 function isLikelyHeroTaglineCandidate(text: string, headingText: string): boolean {
   const normalizedText = stripTagsToText(text);
   if (!normalizedText || normalizedText === headingText) return false;
@@ -169,6 +181,7 @@ function isLikelyHeroTaglineCandidate(text: string, headingText: string): boolea
   if (normalizedText.length > 180) return false;
   if (/^(home|back|menu|contact us|call now|learn more|get started)$/i.test(normalizedText)) return false;
   if (/[›»]/.test(normalizedText) || /\b(home|breadcrumb)\b/i.test(normalizedText)) return false;
+  if (looksLikeStandaloneHeading(normalizedText)) return false;
 
   return true;
 }
@@ -176,34 +189,29 @@ function isLikelyHeroTaglineCandidate(text: string, headingText: string): boolea
 function extractHeroTaglineFromWindow(html: string, headingMatch: HeadingMatch | null): string {
   if (!headingMatch || headingMatch.tagName !== 'h1') return '';
 
-  const windowStart = Math.max(0, headingMatch.start - 600);
-  const windowEnd = Math.min(html.length, headingMatch.end + 1200);
-  const windowHtml = html.slice(windowStart, windowEnd);
+  const afterHeadingHtml = html.slice(headingMatch.end, Math.min(html.length, headingMatch.end + 900));
+  const nextHeadingMatch = afterHeadingHtml.match(/<h[2-6][^>]*>/i);
+  const searchHtml = (nextHeadingMatch ? afterHeadingHtml.slice(0, nextHeadingMatch.index) : afterHeadingHtml).slice(0, 500);
 
   const scoreCandidates = (pattern: RegExp, allowWrappers: boolean): string => {
     let match: RegExpExecArray | null;
     let bestCandidate = '';
     let bestScore = -Infinity;
 
-    while ((match = pattern.exec(windowHtml)) !== null) {
+    while ((match = pattern.exec(searchHtml)) !== null) {
       const tagName = match[1].toLowerCase();
       const innerHtml = match[2];
       if (!allowWrappers && (tagName === 'div' || tagName === 'span')) continue;
-      if ((tagName === 'div' || tagName === 'span') && /<h[1-6][^>]*>|<p[^>]*>/i.test(innerHtml)) {
+      if ((tagName === 'div' || tagName === 'span') && /<h[1-6][^>]*>|<p[^>]*>|<div[^>]*>|<section[^>]*>/i.test(innerHtml)) {
         continue;
       }
 
       const text = stripTagsToText(innerHtml);
       if (!isLikelyHeroTaglineCandidate(text, headingMatch.text)) continue;
 
-      const absoluteIndex = windowStart + match.index;
-      const distance = Math.min(
-        Math.abs(absoluteIndex - headingMatch.start),
-        Math.abs(absoluteIndex - headingMatch.end)
-      );
-      const priority = tagName === 'p' ? 40 : tagName === 'span' ? 32 : tagName === 'div' ? 24 : 28;
-      const directionalBonus = absoluteIndex <= headingMatch.start ? 10 : 0;
-      const score = priority + directionalBonus - distance / 20;
+      const distanceFromHeading = match.index;
+      const priority = tagName === 'p' ? 40 : tagName === 'span' ? 28 : 24;
+      const score = priority - distanceFromHeading / 12;
 
       if (score > bestScore) {
         bestScore = score;
@@ -215,7 +223,7 @@ function extractHeroTaglineFromWindow(html: string, headingMatch: HeadingMatch |
   };
 
   return (
-    scoreCandidates(/<(p|h2|h3|h4|h5|h6)[^>]*>([\s\S]*?)<\/\1>/gi, false) ||
+    scoreCandidates(/<(p)[^>]*>([\s\S]*?)<\/\1>/gi, false) ||
     scoreCandidates(/<(div|span)[^>]*>([\s\S]*?)<\/\1>/gi, true)
   );
 }
@@ -240,15 +248,20 @@ function removePromotedHeroTagline(html: string, heroTagline: string): string {
   if (!html?.trim() || !normalizedHeroTagline) return html;
 
   const firstH2Index = html.search(/<h2[^>]*>/i);
-  const searchLimit = firstH2Index >= 0 ? firstH2Index + 400 : Math.min(html.length, 2000);
-  const elementPattern = /<(p|h2|h3|h4|h5|h6|div|span)([^>]*)>([\s\S]*?)<\/\1>/gi;
+  const searchLimit = firstH2Index >= 0 ? firstH2Index : Math.min(html.length, 1200);
+  const elementPattern = /<(p|div|span)([^>]*)>([\s\S]*?)<\/\1>/gi;
   let removed = false;
 
   return html.replace(elementPattern, (match, tagName, attrs, content, offset) => {
-    if (removed || offset > searchLimit) return match;
+    if (removed || offset >= searchLimit) return match;
+    if ((tagName === 'div' || tagName === 'span') && /<h[1-6][^>]*>|<p[^>]*>|<div[^>]*>|<section[^>]*>/i.test(content)) {
+      return match;
+    }
+
     const text = stripTagsToText(content);
     if (text !== normalizedHeroTagline) return match;
     if (!isLikelyHeroTaglineCandidate(text, '')) return match;
+
     removed = true;
     return '';
   });
