@@ -29,7 +29,9 @@ export interface AllocationDebug {
   closingBodyLength: number;
 }
 
-export type TitleSource = 'preserved-h1' | 'preserved-h2' | 'cleaned-meta-title' | 'empty';
+export type TitleSource = 'early-preserved-h1' | 'early-preserved-h2' | 'cleaned-meta-title' | 'empty';
+
+export type HeroTaglineSource = 'mapped-hero-tagline' | 'early-hero-tagline' | 'empty';
 
 export interface NormalizedContent {
   sourceUrl: string;
@@ -38,10 +40,19 @@ export interface NormalizedContent {
   rawMetaTitle: string;
   cleanedMetaTitle: string;
   extractedH1: string;
+  earlyPreservedHeading: string;
+  earlyPreservedH1: string;
+  earlyPreservedH2: string;
+  earlyHeroTagline: string;
+  earlyHadH1BeforeStrip: boolean;
   preservedHeading: string;
   preservedH1: string;
   preservedH2: string;
+  latePreservedHeading: string;
+  latePreservedH1: string;
+  latePreservedH2: string;
   hadH1BeforeStrip: boolean;
+  mainContentDroppedEarlyH1: boolean;
   titleSource: TitleSource;
   chosenTitle: string;
   metaDescription: string;
@@ -50,6 +61,7 @@ export interface NormalizedContent {
   schemaType: string;
   status: string;
   heroTagline: string;
+  heroTaglineSource: HeroTaglineSource;
   heroDescription: string;
   heroImage: string;
   heroImageAlt: string;
@@ -450,20 +462,29 @@ export function buildNormalizedContent(
   const body = mappedData.body || '';
   const rawMetaTitle = mappedData.meta_title || mappedData.title || '';
   const extractedH1 = extractPrimaryHeading(body);
+  const earlyPreservedH1 = normalizeText(mappedData.__body_early_preserved_h1 || '');
+  const earlyPreservedH2 = normalizeText(mappedData.__body_early_preserved_h2 || '');
+  const earlyPreservedHeading = normalizeText(mappedData.__body_early_preserved_heading || earlyPreservedH1 || earlyPreservedH2 || '');
+  const earlyHeroTagline = normalizeText(mappedData.__body_early_hero_tagline || '');
+  const earlyHadH1BeforeStrip = mappedData.__body_early_had_h1_before_strip === 'true' || Boolean(earlyPreservedH1);
   const preservedH1 = normalizeText(mappedData.__body_preserved_h1 || '');
   const preservedH2 = normalizeText(mappedData.__body_preserved_h2 || '');
   const preservedHeading = normalizeText(mappedData.__body_preserved_heading || preservedH1 || preservedH2 || '');
+  const latePreservedHeading = preservedHeading;
+  const latePreservedH1 = preservedH1;
+  const latePreservedH2 = preservedH2;
   const hadH1BeforeStrip = mappedData.__body_had_h1_before_strip === 'true' || Boolean(preservedH1);
+  const mainContentDroppedEarlyH1 = mappedData.__body_main_content_dropped_early_h1 === 'true';
   const cleanedMetaTitle = cleanMetadataTitle(rawMetaTitle, mappedData.canonical_url || sourceUrl || '');
   let chosenTitle = '';
   let titleSource: TitleSource = 'empty';
 
-  if (preservedH1) {
-    chosenTitle = preservedH1;
-    titleSource = 'preserved-h1';
-  } else if (preservedH2) {
-    chosenTitle = preservedH2;
-    titleSource = 'preserved-h2';
+  if (earlyPreservedH1) {
+    chosenTitle = earlyPreservedH1;
+    titleSource = 'early-preserved-h1';
+  } else if (earlyPreservedH2) {
+    chosenTitle = earlyPreservedH2;
+    titleSource = 'early-preserved-h2';
   } else if (cleanedMetaTitle) {
     chosenTitle = cleanedMetaTitle;
     titleSource = 'cleaned-meta-title';
@@ -476,7 +497,13 @@ export function buildNormalizedContent(
   const ogImage = mappedData.og_image || '';
   const schemaType = mappedData.schema_type || (templateType === 'post' ? 'BlogPosting' : 'LegalService');
   const status = mappedData.status || 'draft';
-  const heroTagline = mappedData.hero_tagline || '';
+  const explicitHeroTagline = normalizeText(mappedData.hero_tagline || '');
+  const heroTagline = explicitHeroTagline || earlyHeroTagline;
+  const heroTaglineSource: HeroTaglineSource = explicitHeroTagline
+    ? 'mapped-hero-tagline'
+    : earlyHeroTagline
+      ? 'early-hero-tagline'
+      : 'empty';
   const heroDescription = mappedData.hero_description || '';
   const heroImage = mappedData.hero_image || '';
   const heroImageAlt = chosenTitle;
@@ -596,10 +623,19 @@ export function buildNormalizedContent(
     rawMetaTitle,
     cleanedMetaTitle,
     extractedH1,
+    earlyPreservedHeading,
+    earlyPreservedH1,
+    earlyPreservedH2,
+    earlyHeroTagline,
+    earlyHadH1BeforeStrip,
     preservedHeading,
     preservedH1,
     preservedH2,
+    latePreservedHeading,
+    latePreservedH1,
+    latePreservedH2,
     hadH1BeforeStrip,
+    mainContentDroppedEarlyH1,
     titleSource,
     chosenTitle,
     metaDescription,
@@ -608,6 +644,7 @@ export function buildNormalizedContent(
     schemaType,
     status,
     heroTagline,
+    heroTaglineSource,
     heroDescription,
     heroImage,
     heroImageAlt,

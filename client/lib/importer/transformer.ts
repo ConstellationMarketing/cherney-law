@@ -309,18 +309,48 @@ export function transformRecords(
       });
       transformationLog.push({
         stage: 'prepare_records',
-        field: 'preservedH1',
-        action: normalizedContent.preservedH1 || '(empty)',
+        field: 'earlyPreservedH1',
+        action: normalizedContent.earlyPreservedH1 || '(empty)',
       });
       transformationLog.push({
         stage: 'prepare_records',
-        field: 'preservedH2',
-        action: normalizedContent.preservedH2 || '(empty)',
+        field: 'earlyPreservedH2',
+        action: normalizedContent.earlyPreservedH2 || '(empty)',
+      });
+      transformationLog.push({
+        stage: 'prepare_records',
+        field: 'earlyHeroTagline',
+        action: normalizedContent.earlyHeroTagline || '(empty)',
+      });
+      transformationLog.push({
+        stage: 'prepare_records',
+        field: 'latePreservedH1',
+        action: normalizedContent.latePreservedH1 || '(empty)',
+      });
+      transformationLog.push({
+        stage: 'prepare_records',
+        field: 'latePreservedH2',
+        action: normalizedContent.latePreservedH2 || '(empty)',
+      });
+      transformationLog.push({
+        stage: 'prepare_records',
+        field: 'earlyHadH1BeforeStrip',
+        action: normalizedContent.earlyHadH1BeforeStrip ? 'true' : 'false',
       });
       transformationLog.push({
         stage: 'prepare_records',
         field: 'hadH1BeforeStrip',
         action: normalizedContent.hadH1BeforeStrip ? 'true' : 'false',
+      });
+      transformationLog.push({
+        stage: 'prepare_records',
+        field: 'mainContentDroppedEarlyH1',
+        action: normalizedContent.mainContentDroppedEarlyH1 ? 'true' : 'false',
+      });
+      transformationLog.push({
+        stage: 'prepare_records',
+        field: 'heroTaglineSource',
+        action: normalizedContent.heroTaglineSource,
       });
 
       if (normalizedContent.allocationDebug) {
@@ -463,6 +493,7 @@ function buildPreviewMappedData(
   return {
     ...data,
     ...(normalizedContent.chosenTitle ? { title: normalizedContent.chosenTitle } : {}),
+    ...(normalizedContent.heroTagline ? { hero_tagline: normalizedContent.heroTagline } : {}),
     ...(normalizedContent.cleanedMetaTitle || normalizedContent.metaTitle
       ? { meta_title: normalizedContent.cleanedMetaTitle || normalizedContent.metaTitle }
       : {}),
@@ -567,10 +598,16 @@ function normalizeContentFields(
       if (key === 'body') {
         const normalized = normalizeHtmlWithMetadata(value, filterOptions);
         result[key] = normalized.html;
+        result.__body_early_preserved_heading = normalized.earlyPreservedHeading;
+        result.__body_early_preserved_h1 = normalized.earlyPreservedH1;
+        result.__body_early_preserved_h2 = normalized.earlyPreservedH2;
+        result.__body_early_hero_tagline = normalized.earlyHeroTagline;
+        result.__body_early_had_h1_before_strip = normalized.earlyHadH1BeforeStrip ? 'true' : 'false';
         result.__body_preserved_heading = normalized.preservedHeading;
         result.__body_preserved_h1 = normalized.preservedH1;
         result.__body_preserved_h2 = normalized.preservedH2;
         result.__body_had_h1_before_strip = normalized.hadH1BeforeStrip ? 'true' : 'false';
+        result.__body_main_content_dropped_early_h1 = normalized.mainContentDroppedEarlyH1 ? 'true' : 'false';
       } else {
         result[key] = normalizeHtml(value, filterOptions);
       }

@@ -59,10 +59,16 @@ function extractFaqZones(html: string): string {
 
 export interface NormalizedHtmlResult {
   html: string;
+  earlyPreservedHeading: string;
+  earlyPreservedH1: string;
+  earlyPreservedH2: string;
+  earlyHeroTagline: string;
+  earlyHadH1BeforeStrip: boolean;
   preservedHeading: string;
   preservedH1: string;
   preservedH2: string;
   hadH1BeforeStrip: boolean;
+  mainContentDroppedEarlyH1: boolean;
 }
 
 function stripTagsToText(html: string): string {
@@ -80,39 +86,172 @@ function countWords(text: string): number {
   return text ? text.split(/\s+/).filter(Boolean).length : 0;
 }
 
-function extractTagTexts(html: string, tagName: 'h1' | 'h2'): string[] {
+type HeadingTagName = 'h1' | 'h2';
+
+interface HeadingMatch {
+  tagName: HeadingTagName;
+  text: string;
+  start: number;
+  end: number;
+}
+
+function extractTagMatches(html: string, tagName: HeadingTagName): HeadingMatch[] {
   if (!html?.trim()) return [];
 
   const pattern = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)<\\/${tagName}>`, 'gi');
-  const results: string[] = [];
+  const results: HeadingMatch[] = [];
   let match: RegExpExecArray | null;
 
   while ((match = pattern.exec(html)) !== null) {
     const text = stripTagsToText(match[1]);
-    if (text) results.push(text);
+    if (!text) continue;
+    results.push({
+      tagName,
+      text,
+      start: match.index,
+      end: match.index + match[0].length,
+    });
   }
 
   return results;
 }
 
-function findMeaningfulHeading(candidates: string[]): string {
-  return candidates.find((candidate) => countWords(candidate) >= 3) || '';
+function findMeaningfulHeadingMatch(candidates: HeadingMatch[]): HeadingMatch | null {
+  return candidates.find((candidate) => countWords(candidate.text) >= 3) || null;
 }
 
-function extractPreservedHeadingData(html: string): Omit<NormalizedHtmlResult, 'html'> {
-  const h1Candidates = extractTagTexts(html, 'h1');
-  const h2Candidates = extractTagTexts(html, 'h2');
-  const meaningfulH1 = findMeaningfulHeading(h1Candidates);
-  const meaningfulH2 = findMeaningfulHeading(h2Candidates);
-  const preservedH1 = meaningfulH1 || (!meaningfulH2 ? h1Candidates[0] || '' : '');
-  const preservedH2 = meaningfulH2 || (!preservedH1 ? h2Candidates[0] || '' : '');
+function choosePreservedHeadingMatches(h1Candidates: HeadingMatch[], h2Candidates: HeadingMatch[]) {
+  const meaningfulH1 = findMeaningfulHeadingMatch(h1Candidates);
+  const meaningfulH2 = findMeaningfulHeadingMatch(h2Candidates);
+  const preservedH1 = meaningfulH1 || (!meaningfulH2 ? h1Candidates[0] || null : null);
+  const preservedH2 = meaningfulH2 || (!preservedH1 ? h2Candidates[0] || null : null);
 
   return {
-    preservedHeading: preservedH1 || preservedH2 || '',
-    preservedH1,
-    preservedH2,
+    preservedHeading: preservedH1?.text || preservedH2?.text || '',
+    preservedH1: preservedH1?.text || '',
+    preservedH2: preservedH2?.text || '',
     hadH1BeforeStrip: h1Candidates.length > 0,
+    chosenHeadingMatch: preservedH1 || preservedH2 || null,
   };
+}
+
+function extractPreservedHeadingData(html: string) {
+  const h1Candidates = extractTagMatches(html, 'h1');
+  const h2Candidates = extractTagMatches(html, 'h2');
+
+  return choosePreservedHeadingMatches(h1Candidates, h2Candidates);
+}
+
+function stripForEarlyHeadingCapture(html: string): string {
+  let result = html;
+
+  result = result.replace(/<!DOCTYPE[^>]*>/gi, '');
+  result = result.replace(/<head[\s>][\s\S]*?<\/head>/gi, '');
+  result = result.replace(/<script[\s>][\s\S]*?<\/script>/gi, '');
+  result = result.replace(/<style[\s>][\s\S]*?<\/style>/gi, '');
+  result = result.replace(/<noscript[\s>][\s\S]*?<\/noscript>/gi, '');
+  result = result.replace(/<footer[\s>][\s\S]*?<\/footer>/gi, '');
+  result = result.replace(/<aside[\s>][\s\S]*?<\/aside>/gi, '');
+  result = result.replace(/<nav[\s>][\s\S]*?<\/nav>/gi, '');
+  result = result.replace(/<\/?(html|body)[^>]*>/gi, '');
+  result = result.replace(/<\/?header[^>]*>/gi, '');
+
+  return result;
+}
+
+function isLikelyHeroTaglineCandidate(text: string, headingText: string): boolean {
+  const normalizedText = stripTagsToText(text);
+  if (!normalizedText || normalizedText === headingText) return false;
+  if (headingText && normalizedText.includes(headingText)) return false;
+
+  const words = countWords(normalizedText);
+  if (words < 2 || words > 24) return false;
+  if (normalizedText.length > 180) return false;
+  if (/^(home|back|menu|contact us|call now|learn more|get started)$/i.test(normalizedText)) return false;
+  if (/[›»]/.test(normalizedText) || /\b(home|breadcrumb)\b/i.test(normalizedText)) return false;
+
+  return true;
+}
+
+function extractHeroTaglineFromWindow(html: string, headingMatch: HeadingMatch | null): string {
+  if (!headingMatch || headingMatch.tagName !== 'h1') return '';
+
+  const windowStart = Math.max(0, headingMatch.start - 600);
+  const windowEnd = Math.min(html.length, headingMatch.end + 1200);
+  const windowHtml = html.slice(windowStart, windowEnd);
+
+  const scoreCandidates = (pattern: RegExp, allowWrappers: boolean): string => {
+    let match: RegExpExecArray | null;
+    let bestCandidate = '';
+    let bestScore = -Infinity;
+
+    while ((match = pattern.exec(windowHtml)) !== null) {
+      const tagName = match[1].toLowerCase();
+      const innerHtml = match[2];
+      if (!allowWrappers && (tagName === 'div' || tagName === 'span')) continue;
+      if ((tagName === 'div' || tagName === 'span') && /<h[1-6][^>]*>|<p[^>]*>/i.test(innerHtml)) {
+        continue;
+      }
+
+      const text = stripTagsToText(innerHtml);
+      if (!isLikelyHeroTaglineCandidate(text, headingMatch.text)) continue;
+
+      const absoluteIndex = windowStart + match.index;
+      const distance = Math.min(
+        Math.abs(absoluteIndex - headingMatch.start),
+        Math.abs(absoluteIndex - headingMatch.end)
+      );
+      const priority = tagName === 'p' ? 40 : tagName === 'span' ? 32 : tagName === 'div' ? 24 : 28;
+      const directionalBonus = absoluteIndex <= headingMatch.start ? 10 : 0;
+      const score = priority + directionalBonus - distance / 20;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestCandidate = text;
+      }
+    }
+
+    return bestCandidate;
+  };
+
+  return (
+    scoreCandidates(/<(p|h2|h3|h4|h5|h6)[^>]*>([\s\S]*?)<\/\1>/gi, false) ||
+    scoreCandidates(/<(div|span)[^>]*>([\s\S]*?)<\/\1>/gi, true)
+  );
+}
+
+function extractEarlyPreservedHeadingData(html: string) {
+  const strippedHtml = stripForEarlyHeadingCapture(html);
+  const h1Candidates = extractTagMatches(strippedHtml, 'h1');
+  const h2Candidates = extractTagMatches(strippedHtml, 'h2');
+  const chosen = choosePreservedHeadingMatches(h1Candidates, h2Candidates);
+
+  return {
+    earlyPreservedHeading: chosen.preservedHeading,
+    earlyPreservedH1: chosen.preservedH1,
+    earlyPreservedH2: chosen.preservedH2,
+    earlyHeroTagline: extractHeroTaglineFromWindow(strippedHtml, chosen.chosenHeadingMatch),
+    earlyHadH1BeforeStrip: chosen.hadH1BeforeStrip,
+  };
+}
+
+function removePromotedHeroTagline(html: string, heroTagline: string): string {
+  const normalizedHeroTagline = stripTagsToText(heroTagline);
+  if (!html?.trim() || !normalizedHeroTagline) return html;
+
+  const firstH2Index = html.search(/<h2[^>]*>/i);
+  const searchLimit = firstH2Index >= 0 ? firstH2Index + 400 : Math.min(html.length, 2000);
+  const elementPattern = /<(p|h2|h3|h4|h5|h6|div|span)([^>]*)>([\s\S]*?)<\/\1>/gi;
+  let removed = false;
+
+  return html.replace(elementPattern, (match, tagName, attrs, content, offset) => {
+    if (removed || offset > searchLimit) return match;
+    const text = stripTagsToText(content);
+    if (text !== normalizedHeroTagline) return match;
+    if (!isLikelyHeroTaglineCandidate(text, '')) return match;
+    removed = true;
+    return '';
+  });
 }
 
 export function normalizeHtml(html: string, options: FilterOptions): string {
@@ -123,10 +262,16 @@ export function normalizeHtmlWithMetadata(html: string, options: FilterOptions):
   if (!html?.trim()) {
     return {
       html: '',
+      earlyPreservedHeading: '',
+      earlyPreservedH1: '',
+      earlyPreservedH2: '',
+      earlyHeroTagline: '',
+      earlyHadH1BeforeStrip: false,
       preservedHeading: '',
       preservedH1: '',
       preservedH2: '',
       hadH1BeforeStrip: false,
+      mainContentDroppedEarlyH1: false,
     };
   }
 
@@ -142,6 +287,9 @@ export function normalizeHtmlWithMetadata(html: string, options: FilterOptions):
 
   let result = html;
 
+  // Capture title/tagline candidates before extractMainContent can drop hero/header wrappers.
+  const earlyPreservedHeadingData = extractEarlyPreservedHeadingData(result);
+
   // 5a: Extract main content (strip shell, extract main column, unwrap wrappers)
   // Keep a stripped-shell copy to recover FAQ zones if they get dropped.
   const preExtract = result;
@@ -154,6 +302,11 @@ export function normalizeHtmlWithMetadata(html: string, options: FilterOptions):
     if (faqZones) result = result + '\n' + faqZones;
   }
   debugCheck('extractMainContent', result);
+
+  const postExtractHeadingData = extractPreservedHeadingData(result);
+  const mainContentDroppedEarlyH1 = !!(
+    earlyPreservedHeadingData.earlyPreservedH1 && !postExtractHeadingData.preservedH1
+  );
 
   // 5a (second pass): After extractMainContent strips classes, newly-bare divs
   // (elements that had non-layout classes which are now gone) need another unwrap
@@ -180,6 +333,12 @@ export function normalizeHtmlWithMetadata(html: string, options: FilterOptions):
   result = cleanInlineMarkup(result);
   debugCheck('cleanInlineMarkup', result);
 
+  // If a hero tagline was promoted into a dedicated field, remove the matching
+  // short hero subtitle from the body lead so it does not render twice.
+  if (earlyPreservedHeadingData.earlyHeroTagline) {
+    result = removePromotedHeroTagline(result, earlyPreservedHeadingData.earlyHeroTagline);
+  }
+
   // Preserve the first meaningful heading from the cleaned main-content stream
   // BEFORE H1 stripping. This keeps title resolution stable without reintroducing
   // duplicate H1 markup into final body HTML.
@@ -199,7 +358,12 @@ export function normalizeHtmlWithMetadata(html: string, options: FilterOptions):
 
   return {
     html: result.trim(),
-    ...preservedHeadingData,
+    ...earlyPreservedHeadingData,
+    preservedHeading: preservedHeadingData.preservedHeading,
+    preservedH1: preservedHeadingData.preservedH1,
+    preservedH2: preservedHeadingData.preservedH2,
+    hadH1BeforeStrip: preservedHeadingData.hadH1BeforeStrip,
+    mainContentDroppedEarlyH1,
   };
 }
 

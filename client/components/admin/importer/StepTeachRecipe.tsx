@@ -598,6 +598,13 @@ function AllocatedPreviewPanel({
           <div className="rounded border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
             <span className="font-medium">Resolved title:</span>{' '}
             <strong>{preview.chosenTitle || '—'}</strong>
+            <span className="ml-2 text-blue-700">({preview.normalizedContent.titleSource})</span>
+          </div>
+
+          <div className="rounded border border-purple-200 bg-purple-50 px-3 py-2 text-xs text-purple-900">
+            <span className="font-medium">Resolved hero tagline:</span>{' '}
+            <strong>{preview.normalizedContent.heroTagline || '—'}</strong>
+            <span className="ml-2 text-purple-700">({preview.normalizedContent.heroTaglineSource})</span>
           </div>
 
           {/* Stats bar */}
@@ -613,13 +620,28 @@ function AllocatedPreviewPanel({
               <span className="font-medium text-gray-700">titleSource:</span> {preview.normalizedContent.titleSource}
             </div>
             <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
-              <span className="font-medium text-gray-700">preservedH1:</span> {preview.normalizedContent.preservedH1 || '—'}
+              <span className="font-medium text-gray-700">earlyPreservedH1:</span> {preview.normalizedContent.earlyPreservedH1 || '—'}
             </div>
             <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
-              <span className="font-medium text-gray-700">preservedH2:</span> {preview.normalizedContent.preservedH2 || '—'}
+              <span className="font-medium text-gray-700">earlyPreservedH2:</span> {preview.normalizedContent.earlyPreservedH2 || '—'}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">latePreservedH1:</span> {preview.normalizedContent.latePreservedH1 || '—'}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">latePreservedH2:</span> {preview.normalizedContent.latePreservedH2 || '—'}
             </div>
             <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
               <span className="font-medium text-gray-700">hadH1BeforeStrip:</span> {preview.normalizedContent.hadH1BeforeStrip ? 'true' : 'false'}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">mainContentDroppedH1:</span> {preview.normalizedContent.mainContentDroppedEarlyH1 ? 'true' : 'false'}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">earlyHeroTagline:</span> {preview.normalizedContent.earlyHeroTagline || '—'}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">heroTaglineSource:</span> {preview.normalizedContent.heroTaglineSource}
             </div>
             <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
               <span className="font-medium text-gray-700">rawMetaTitle:</span> {preview.normalizedContent.rawMetaTitle || '—'}

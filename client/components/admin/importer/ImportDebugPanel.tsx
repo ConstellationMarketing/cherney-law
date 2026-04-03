@@ -105,13 +105,30 @@ export default function ImportDebugPanel({ record, templateType }: Props) {
               <div className="space-y-1 rounded bg-gray-50 p-2">
                 <DebugRow label="chosenTitle" value={nc.chosenTitle} />
                 <DebugRow label="titleSource" value={nc.titleSource} />
-                <DebugRow label="preservedHeading" value={nc.preservedHeading} />
-                <DebugRow label="preservedH1" value={nc.preservedH1} />
-                <DebugRow label="preservedH2" value={nc.preservedH2} />
+                <DebugRow label="earlyPreservedHeading" value={nc.earlyPreservedHeading} />
+                <DebugRow label="earlyPreservedH1" value={nc.earlyPreservedH1} />
+                <DebugRow label="earlyPreservedH2" value={nc.earlyPreservedH2} />
+                <DebugRow label="earlyHadH1" value={nc.earlyHadH1BeforeStrip ? 'true' : 'false'} />
+                <DebugRow label="latePreservedHeading" value={nc.latePreservedHeading} />
+                <DebugRow label="latePreservedH1" value={nc.latePreservedH1} />
+                <DebugRow label="latePreservedH2" value={nc.latePreservedH2} />
                 <DebugRow label="hadH1BeforeStrip" value={nc.hadH1BeforeStrip ? 'true' : 'false'} />
+                <DebugRow label="mainContentDroppedH1" value={nc.mainContentDroppedEarlyH1 ? 'true' : 'false'} />
                 <DebugRow label="extractedH1" value={nc.extractedH1} />
                 <DebugRow label="rawMetaTitle" value={nc.rawMetaTitle} />
                 <DebugRow label="cleanedMetaTitle" value={nc.cleanedMetaTitle} />
+              </div>
+            </div>
+          )}
+
+          {nc && (
+            <div>
+              <h5 className="font-semibold text-gray-700 mb-1">Hero Mapping</h5>
+              <div className="space-y-1 rounded bg-gray-50 p-2">
+                <DebugRow label="heroTagline" value={nc.heroTagline} />
+                <DebugRow label="heroTaglineSource" value={nc.heroTaglineSource} />
+                <DebugRow label="earlyHeroTagline" value={nc.earlyHeroTagline} />
+                <DebugRow label="heroDescription" value={nc.heroDescription} />
               </div>
             </div>
           )}
