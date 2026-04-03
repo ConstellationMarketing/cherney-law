@@ -44,6 +44,14 @@ export interface SamplePreviewRecord {
   slug: string;
 }
 
+export const AREA_SKIP_NORMALIZATION_KEYS = ['body', 'why_body', 'closing_body'] as const;
+
+export function getSkipNormalizationKeysForTemplate(
+  templateType: TemplateType
+): string[] | undefined {
+  return templateType === 'area' ? [...AREA_SKIP_NORMALIZATION_KEYS] : undefined;
+}
+
 /**
  * Run the full transformation pipeline on source records.
  * This is the ONE canonical pipeline — all paths must use this.

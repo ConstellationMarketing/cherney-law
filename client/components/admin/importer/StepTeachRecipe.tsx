@@ -4,7 +4,7 @@ import { createDefaultRecipe } from '@site/lib/importer/recipeEngine';
 import { supabase } from '@/lib/supabase';
 import { computeFieldDiffs, inferRulesFromDiff } from '@site/lib/importer/recipeInference';
 import { getTemplateFields, getContentFieldKeys } from '@site/lib/importer/templateFields';
-import { getSamplePreviewRecord } from '@site/lib/importer/transformer';
+import { getSamplePreviewRecord, getSkipNormalizationKeysForTemplate } from '@site/lib/importer/transformer';
 import type { SamplePreviewRecord } from '@site/lib/importer/transformer';
 
 interface Props {
@@ -49,6 +49,10 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
   const sampleRecord =
     state.sourceRecords.find((r) => r.rowIndex === chosenSampleIndex) ??
     state.sourceRecords[0];
+  const previewSkipNormalizationKeys = useMemo(
+    () => getSkipNormalizationKeysForTemplate(state.templateType!),
+    [state.templateType]
+  );
 
   const samplePreviewMap = useMemo(() => {
     if (!state.mappingConfig || !state.templateType) return new Map<number, SamplePreviewRecord>();
@@ -60,11 +64,13 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
           record,
           state.mappingConfig,
           state.templateType,
-          state.filterOptions
+          state.filterOptions,
+          {},
+          previewSkipNormalizationKeys
         ),
       ])
     );
-  }, [state.sourceRecords, state.mappingConfig, state.templateType, state.filterOptions]);
+  }, [state.sourceRecords, state.mappingConfig, state.templateType, state.filterOptions, previewSkipNormalizationKeys]);
 
   const mappedSample = sampleRecord ? (samplePreviewMap.get(sampleRecord.rowIndex) ?? null) : null;
 
@@ -88,9 +94,10 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
       state.mappingConfig,
       state.templateType,
       state.filterOptions,
-      corrections
+      corrections,
+      previewSkipNormalizationKeys
     );
-  }, [sampleRecord, state.mappingConfig, state.templateType, state.filterOptions, corrections]);
+  }, [sampleRecord, state.mappingConfig, state.templateType, state.filterOptions, corrections, previewSkipNormalizationKeys]);
 
   // AI split state (only relevant for 'area' template)
   const [aiSplitting, setAiSplitting] = useState(false);
@@ -182,7 +189,7 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
     // For area template, body is also an AI-split field — after AI Split Content,
     // the body field becomes intro-only. Without this, the diff would generate a
     // recipe rule that embeds the sample page's body as a default_value for all pages.
-    ...(state.templateType === 'area' ? ['body'] : []),
+    ...(state.templateType === 'area' ? ['body', '__ai_split_mode'] : []),
     'why_body', 'closing_body', 'faq',
     'body_image', 'body_image_alt',
     'why_image', 'why_image_alt',
@@ -265,6 +272,7 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
 
       setCorrections((prev) => ({
         ...prev,
+        __ai_split_mode: 'true',
         body: splitData.body,
         why_body: splitData.why_body,
         closing_body: splitData.closing_body,
@@ -508,7 +516,12 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
       )}
 
       {/* Preview Allocated Output */}
-      <AllocatedPreviewPanel preview={correctedPreview} templateType={state.templateType!} />
+      <AllocatedPreviewPanel
+        preview={correctedPreview}
+        templateType={state.templateType!}
+        corrections={corrections}
+        skipNormalizationKeys={previewSkipNormalizationKeys}
+      />
 
       <div className="flex justify-between items-center">
         <button onClick={onBack} className="px-4 py-2 text-gray-600 hover:text-gray-900 text-sm font-medium">
@@ -582,9 +595,13 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
 function AllocatedPreviewPanel({
   preview,
   templateType,
+  corrections,
+  skipNormalizationKeys,
 }: {
   preview: SamplePreviewRecord | null;
   templateType: import('@site/lib/importer/types').TemplateType;
+  corrections: Record<string, string>;
+  skipNormalizationKeys?: string[];
 }) {
   const [open, setOpen] = useState(false);
 
@@ -625,6 +642,20 @@ function AllocatedPreviewPanel({
             </div>
             <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
               <span className="font-medium text-gray-700">leadHtmlLength:</span> {preview.normalizedContent.allocationDebug?.leadHtmlLength ?? '—'}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">skipNormalizationKeys:</span>{' '}
+              {skipNormalizationKeys?.length ? skipNormalizationKeys.join(', ') : '—'}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">splitSignals:</span>{' '}
+              {preview.normalizedContent.segmentation.areaSplitSignals?.length
+                ? preview.normalizedContent.segmentation.areaSplitSignals.join(', ')
+                : '—'}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">correctedLengths:</span>{' '}
+              body={(corrections.body ?? '').length}, why={(corrections.why_body ?? '').length}, closing={(corrections.closing_body ?? '').length}
             </div>
           </div>
 

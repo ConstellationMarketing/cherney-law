@@ -3,7 +3,7 @@ import type { WizardState } from '@site/lib/importer/recipeTypes';
 import type { FieldMapping, MappingPreset } from '@site/lib/importer/types';
 import { autoMapFields } from '@site/lib/importer/autoMapper';
 import { getTemplateFields } from '@site/lib/importer/templateFields';
-import { getSamplePreviewRecord } from '@site/lib/importer/transformer';
+import { getSamplePreviewRecord, getSkipNormalizationKeysForTemplate } from '@site/lib/importer/transformer';
 import { supabase } from '@/lib/supabase';
 
 interface Props {
@@ -115,7 +115,9 @@ export default function StepFieldDetection({ state, updateState, onNext, onBack 
       sampleRecord,
       config,
       state.templateType,
-      state.filterOptions
+      state.filterOptions,
+      {},
+      getSkipNormalizationKeysForTemplate(state.templateType)
     );
   }, [mappings, state.sourceRecords, state.templateType, state.filterOptions, state.sourceColumns, templateFields]);
 

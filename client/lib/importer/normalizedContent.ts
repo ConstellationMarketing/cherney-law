@@ -95,6 +95,7 @@ export interface SegmentationDebug {
   faqDetectionMethod: 'heading-match' | 'bold-qa' | 'dl-list' | 'none';
   preH2ContentLength: number;
   totalInputLength: number;
+  areaSplitSignals?: string[];
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -129,6 +130,10 @@ function normalizeText(text: string): string {
 
 function countWords(text: string): number {
   return text ? text.split(/\s+/).filter(Boolean).length : 0;
+}
+
+function hasOwnMappedKey(mappedData: Record<string, string>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(mappedData, key);
 }
 
 function compactText(text: string): string {
@@ -451,7 +456,23 @@ export function buildNormalizedContent(
   const heroDescription = mappedData.hero_description || '';
   const heroImage = mappedData.hero_image || '';
   const heroImageAlt = chosenTitle;
-  const hasAiSplitFields = !!(mappedData.why_body || mappedData.closing_body);
+  const areaSplitSignals = templateType === 'area'
+    ? [
+        ...(mappedData.__ai_split_mode === 'true' ? ['__ai_split_mode'] : []),
+        ...[
+          'why_body',
+          'closing_body',
+          'faq',
+          'body_image',
+          'body_image_alt',
+          'why_image',
+          'why_image_alt',
+          'closing_image',
+          'closing_image_alt',
+        ].filter((key) => hasOwnMappedKey(mappedData, key)),
+      ]
+    : [];
+  const hasAiSplitFields = templateType === 'area' && areaSplitSignals.length > 0;
 
   let sectionBlocks: SectionBlock[] = [];
   let leadHtml = '';
@@ -580,6 +601,7 @@ export function buildNormalizedContent(
       faqDetectionMethod,
       preH2ContentLength: leadHtml.length,
       totalInputLength: body.length,
+      areaSplitSignals,
     },
   };
 }

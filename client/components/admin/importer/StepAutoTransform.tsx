@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { WizardState } from '@site/lib/importer/recipeTypes';
 import type { SourceRecord, MappingConfig } from '@site/lib/importer/types';
 import { createDefaultRecipe } from '@site/lib/importer/recipeEngine';
-import { transformRecords } from '@site/lib/importer/transformer';
+import { getSkipNormalizationKeysForTemplate, transformRecords } from '@site/lib/importer/transformer';
 
 interface Props {
   state: WizardState;
@@ -167,9 +167,7 @@ export default function StepAutoTransform({ state, updateState, onNext, onBack }
 
       // For area template: skip re-normalization on AI-split fields that were
       // already cleaned server-side to avoid double HTML normalization stripping content
-      const skipNormalizationKeys = state.templateType === 'area'
-        ? ['body', 'why_body', 'closing_body']
-        : undefined;
+      const skipNormalizationKeys = getSkipNormalizationKeysForTemplate(state.templateType!);
 
       const results = transformRecords(sourceRecords, {
         templateType: state.templateType!,
