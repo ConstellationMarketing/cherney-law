@@ -167,8 +167,8 @@ export function transformRecords(
         });
         transformationLog.push({
           stage: 'prepare_records',
-          field: 'introCandidates',
-          action: `[${normalizedContent.allocationDebug.introCandidateIndexes.join(', ')}]`,
+          field: 'rawOrderedNonFaqBlocks',
+          action: `[${normalizedContent.allocationDebug.rawOrderedNonFaqBlockIndexes.join(', ')}]`,
         });
         transformationLog.push({
           stage: 'prepare_records',
@@ -184,6 +184,11 @@ export function transformRecords(
           stage: 'prepare_records',
           field: 'allocation',
           action: `intro=[${normalizedContent.allocationDebug.allocationLog.intro.join(', ')}], why=[${normalizedContent.allocationDebug.allocationLog.why.join(', ')}], closing=[${normalizedContent.allocationDebug.allocationLog.closing.join(', ')}]`,
+        });
+        transformationLog.push({
+          stage: 'prepare_records',
+          field: 'allocatedLengths',
+          action: `intro=${normalizedContent.allocationDebug.introBodyLength}, why=${normalizedContent.allocationDebug.whyBodyLength}, closing=${normalizedContent.allocationDebug.closingBodyLength}`,
         });
       }
     }

@@ -474,6 +474,11 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
                     } focus:border-blue-500 focus:ring-1 focus:ring-blue-500`}
                   />
                 )}
+                {isBodyField && (
+                  <p className="text-xs text-gray-500">
+                    This editable field is the mapped source body input. The final section assignment is shown below in Preview Allocated Output.
+                  </p>
+                )}
                 {isChanged && (
                   <p className="text-xs text-yellow-600">
                     Changed from: {autoValue.substring(0, 80)}{autoValue.length > 80 ? '...' : ''}
@@ -631,10 +636,13 @@ function AllocatedPreviewPanel({
                 <span className="font-medium text-gray-700">introFallback:</span> {preview.normalizedContent.allocationDebug.fallbackRan ? 'ran' : 'skipped'} — {preview.normalizedContent.allocationDebug.fallbackReason}
               </div>
               <div>
-                <span className="font-medium text-gray-700">introCandidates:</span> [{preview.normalizedContent.allocationDebug.introCandidateIndexes.join(', ')}]
+                <span className="font-medium text-gray-700">rawOrderedNonFaqBlocks:</span> [{preview.normalizedContent.allocationDebug.rawOrderedNonFaqBlockIndexes.join(', ')}]
               </div>
               <div>
                 <span className="font-medium text-gray-700">allocation:</span> intro=[{preview.normalizedContent.allocationDebug.allocationLog.intro.join(', ')}], why=[{preview.normalizedContent.allocationDebug.allocationLog.why.join(', ')}], closing=[{preview.normalizedContent.allocationDebug.allocationLog.closing.join(', ')}]
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">allocatedLengths:</span> intro={preview.normalizedContent.allocationDebug.introBodyLength}, why={preview.normalizedContent.allocationDebug.whyBodyLength}, closing={preview.normalizedContent.allocationDebug.closingBodyLength}
               </div>
               {preview.normalizedContent.allocationDebug.sectionBlocks.length > 0 && (
                 <div className="space-y-1">
@@ -661,7 +669,7 @@ function AllocatedPreviewPanel({
             const closing = content.closingSection as Record<string, unknown>;
             const faq = content.faq as { items?: { question: string }[] };
             const sections = [
-              { label: 'Intro', heading: String(intro?.heading ?? ''), body: String(intro?.body ?? ''), hasImg: !!intro?.image },
+              { label: 'Introduction Content', heading: String(intro?.heading ?? ''), body: String(intro?.body ?? ''), hasImg: !!intro?.image },
               { label: 'Why', heading: String(why?.heading ?? ''), body: String(why?.body ?? ''), hasImg: !!why?.image },
               { label: 'Closing', heading: String(closing?.heading ?? ''), body: String(closing?.body ?? ''), hasImg: !!closing?.image },
             ];

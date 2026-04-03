@@ -106,6 +106,7 @@ function allocateForAreaPage(
   const seoTitle = normalized.cleanedMetaTitle || pageTitle || '';
   const blocks = normalized.sectionBlocks;
   const leadHtml = normalized.leadHtml.trim();
+  const rawOrderedNonFaqBlockIndexes = blocks.map((_, index) => index);
   const allocationLog = {
     intro: [] as number[],
     why: [] as number[],
@@ -127,27 +128,29 @@ function allocateForAreaPage(
   let fallbackReason = 'Did not run: no non-FAQ section blocks available';
   const introBlocks: SectionBlock[] = [];
 
-  if (leadHtml) {
-    introSource = 'preH2';
-    fallbackReason = 'Skipped: pre-H2 content was present';
-
-    if (blocks[0]) {
-      introBlocks.push(blocks[0]);
-      allocationLog.intro.push(0);
-    }
-  } else if (blocks[0]) {
-    introSource = 'firstBlockFallback';
-    fallbackRan = true;
-    fallbackReason = 'Ran: no pre-H2 content, so intro was seeded from the first non-FAQ block';
-    introBlocks.push(blocks[0]);
+  const firstBlock = blocks[0];
+  if (firstBlock) {
+    introBlocks.push(firstBlock);
     allocationLog.intro.push(0);
+
+    if (leadHtml) {
+      introSource = 'preH2';
+      fallbackReason = 'Skipped: pre-H2 content was present, so intro used leadHtml plus the first non-FAQ block';
+    } else {
+      introSource = 'firstBlockFallback';
+      fallbackRan = true;
+      fallbackReason = 'Ran: no pre-H2 content, so intro was seeded from the first non-FAQ block';
+    }
+  } else if (leadHtml) {
+    introSource = 'preH2';
+    fallbackReason = 'Skipped: pre-H2 content was present and no non-FAQ section blocks were available';
   }
 
   if (introBlocks[0] && introBlocks[0].wordCount < 30 && blocks[introBlocks.length]) {
     const nextIndex = introBlocks.length;
     introBlocks.push(blocks[nextIndex]);
     allocationLog.intro.push(nextIndex);
-    fallbackReason += '; merged the next block because the first block was under 30 words';
+    fallbackReason += '; merged the next ordered block because the first block was under 30 words';
   }
 
   if (leadHtml || introBlocks.length > 0) {
@@ -195,10 +198,13 @@ function allocateForAreaPage(
       classification: block.classification || 'general',
       hasImages: block.images.length > 0,
     })),
-    introCandidateIndexes: blocks.map((_, index) => index),
+    rawOrderedNonFaqBlockIndexes,
     fallbackRan,
     fallbackReason,
     allocationLog,
+    introBodyLength: introBody.length,
+    whyBodyLength: whyBody.length,
+    closingBodyLength: closingBody.length,
   };
 
   // Deduplicate images across sections

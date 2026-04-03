@@ -104,12 +104,13 @@ export default function ImportDebugPanel({ record, templateType }: Props) {
               <h5 className="font-semibold text-gray-700 mb-1">Area Allocation</h5>
               <div className="space-y-1 rounded bg-gray-50 p-2">
                 <DebugRow label="leadHtmlLength" value={String(nc.allocationDebug.leadHtmlLength)} />
-                <DebugRow label="introCandidates" value={formatIndexes(nc.allocationDebug.introCandidateIndexes)} />
+                <DebugRow label="rawOrderedNonFaqBlocks" value={formatIndexes(nc.allocationDebug.rawOrderedNonFaqBlockIndexes)} />
                 <DebugRow label="introSource" value={nc.allocationDebug.introSource} />
                 <DebugRow label="introFallback" value={`${nc.allocationDebug.fallbackRan ? 'ran' : 'skipped'} — ${nc.allocationDebug.fallbackReason}`} />
                 <DebugRow label="intro" value={formatIndexes(nc.allocationDebug.allocationLog.intro)} />
                 <DebugRow label="why" value={formatIndexes(nc.allocationDebug.allocationLog.why)} />
                 <DebugRow label="closing" value={formatIndexes(nc.allocationDebug.allocationLog.closing)} />
+                <DebugRow label="allocatedLengths" value={`intro=${nc.allocationDebug.introBodyLength}, why=${nc.allocationDebug.whyBodyLength}, closing=${nc.allocationDebug.closingBodyLength}`} />
               </div>
               {nc.allocationDebug.sectionBlocks.length > 0 && (
                 <div className="mt-2 space-y-1">

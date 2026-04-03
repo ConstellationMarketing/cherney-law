@@ -16,7 +16,7 @@ export interface AllocationDebug {
     classification: string;
     hasImages: boolean;
   }[];
-  introCandidateIndexes: number[];
+  rawOrderedNonFaqBlockIndexes: number[];
   fallbackRan: boolean;
   fallbackReason: string;
   allocationLog: {
@@ -24,6 +24,9 @@ export interface AllocationDebug {
     why: number[];
     closing: number[];
   };
+  introBodyLength: number;
+  whyBodyLength: number;
+  closingBodyLength: number;
 }
 
 export interface NormalizedContent {
