@@ -619,13 +619,37 @@ function AllocatedPreviewPanel({
               <span className="font-medium text-gray-700">cleanedMetaTitle:</span> {preview.normalizedContent.cleanedMetaTitle || '—'}
             </div>
             <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
-              <span className="font-medium text-gray-700">introSource:</span> {preview.normalizedContent.allocationDebug?.introSource || '—'}
+              <span className="font-medium text-gray-700">leadHtmlLength:</span> {preview.normalizedContent.allocationDebug?.leadHtmlLength ?? '—'}
             </div>
           </div>
 
           {preview.normalizedContent.allocationDebug && (
-            <div className="text-xs text-gray-500">
-              allocation: intro=[{preview.normalizedContent.allocationDebug.allocationLog.intro.join(', ')}], why=[{preview.normalizedContent.allocationDebug.allocationLog.why.join(', ')}], closing=[{preview.normalizedContent.allocationDebug.allocationLog.closing.join(', ')}]
+            <div className="space-y-2 text-xs text-gray-500">
+              <div>
+                <span className="font-medium text-gray-700">introSource:</span> {preview.normalizedContent.allocationDebug.introSource}
+                {' · '}
+                <span className="font-medium text-gray-700">introFallback:</span> {preview.normalizedContent.allocationDebug.fallbackRan ? 'ran' : 'skipped'} — {preview.normalizedContent.allocationDebug.fallbackReason}
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">introCandidates:</span> [{preview.normalizedContent.allocationDebug.introCandidateIndexes.join(', ')}]
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">allocation:</span> intro=[{preview.normalizedContent.allocationDebug.allocationLog.intro.join(', ')}], why=[{preview.normalizedContent.allocationDebug.allocationLog.why.join(', ')}], closing=[{preview.normalizedContent.allocationDebug.allocationLog.closing.join(', ')}]
+              </div>
+              {preview.normalizedContent.allocationDebug.sectionBlocks.length > 0 && (
+                <div className="space-y-1">
+                  {preview.normalizedContent.allocationDebug.sectionBlocks.map((block) => (
+                    <div key={block.index} className="rounded border border-gray-200 bg-gray-50 px-2 py-1">
+                      <span className="font-medium text-gray-700">#{block.index}</span>
+                      {' · '}
+                      <span>{block.wordCount} words</span>
+                      {' · '}
+                      <span>class={block.classification}</span>
+                      {block.heading ? ` · ${block.heading}` : ''}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

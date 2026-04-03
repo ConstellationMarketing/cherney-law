@@ -155,8 +155,30 @@ export function transformRecords(
       if (normalizedContent.allocationDebug) {
         transformationLog.push({
           stage: 'prepare_records',
+          field: 'leadHtmlLength',
+          action: String(normalizedContent.allocationDebug.leadHtmlLength),
+        });
+        transformationLog.push({
+          stage: 'prepare_records',
+          field: 'sectionBlocks',
+          action: normalizedContent.allocationDebug.sectionBlocks
+            .map((block) => `#${block.index} "${block.heading || '(no heading)'}" ${block.wordCount}w class=${block.classification}`)
+            .join('; ') || '(none)',
+        });
+        transformationLog.push({
+          stage: 'prepare_records',
+          field: 'introCandidates',
+          action: `[${normalizedContent.allocationDebug.introCandidateIndexes.join(', ')}]`,
+        });
+        transformationLog.push({
+          stage: 'prepare_records',
           field: 'introSource',
           action: normalizedContent.allocationDebug.introSource,
+        });
+        transformationLog.push({
+          stage: 'prepare_records',
+          field: 'introFallback',
+          action: `${normalizedContent.allocationDebug.fallbackRan ? 'ran' : 'skipped'} — ${normalizedContent.allocationDebug.fallbackReason}`,
         });
         transformationLog.push({
           stage: 'prepare_records',

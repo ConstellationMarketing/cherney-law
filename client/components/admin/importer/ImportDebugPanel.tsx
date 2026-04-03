@@ -103,11 +103,27 @@ export default function ImportDebugPanel({ record, templateType }: Props) {
             <div>
               <h5 className="font-semibold text-gray-700 mb-1">Area Allocation</h5>
               <div className="space-y-1 rounded bg-gray-50 p-2">
+                <DebugRow label="leadHtmlLength" value={String(nc.allocationDebug.leadHtmlLength)} />
+                <DebugRow label="introCandidates" value={formatIndexes(nc.allocationDebug.introCandidateIndexes)} />
                 <DebugRow label="introSource" value={nc.allocationDebug.introSource} />
+                <DebugRow label="introFallback" value={`${nc.allocationDebug.fallbackRan ? 'ran' : 'skipped'} — ${nc.allocationDebug.fallbackReason}`} />
                 <DebugRow label="intro" value={formatIndexes(nc.allocationDebug.allocationLog.intro)} />
                 <DebugRow label="why" value={formatIndexes(nc.allocationDebug.allocationLog.why)} />
                 <DebugRow label="closing" value={formatIndexes(nc.allocationDebug.allocationLog.closing)} />
               </div>
+              {nc.allocationDebug.sectionBlocks.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {nc.allocationDebug.sectionBlocks.map((block) => (
+                    <div key={block.index} className="flex items-center gap-2 bg-gray-50 rounded px-2 py-1 text-gray-600">
+                      <span className="font-medium text-gray-700 w-14">#{block.index}</span>
+                      <span>{block.wordCount} words</span>
+                      <span className="text-gray-400">class={block.classification}</span>
+                      {block.heading && <span className="truncate text-gray-500 max-w-[220px]">H2: {block.heading}</span>}
+                      {block.hasImages && <span className="text-blue-500">has image</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

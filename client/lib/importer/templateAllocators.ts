@@ -87,10 +87,11 @@ function allocateForBlogPost(
  * Areas We Serve: distribute content into intro/why/closing sections.
  *
  * Deterministic allocation rules:
- * - If pre-H2 content exists, intro uses leadHtml only.
+ * - Build intro from the raw ordered non-FAQ blocks with no pre-filtering.
+ * - If pre-H2 content exists, intro uses leadHtml + the first non-FAQ block.
  * - If no pre-H2 content exists, intro must take the first non-FAQ block.
  * - If that first block is shorter than 30 words and another block exists,
- *   merge the next block into intro.
+ *   merge the next block into intro after selecting the first block.
  * - Remaining non-FAQ blocks are distributed without duplication:
  *   - 0 remaining → why/closing empty
  *   - 1 remaining → closing only
@@ -104,15 +105,16 @@ function allocateForAreaPage(
   const pageTitle = normalized.chosenTitle || normalized.h1 || '';
   const seoTitle = normalized.cleanedMetaTitle || pageTitle || '';
   const blocks = normalized.sectionBlocks;
+  const leadHtml = normalized.leadHtml.trim();
   const allocationLog = {
     intro: [] as number[],
     why: [] as number[],
     closing: [] as number[],
   };
 
-  let introBody = normalized.leadHtml.trim();
+  let introBody = '';
   let introHeading = '';
-  let introImages: ImageCandidate[] = introBody ? extractImagesFromHtml(introBody) : [];
+  let introImages: ImageCandidate[] = [];
   let whyBody = '';
   let whyHeading = '';
   let whyImages: ImageCandidate[] = [];
@@ -121,28 +123,44 @@ function allocateForAreaPage(
   let closingImages: ImageCandidate[] = [];
 
   let introSource: 'preH2' | 'firstBlockFallback' | 'empty' = 'empty';
-  let remainingStartIndex = 0;
+  let fallbackRan = false;
+  let fallbackReason = 'Did not run: no non-FAQ section blocks available';
+  const introBlocks: SectionBlock[] = [];
 
-  if (normalized.leadHtml.trim()) {
+  if (leadHtml) {
     introSource = 'preH2';
-  } else if (blocks.length > 0) {
-    introSource = 'firstBlockFallback';
+    fallbackReason = 'Skipped: pre-H2 content was present';
 
-    const introBlocks = [blocks[0]];
-    allocationLog.intro.push(0);
-
-    if (blocks[0].wordCount < 30 && blocks[1]) {
-      introBlocks.push(blocks[1]);
-      allocationLog.intro.push(1);
+    if (blocks[0]) {
+      introBlocks.push(blocks[0]);
+      allocationLog.intro.push(0);
     }
-
-    introBody = joinBlockBodies(introBlocks);
-    introHeading = pickSectionHeading(introBlocks);
-    introImages = collectImages(introBlocks);
-    remainingStartIndex = introBlocks.length;
+  } else if (blocks[0]) {
+    introSource = 'firstBlockFallback';
+    fallbackRan = true;
+    fallbackReason = 'Ran: no pre-H2 content, so intro was seeded from the first non-FAQ block';
+    introBlocks.push(blocks[0]);
+    allocationLog.intro.push(0);
   }
 
-  const remainingBlocks = blocks.slice(remainingStartIndex);
+  if (introBlocks[0] && introBlocks[0].wordCount < 30 && blocks[introBlocks.length]) {
+    const nextIndex = introBlocks.length;
+    introBlocks.push(blocks[nextIndex]);
+    allocationLog.intro.push(nextIndex);
+    fallbackReason += '; merged the next block because the first block was under 30 words';
+  }
+
+  if (leadHtml || introBlocks.length > 0) {
+    introBody = joinBlockBodies(introBlocks, leadHtml);
+    introHeading = pickSectionHeading(introBlocks);
+    introImages = [
+      ...(leadHtml ? extractImagesFromHtml(leadHtml) : []),
+      ...collectImages(introBlocks),
+    ];
+  }
+
+  const remainingBlocks = blocks.slice(introBlocks.length);
+  const remainingStartIndex = introBlocks.length;
 
   if (remainingBlocks.length === 1) {
     const closingIndex = remainingStartIndex;
@@ -169,6 +187,17 @@ function allocateForAreaPage(
 
   normalized.allocationDebug = {
     introSource,
+    leadHtmlLength: leadHtml.length,
+    sectionBlocks: blocks.map((block, index) => ({
+      index,
+      heading: block.heading,
+      wordCount: block.wordCount,
+      classification: block.classification || 'general',
+      hasImages: block.images.length > 0,
+    })),
+    introCandidateIndexes: blocks.map((_, index) => index),
+    fallbackRan,
+    fallbackReason,
     allocationLog,
   };
 

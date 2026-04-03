@@ -8,6 +8,17 @@ import type { TemplateType } from './types';
 
 export interface AllocationDebug {
   introSource: 'preH2' | 'firstBlockFallback' | 'empty';
+  leadHtmlLength: number;
+  sectionBlocks: {
+    index: number;
+    heading: string;
+    wordCount: number;
+    classification: string;
+    hasImages: boolean;
+  }[];
+  introCandidateIndexes: number[];
+  fallbackRan: boolean;
+  fallbackReason: string;
   allocationLog: {
     intro: number[];
     why: number[];
