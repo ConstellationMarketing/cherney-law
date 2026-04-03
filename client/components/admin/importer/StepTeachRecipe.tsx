@@ -1,15 +1,11 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { WizardState, RecipePreset } from '@site/lib/importer/recipeTypes';
 import { createDefaultRecipe } from '@site/lib/importer/recipeEngine';
 import { supabase } from '@/lib/supabase';
-import { applyFieldMappingSingle } from '@site/lib/importer/fieldMapping';
 import { computeFieldDiffs, inferRulesFromDiff } from '@site/lib/importer/recipeInference';
 import { getTemplateFields, getContentFieldKeys } from '@site/lib/importer/templateFields';
-import { cleanSourceRecords } from '@site/lib/importer/sourceCleaner';
-import { normalizeHtml } from '@site/lib/importer/htmlNormalizer';
-import { buildNormalizedContent } from '@site/lib/importer/normalizedContent';
-import { allocateForTemplate } from '@site/lib/importer/templateAllocators';
-import { normalizeUrlSlug } from '@site/lib/importer/preparer';
+import { getSamplePreviewRecord } from '@site/lib/importer/transformer';
+import type { SamplePreviewRecord } from '@site/lib/importer/transformer';
 
 interface Props {
   state: WizardState;
@@ -40,6 +36,10 @@ function replaceImageUrls(html: string, mapping: Record<string, string>): string
   });
 }
 
+function buildEditableCorrections(preview: SamplePreviewRecord | null): Record<string, string> {
+  return preview ? { ...preview.mappedData } : {};
+}
+
 export default function StepTeachRecipe({ state, updateState, onNext, onBack }: Props) {
   const templateFields = getTemplateFields(state.templateType!);
   const recipe = state.recipe ?? createDefaultRecipe(state.templateType!);
@@ -50,53 +50,47 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
     state.sourceRecords.find((r) => r.rowIndex === chosenSampleIndex) ??
     state.sourceRecords[0];
 
-  // CRITICAL (Rule 3): Run the same pipeline stages 1-5 that auto-transform uses,
-  // so the Build Recipe step always shows cleaned HTML — not raw source.
-  const mappedSample = useMemo(() => {
-    if (!sampleRecord || !state.mappingConfig) return null;
+  const samplePreviewMap = useMemo(() => {
+    if (!state.mappingConfig || !state.templateType) return new Map<number, SamplePreviewRecord>();
 
-    const contentFieldKeys = getContentFieldKeys(state.templateType!);
-    const filterOptions = state.filterOptions;
+    return new Map(
+      state.sourceRecords.map((record) => [
+        record.rowIndex,
+        getSamplePreviewRecord(
+          record,
+          state.mappingConfig,
+          state.templateType,
+          state.filterOptions
+        ),
+      ])
+    );
+  }, [state.sourceRecords, state.mappingConfig, state.templateType, state.filterOptions]);
 
-    // Stages 1-4: clean source record
-    const [cleaned] = cleanSourceRecords([sampleRecord], contentFieldKeys, filterOptions);
-
-    // Stage 6: field mapping first (so keys become template field keys)
-    const mapped = applyFieldMappingSingle(cleaned, state.mappingConfig);
-
-    // Stage 5: normalize HTML for content fields (now keys match contentFieldKeys)
-    const normalizedMappedData: Record<string, string> = {};
-    for (const [key, value] of Object.entries(mapped.mappedData)) {
-      normalizedMappedData[key] =
-        contentFieldKeys.includes(key) && value
-          ? normalizeHtml(value, filterOptions)
-          : value;
-    }
-
-    return { ...mapped, mappedData: normalizedMappedData };
-  }, [sampleRecord, state.mappingConfig, state.filterOptions, state.templateType]);
+  const mappedSample = sampleRecord ? (samplePreviewMap.get(sampleRecord.rowIndex) ?? null) : null;
 
   // When the user picks a different sample record, reinitialize corrections from that record
   const handleSampleChange = (newRowIndex: number) => {
     updateState({ sampleRowIndex: newRowIndex });
   };
 
-  const [corrections, setCorrections] = useState<Record<string, string>>(() => {
-    if (!mappedSample?.mappedData) return {};
-    const initial = { ...mappedSample.mappedData };
-    // Strip domain from slug but keep the full path (e.g. /areas-we-serve/atlanta/)
-    if (initial.slug) {
-      try {
-        if (/^https?:\/\//i.test(initial.slug)) {
-          const url = new URL(initial.slug);
-          initial.slug = url.pathname;
-        }
-      } catch {
-        // Not a valid URL, leave as-is
-      }
-    }
-    return initial;
-  });
+  const initialCorrections = useMemo(
+    () => buildEditableCorrections(mappedSample),
+    [mappedSample]
+  );
+
+  const [corrections, setCorrections] = useState<Record<string, string>>(initialCorrections);
+
+  const correctedPreview = useMemo(() => {
+    if (!sampleRecord || !state.mappingConfig || !state.templateType) return null;
+
+    return getSamplePreviewRecord(
+      sampleRecord,
+      state.mappingConfig,
+      state.templateType,
+      state.filterOptions,
+      corrections
+    );
+  }, [sampleRecord, state.mappingConfig, state.templateType, state.filterOptions, corrections]);
 
   // AI split state (only relevant for 'area' template)
   const [aiSplitting, setAiSplitting] = useState(false);
@@ -171,24 +165,11 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
     setTimeout(() => setSaveSuccess(false), 3000);
   };
 
-  // Reinitialize corrections whenever the chosen sample record changes
+  // Reinitialize corrections whenever the chosen sample preview changes
   useEffect(() => {
-    if (!mappedSample?.mappedData) return;
-    const initial = { ...mappedSample.mappedData };
-    if (initial.slug) {
-      try {
-        if (/^https?:\/\//i.test(initial.slug)) {
-          const url = new URL(initial.slug);
-          initial.slug = url.pathname;
-        }
-      } catch {
-        // Not a valid URL, leave as-is
-      }
-    }
-    setCorrections(initial);
+    setCorrections(initialCorrections);
     setAiSplitError(null);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chosenSampleIndex]);
+  }, [initialCorrections]);
 
   const handleFieldChange = (key: string, value: string) => {
     setCorrections((prev) => ({ ...prev, [key]: value }));
@@ -211,7 +192,7 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
   const handleInferRules = () => {
     if (!mappedSample) return;
 
-    const diffs = computeFieldDiffs(mappedSample.mappedData, corrections);
+    const diffs = computeFieldDiffs(initialCorrections, corrections);
     // Strip AI-split fields so their content never becomes a recipe rule
     const filteredDiffs = diffs.filter((d) => !AI_SPLIT_FIELDS.has(d.field));
     // Pass content field keys so inferRulesFromDiff guards against literal-content rules
@@ -336,10 +317,16 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
 
   const hasChanges = useMemo(() => {
     if (!mappedSample) return false;
-    return Object.keys(corrections).some(
-      (k) => corrections[k] !== (mappedSample.mappedData[k] ?? '')
-    );
-  }, [corrections, mappedSample]);
+
+    const keys = new Set([...Object.keys(initialCorrections), ...Object.keys(corrections)]);
+    for (const key of keys) {
+      if ((corrections[key] ?? '') !== (initialCorrections[key] ?? '')) {
+        return true;
+      }
+    }
+
+    return false;
+  }, [corrections, initialCorrections, mappedSample]);
 
   const isAreaTemplate = state.templateType === 'area';
   const aiAvailable = state.aiAvailable ?? false;
@@ -405,11 +392,12 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
             onChange={(e) => handleSampleChange(Number(e.target.value))}
             className="flex-1 rounded border border-blue-300 bg-white px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           >
-            {state.sourceRecords.map((r, i) => {
+            {state.sourceRecords.map((r) => {
+              const preview = samplePreviewMap.get(r.rowIndex);
               const label =
-                (r.data.title as string | undefined) ??
-                (r.data.name as string | undefined) ??
-                (r.data.url as string | undefined) ??
+                preview?.chosenTitle ||
+                String(preview?.allocatedData.title ?? '') ||
+                preview?.slug ||
                 `Row ${r.rowIndex + 1}`;
               return (
                 <option key={r.rowIndex} value={r.rowIndex}>
@@ -426,7 +414,7 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
 
       <div className="space-y-4">
         {templateFields.map((field) => {
-          const autoValue = mappedSample.mappedData[field.key] ?? '';
+          const autoValue = initialCorrections[field.key] ?? '';
           const correctedValue = corrections[field.key] ?? '';
           const isChanged = autoValue !== correctedValue;
           const isBodyField = field.key === 'body' && isAreaTemplate;
@@ -515,7 +503,7 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
       )}
 
       {/* Preview Allocated Output */}
-      <AllocatedPreviewPanel corrections={corrections} templateType={state.templateType!} />
+      <AllocatedPreviewPanel preview={correctedPreview} templateType={state.templateType!} />
 
       <div className="flex justify-between items-center">
         <button onClick={onBack} className="px-4 py-2 text-gray-600 hover:text-gray-900 text-sm font-medium">
@@ -587,25 +575,13 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
 // ─── Allocated Preview Panel ─────────────────────────────────────────────────
 
 function AllocatedPreviewPanel({
-  corrections,
+  preview,
   templateType,
 }: {
-  corrections: Record<string, string>;
+  preview: SamplePreviewRecord | null;
   templateType: import('@site/lib/importer/types').TemplateType;
 }) {
   const [open, setOpen] = useState(false);
-
-  const preview = useMemo(() => {
-    if (!open) return null;
-    const slug = normalizeUrlSlug(
-      corrections.slug || corrections.title || '',
-      corrections.title || '',
-      templateType
-    );
-    const normalized = buildNormalizedContent(corrections, templateType);
-    const allocated = allocateForTemplate(normalized, templateType, slug);
-    return { normalized, allocated };
-  }, [open, corrections, templateType]);
 
   const strip = (html: string) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   const trunc = (text: string, max: number) => text.length > max ? text.substring(0, max).trimEnd() + '\u2026' : text;
@@ -622,17 +598,40 @@ function AllocatedPreviewPanel({
 
       {open && preview && (
         <div className="p-4 space-y-3 bg-white">
+          <div className="rounded border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
+            <span className="font-medium">Resolved title:</span>{' '}
+            <strong>{preview.chosenTitle || '—'}</strong>
+          </div>
+
           {/* Stats bar */}
           <div className="flex gap-3 text-xs text-gray-500">
-            <span>Method: <strong className="text-gray-700">{preview.normalized.segmentation.method}</strong></span>
-            <span>Blocks: <strong className="text-gray-700">{preview.normalized.stats.sectionBlockCount}</strong></span>
-            <span>FAQ: <strong className="text-gray-700">{preview.normalized.stats.faqItemCount}</strong></span>
-            <span>Images: <strong className="text-gray-700">{preview.normalized.stats.imageCount}</strong></span>
+            <span>Method: <strong className="text-gray-700">{preview.normalizedContent.segmentation.method}</strong></span>
+            <span>Blocks: <strong className="text-gray-700">{preview.normalizedContent.stats.sectionBlockCount}</strong></span>
+            <span>FAQ: <strong className="text-gray-700">{preview.normalizedContent.stats.faqItemCount}</strong></span>
+            <span>Images: <strong className="text-gray-700">{preview.normalizedContent.stats.imageCount}</strong></span>
           </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-gray-600">
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">rawMetaTitle:</span> {preview.normalizedContent.rawMetaTitle || '—'}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">cleanedMetaTitle:</span> {preview.normalizedContent.cleanedMetaTitle || '—'}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">introSource:</span> {preview.normalizedContent.allocationDebug?.introSource || '—'}
+            </div>
+          </div>
+
+          {preview.normalizedContent.allocationDebug && (
+            <div className="text-xs text-gray-500">
+              allocation: intro=[{preview.normalizedContent.allocationDebug.allocationLog.intro.join(', ')}], why=[{preview.normalizedContent.allocationDebug.allocationLog.why.join(', ')}], closing=[{preview.normalizedContent.allocationDebug.allocationLog.closing.join(', ')}]
+            </div>
+          )}
 
           {/* Template-specific preview */}
           {templateType === 'area' && (() => {
-            const content = preview.allocated.content as Record<string, unknown>;
+            const content = preview.allocatedData.content as Record<string, unknown>;
             const intro = content.introSection as Record<string, unknown>;
             const why = content.whySection as Record<string, unknown>;
             const closing = content.closingSection as Record<string, unknown>;
@@ -666,7 +665,7 @@ function AllocatedPreviewPanel({
           })()}
 
           {templateType === 'practice' && (() => {
-            const content = preview.allocated.content as Record<string, unknown>;
+            const content = preview.allocatedData.content as Record<string, unknown>;
             const cs = (content.contentSections as Record<string, unknown>[]) ?? [];
             const faq = content.faq as { items?: { question: string }[] };
             return (
@@ -694,10 +693,10 @@ function AllocatedPreviewPanel({
           })()}
 
           {templateType === 'post' && (() => {
-            const body = String(preview.allocated.body ?? '');
+            const body = String(preview.allocatedData.body ?? '');
             const text = strip(body);
             const words = text ? text.split(/\s+/).length : 0;
-            const excerpt = String(preview.allocated.excerpt ?? '');
+            const excerpt = String(preview.allocatedData.excerpt ?? '');
             return (
               <div className="space-y-2">
                 {excerpt && (

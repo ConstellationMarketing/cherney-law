@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { WizardState } from '@site/lib/importer/recipeTypes';
 import type { FieldMapping, MappingPreset } from '@site/lib/importer/types';
 import { autoMapFields } from '@site/lib/importer/autoMapper';
 import { getTemplateFields } from '@site/lib/importer/templateFields';
+import { getSamplePreviewRecord } from '@site/lib/importer/transformer';
 import { supabase } from '@/lib/supabase';
 
 interface Props {
@@ -102,6 +103,43 @@ export default function StepFieldDetection({ state, updateState, onNext, onBack 
       .map((f) => f.key)
       .filter((k) => !mappings.find((m) => m.targetField === k)),
   });
+
+  const samplePreview = useMemo(() => {
+    const sampleRecord = state.sourceRecords[0];
+    if (!sampleRecord || !state.templateType) return null;
+
+    const config = buildConfig();
+    if (config.mappings.length === 0) return null;
+
+    return getSamplePreviewRecord(
+      sampleRecord,
+      config,
+      state.templateType,
+      state.filterOptions
+    );
+  }, [mappings, state.sourceRecords, state.templateType, state.filterOptions, state.sourceColumns, templateFields]);
+
+  const getSampleValue = (sourceColumn: string, targetField?: string) => {
+    if (!samplePreview) return '—';
+
+    if (targetField === 'title') {
+      return samplePreview.chosenTitle || '—';
+    }
+
+    if (targetField === 'meta_title') {
+      return samplePreview.normalizedContent.cleanedMetaTitle || samplePreview.mappedData.meta_title || '—';
+    }
+
+    if (targetField === 'slug') {
+      return samplePreview.slug || samplePreview.mappedData.slug || '—';
+    }
+
+    if (targetField) {
+      return samplePreview.mappedData[targetField] || samplePreview.cleanedData[sourceColumn] || '—';
+    }
+
+    return samplePreview.cleanedData[sourceColumn] || '—';
+  };
 
   const handleContinue = () => {
     const config = buildConfig();
@@ -207,7 +245,7 @@ export default function StepFieldDetection({ state, updateState, onNext, onBack 
                 <tr key={col.name} className="hover:bg-gray-50">
                   <td className="px-4 py-2.5 font-medium text-gray-900">{col.name}</td>
                   <td className="px-4 py-2.5 text-gray-500 max-w-[200px] truncate">
-                    {col.sampleValues[0]?.substring(0, 60) || '—'}
+                    {String(getSampleValue(col.name, mapping?.targetField)).substring(0, 60) || '—'}
                   </td>
                   <td className="px-4 py-2.5">
                     <select

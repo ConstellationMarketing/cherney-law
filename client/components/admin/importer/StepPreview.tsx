@@ -158,7 +158,7 @@ interface ContentPreviewCardProps {
 function ContentPreviewCard({ record, templateType }: ContentPreviewCardProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const title = String(record.preparedData.title ?? record.mappedData.title ?? '');
+  const title = String(record.preparedData.title ?? record.normalizedContent?.chosenTitle ?? '');
   const slug = record.slug;
 
   const content = record.preparedData.content as Record<string, unknown> | undefined;
@@ -317,7 +317,7 @@ export default function StepPreview({ state, updateState, onNext, onBack }: Prop
           </thead>
           <tbody className="divide-y divide-gray-100">
             {importReady.map((record) => {
-              const title = String(record.preparedData.title ?? record.mappedData.title ?? '');
+              const title = String(record.preparedData.title ?? record.normalizedContent?.chosenTitle ?? '');
               return (
                 <tr key={record.rowIndex} className="hover:bg-gray-50">
                   <td className="px-3 py-2 text-gray-400">{record.rowIndex + 1}</td>

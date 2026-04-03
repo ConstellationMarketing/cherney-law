@@ -12,12 +12,15 @@ import type {
 } from './types';
 import { cleanSourceRecords } from './sourceCleaner';
 import { normalizeHtml } from './htmlNormalizer';
-import { applyFieldMapping } from './fieldMapping';
+import { applyFieldMapping, applyFieldMappingSingle } from './fieldMapping';
 import { executeRecipe } from './recipeEngine';
-import { prepareRecords } from './preparer';
+import { normalizeUrlSlug, prepareRecords } from './preparer';
 import { scoreConfidence } from './confidenceScorer';
 import { validateRecords } from './validator';
 import { getContentFieldKeys } from './templateFields';
+import { buildNormalizedContent } from './normalizedContent';
+import type { NormalizedContent } from './normalizedContent';
+import { allocateForTemplate } from './templateAllocators';
 
 export interface TransformOptions {
   templateType: TemplateType;
@@ -28,6 +31,17 @@ export interface TransformOptions {
   /** Keys to skip HTML normalization for (e.g. AI-split fields already cleaned server-side) */
   skipNormalizationKeys?: string[];
   onProgress?: (current: number, total: number) => void;
+}
+
+export interface SamplePreviewRecord {
+  rowIndex: number;
+  sourceData: Record<string, string>;
+  cleanedData: Record<string, string>;
+  mappedData: Record<string, string>;
+  normalizedContent: NormalizedContent;
+  allocatedData: Record<string, unknown>;
+  chosenTitle: string;
+  slug: string;
 }
 
 /**
@@ -214,6 +228,63 @@ export function transformRecords(
 
   onProgress?.(total, total);
   return results;
+}
+
+function buildPreviewMappedData(
+  data: Record<string, string>,
+  normalizedContent: NormalizedContent,
+  slug: string
+): Record<string, string> {
+  return {
+    ...data,
+    ...(normalizedContent.chosenTitle ? { title: normalizedContent.chosenTitle } : {}),
+    ...(normalizedContent.cleanedMetaTitle || normalizedContent.metaTitle
+      ? { meta_title: normalizedContent.cleanedMetaTitle || normalizedContent.metaTitle }
+      : {}),
+    ...(slug ? { slug } : {}),
+  };
+}
+
+export function getSamplePreviewRecord(
+  sourceRecord: SourceRecord,
+  mappingConfig: MappingConfig,
+  templateType: TemplateType,
+  filterOptions: FilterOptions,
+  overrides: Record<string, string> = {},
+  skipNormalizationKeys?: string[]
+): SamplePreviewRecord {
+  const contentFieldKeys = getContentFieldKeys(templateType);
+  const [cleanedRecord] = cleanSourceRecords([sourceRecord], contentFieldKeys, filterOptions);
+  const mappedRecord = applyFieldMappingSingle(cleanedRecord, mappingConfig);
+  const mergedMappedData = {
+    ...mappedRecord.mappedData,
+    ...overrides,
+  };
+  const normalizedMappedData = normalizeContentFields(
+    mergedMappedData,
+    contentFieldKeys,
+    filterOptions,
+    skipNormalizationKeys
+  );
+  const normalizedContent = buildNormalizedContent(normalizedMappedData, templateType);
+  const slug = normalizeUrlSlug(
+    normalizedMappedData.slug || normalizedContent.chosenTitle || normalizedMappedData.title || '',
+    normalizedContent.chosenTitle || normalizedMappedData.title || '',
+    templateType
+  );
+  const allocatedData = allocateForTemplate(normalizedContent, templateType, slug);
+  const mappedData = buildPreviewMappedData(normalizedMappedData, normalizedContent, slug);
+
+  return {
+    rowIndex: sourceRecord.rowIndex,
+    sourceData: { ...sourceRecord.data },
+    cleanedData: cleanedRecord.data,
+    mappedData,
+    normalizedContent,
+    allocatedData,
+    chosenTitle: normalizedContent.chosenTitle,
+    slug,
+  };
 }
 
 /**
