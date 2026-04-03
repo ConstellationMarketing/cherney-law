@@ -6,10 +6,23 @@ import type { TemplateType } from './types';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
+export interface AllocationDebug {
+  introSource: 'preH2' | 'firstBlockFallback' | 'empty';
+  allocationLog: {
+    intro: number[];
+    why: number[];
+    closing: number[];
+  };
+}
+
 export interface NormalizedContent {
   sourceUrl: string;
   h1: string;
   metaTitle: string;
+  rawMetaTitle: string;
+  cleanedMetaTitle: string;
+  extractedH1: string;
+  chosenTitle: string;
   metaDescription: string;
   canonicalUrl: string;
   ogImage: string;
@@ -30,6 +43,7 @@ export interface NormalizedContent {
   featuredImageCandidates: ImageCandidate[];
   stats: ContentStats;
   segmentation: SegmentationDebug;
+  allocationDebug?: AllocationDebug;
 }
 
 export interface SectionBlock {
@@ -71,12 +85,170 @@ export interface SegmentationDebug {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+const TITLE_SPLIT_PATTERN = /(?:\s*[|–—:]\s*|\s+-\s+)/g;
+const KNOWN_BRAND_PHRASES = ['cherney law', 'cherney law firm'];
+const PRACTICE_KEYWORD_PATTERN = /\b(accident|injury|injuries|malpractice|divorce|custody|bankruptcy|dui|dwi|criminal|defense|probate|estate|immigration|employment|workers'? comp|personal injury|wrongful death|practice area|legal service|attorney|lawyer|litigation|claims?)\b/i;
+const LOCATION_KEYWORD_PATTERN = /\b(in|near|serving|serves|county|city|state|local|regional|metro|downtown|north|south|east|west|central|beach|hills|park|village|town|borough|district|new york|california|florida|texas|georgia|illinois|ohio|arizona|nevada)\b/i;
+const STRONG_BRAND_PATTERN = /\b(law firm|firm|law offices?|attorneys at law|llp|pllc|pc|p\.c\.|group)\b/i;
+const BRAND_HINT_PATTERN = /\b(law|firm|attorneys?|lawyers?|counsel|llp|pllc|pc|p\.c\.)\b/i;
+
 function stripTagsToText(html: string): string {
-  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  return normalizeText(html.replace(/<[^>]+>/g, ' '));
+}
+
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>');
+}
+
+function normalizeText(text: string): string {
+  return decodeHtmlEntities(text)
+    .replace(/\u00a0/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function countWords(text: string): number {
   return text ? text.split(/\s+/).filter(Boolean).length : 0;
+}
+
+function compactText(text: string): string {
+  return normalizeText(text).toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function getHostnamePhrase(url: string): string {
+  if (!url) return '';
+
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./i, '');
+    const primaryLabel = hostname.split('.')[0] || '';
+    return normalizeText(primaryLabel.replace(/[-_]+/g, ' '));
+  } catch {
+    return '';
+  }
+}
+
+function extractTagTexts(html: string, tagName: 'h1' | 'h2'): string[] {
+  if (!html?.trim()) return [];
+
+  const pattern = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)<\\/${tagName}>`, 'gi');
+  const results: string[] = [];
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(html)) !== null) {
+    const text = stripTagsToText(match[1]);
+    if (text) results.push(text);
+  }
+
+  return results;
+}
+
+function findRichHeadingCandidate(candidates: string[]): string {
+  return candidates.find((candidate) => countWords(candidate) >= 3) || '';
+}
+
+function extractPrimaryHeading(html: string): string {
+  const h1Candidates = extractTagTexts(html, 'h1');
+  const h2Candidates = extractTagTexts(html, 'h2');
+
+  return (
+    findRichHeadingCandidate(h1Candidates) ||
+    findRichHeadingCandidate(h2Candidates) ||
+    h1Candidates[0] ||
+    h2Candidates[0] ||
+    ''
+  );
+}
+
+function extractTitleSegments(rawTitle: string): string[] {
+  if (!rawTitle?.trim()) return [];
+
+  const segments = rawTitle
+    .split(TITLE_SPLIT_PATTERN)
+    .map((segment) => normalizeText(segment.replace(/<[^>]+>/g, ' ')))
+    .filter(Boolean);
+
+  return segments.length > 0 ? segments : [normalizeText(rawTitle)];
+}
+
+function inferBrandPhrases(rawTitle: string, canonicalUrl: string): Set<string> {
+  const phrases = new Set<string>(KNOWN_BRAND_PHRASES.map(compactText).filter(Boolean));
+  const hostnamePhrase = getHostnamePhrase(canonicalUrl);
+  if (hostnamePhrase) phrases.add(compactText(hostnamePhrase));
+
+  for (const segment of extractTitleSegments(rawTitle)) {
+    if (
+      STRONG_BRAND_PATTERN.test(segment) &&
+      !PRACTICE_KEYWORD_PATTERN.test(segment) &&
+      !LOCATION_KEYWORD_PATTERN.test(segment) &&
+      countWords(segment) <= 5
+    ) {
+      phrases.add(compactText(segment));
+    }
+  }
+
+  return phrases;
+}
+
+function segmentContainsBrand(segment: string, brandPhrases: Set<string>): boolean {
+  const compactSegment = compactText(segment);
+  if (!compactSegment) return false;
+
+  for (const brandPhrase of brandPhrases) {
+    if (brandPhrase && compactSegment.includes(brandPhrase)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function scoreMetaTitleSegment(segment: string, brandPhrases: Set<string>): number {
+  const normalizedSegment = normalizeText(segment);
+  const wordCount = countWords(normalizedSegment);
+  const isBrand = segmentContainsBrand(normalizedSegment, brandPhrases);
+
+  let score = Math.min(normalizedSegment.length, 80);
+
+  if (wordCount >= 3) score += 18;
+  if (wordCount >= 5) score += 8;
+  if (PRACTICE_KEYWORD_PATTERN.test(normalizedSegment)) score += 24;
+  if (LOCATION_KEYWORD_PATTERN.test(normalizedSegment)) score += 16;
+  if (wordCount === 1) score -= 10;
+  if (wordCount > 0 && wordCount < 3) score -= 8;
+  if (BRAND_HINT_PATTERN.test(normalizedSegment)) score -= 12;
+  if (isBrand) score -= 100;
+
+  return score;
+}
+
+function cleanMetadataTitle(rawTitle: string, canonicalUrl: string): string {
+  const normalizedRawTitle = normalizeText(rawTitle);
+  if (!normalizedRawTitle) return '';
+
+  const segments = extractTitleSegments(normalizedRawTitle);
+  if (segments.length <= 1) return normalizedRawTitle;
+
+  const brandPhrases = inferBrandPhrases(normalizedRawTitle, canonicalUrl);
+  const nonBrandSegments = segments.filter((segment) => !segmentContainsBrand(segment, brandPhrases));
+  const candidates = nonBrandSegments.length > 0 ? nonBrandSegments : segments;
+
+  const ranked = candidates
+    .map((segment) => ({
+      segment,
+      score: scoreMetaTitleSegment(segment, brandPhrases),
+    }))
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return b.segment.length - a.segment.length;
+    });
+
+  return ranked[0]?.segment || candidates[0] || normalizedRawTitle;
 }
 
 /** Extract all images from an HTML string */
@@ -128,7 +300,7 @@ function splitOnH2(html: string): { leadHtml: string; sections: H2Split[]; h2Pos
   while ((match = h2Pattern.exec(html)) !== null) {
     h2Positions.push(match.index);
     splits.push({
-      heading: match[1].replace(/<[^>]*>/g, '').trim(),
+      heading: stripTagsToText(match[1]),
       headingTag: match[0],
       bodyStart: match.index + match[0].length,
       headingStart: match.index,
@@ -177,7 +349,7 @@ function extractFaqFromHtml(html: string): { items: FaqItem[]; method: Segmentat
   const qaPositions: { question: string; start: number; end: number }[] = [];
 
   while ((match = headingPattern.exec(searchContent)) !== null) {
-    const question = match[1].replace(/<[^>]*>/g, '').trim();
+    const question = stripTagsToText(match[1]);
     if (isLikelyQuestion(question)) {
       qaPositions.push({
         question,
@@ -197,7 +369,7 @@ function extractFaqFromHtml(html: string): { items: FaqItem[]; method: Segmentat
 
   for (const qa of qaPositions) {
     const answerHtml = searchContent.substring(qa.start, qa.end).trim();
-    const answer = answerHtml.replace(/<[^>]*>/g, '').trim();
+    const answer = stripTagsToText(answerHtml);
     if (answer) {
       items.push({ question: qa.question, answer: answerHtml });
     }
@@ -208,7 +380,7 @@ function extractFaqFromHtml(html: string): { items: FaqItem[]; method: Segmentat
   // Pattern 2: Definition lists
   const dlPattern = /<dt[^>]*>([\s\S]*?)<\/dt>\s*<dd[^>]*>([\s\S]*?)<\/dd>/gi;
   while ((match = dlPattern.exec(searchContent)) !== null) {
-    const q = match[1].replace(/<[^>]*>/g, '').trim();
+    const q = stripTagsToText(match[1]);
     const a = match[2].trim();
     if (q && a) items.push({ question: q, answer: a });
   }
@@ -218,7 +390,7 @@ function extractFaqFromHtml(html: string): { items: FaqItem[]; method: Segmentat
   // Pattern 3: Bold text as question
   const boldPattern = /<p[^>]*>\s*<(?:strong|b)>([\s\S]*?)<\/(?:strong|b)>\s*<\/p>\s*<p[^>]*>([\s\S]*?)<\/p>/gi;
   while ((match = boldPattern.exec(searchContent)) !== null) {
-    const q = match[1].replace(/<[^>]*>/g, '').trim();
+    const q = stripTagsToText(match[1]);
     if (isLikelyQuestion(q)) {
       items.push({ question: q, answer: match[2].trim() });
     }
@@ -249,8 +421,13 @@ export function buildNormalizedContent(
   templateType: TemplateType
 ): NormalizedContent {
   const sourceUrl = mappedData.slug || '';
-  const h1 = mappedData.title || '';
-  const metaTitle = mappedData.meta_title || h1;
+  const body = mappedData.body || '';
+  const rawMetaTitle = mappedData.meta_title || mappedData.title || '';
+  const extractedH1 = extractPrimaryHeading(body);
+  const cleanedMetaTitle = cleanMetadataTitle(rawMetaTitle, mappedData.canonical_url || sourceUrl || '');
+  const chosenTitle = extractedH1 || cleanedMetaTitle || '';
+  const h1 = chosenTitle;
+  const metaTitle = cleanedMetaTitle || chosenTitle;
   const metaDescription = mappedData.meta_description || '';
   const canonicalUrl = mappedData.canonical_url || '';
   const ogImage = mappedData.og_image || '';
@@ -259,9 +436,7 @@ export function buildNormalizedContent(
   const heroTagline = mappedData.hero_tagline || '';
   const heroDescription = mappedData.hero_description || '';
   const heroImage = mappedData.hero_image || '';
-  const heroImageAlt = mappedData.title || '';
-
-  const body = mappedData.body || '';
+  const heroImageAlt = chosenTitle;
   const hasAiSplitFields = !!(mappedData.why_body || mappedData.closing_body);
 
   let sectionBlocks: SectionBlock[] = [];
@@ -293,7 +468,9 @@ export function buildNormalizedContent(
           faqItems = parsed;
           faqDetectionMethod = 'heading-match';
         }
-      } catch { /* ignore */ }
+      } catch {
+        // ignore invalid FAQ JSON
+      }
     }
   } else {
     // No AI split — split on H2 headings
@@ -351,12 +528,16 @@ export function buildNormalizedContent(
   if (leadImg) featuredImageCandidates.push(leadImg);
 
   const leadText = stripTagsToText(leadHtml);
-  const totalWordCount = sectionBlocks.reduce((sum, b) => sum + b.wordCount, 0) + countWords(leadText);
+  const totalWordCount = sectionBlocks.reduce((sum, block) => sum + block.wordCount, 0) + countWords(leadText);
 
   return {
     sourceUrl,
     h1,
     metaTitle,
+    rawMetaTitle,
+    cleanedMetaTitle,
+    extractedH1,
+    chosenTitle,
     metaDescription,
     canonicalUrl,
     ogImage,
@@ -417,5 +598,5 @@ function extractFirstH2Text(html: string): string {
   if (!html) return '';
   const match = html.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i);
   if (!match) return '';
-  return match[1].replace(/<[^>]+>/g, '').trim();
+  return stripTagsToText(match[1]);
 }

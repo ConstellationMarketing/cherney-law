@@ -1,7 +1,7 @@
 // Template Allocators — Layer 3 of the import pipeline
 // Template-specific allocation of NormalizedContent into CMS record shapes.
 
-import type { NormalizedContent, SectionBlock, ImageCandidate, FaqItem } from './normalizedContent';
+import type { NormalizedContent, SectionBlock, ImageCandidate } from './normalizedContent';
 import type { TemplateType } from './types';
 
 // ─── Dispatch ────────────────────────────────────────────────────────────────
@@ -37,6 +37,9 @@ function allocateForBlogPost(
   normalized: NormalizedContent,
   slug: string
 ): Record<string, unknown> {
+  const pageTitle = normalized.chosenTitle || normalized.h1 || '';
+  const seoTitle = normalized.cleanedMetaTitle || pageTitle || null;
+
   // Reconstruct full body: lead + all section blocks in order
   let body = '';
   if (normalized.leadHtml) {
@@ -60,16 +63,16 @@ function allocateForBlogPost(
   const fullSlug = slug.endsWith('/') ? slug : slug + '/';
 
   return {
-    title: normalized.h1,
+    title: pageTitle,
     slug: fullSlug,
     body,
     excerpt,
     featured_image: featuredImage,
     category_name: null,
-    meta_title: normalized.metaTitle || normalized.h1 || null,
+    meta_title: seoTitle,
     meta_description: normalized.metaDescription || null,
     canonical_url: normalized.canonicalUrl || null,
-    og_title: normalized.metaTitle || normalized.h1 || null,
+    og_title: seoTitle,
     og_description: normalized.metaDescription || null,
     og_image: normalized.ogImage || featuredImage || null,
     noindex: false,
@@ -83,27 +86,33 @@ function allocateForBlogPost(
 /**
  * Areas We Serve: distribute content into intro/why/closing sections.
  *
- * Section distribution:
- * - If AI classification available: use classification hints directly
- * - Positional fallback:
- *   - 0 blocks: intro = leadHtml only, why/closing empty
- *   - 1 block: intro only (leadHtml + block)
- *   - 2 blocks: intro (leadHtml + first) + closing (last)
- *   - 3+ blocks: intro (leadHtml + first) + why (middle blocks joined) + closing (last)
- *
- * Pre-H2 content (leadHtml) is prepended to intro.
- * Empty = empty. No placeholder text.
+ * Deterministic allocation rules:
+ * - If pre-H2 content exists, intro uses leadHtml only.
+ * - If no pre-H2 content exists, intro must take the first non-FAQ block.
+ * - If that first block is shorter than 30 words and another block exists,
+ *   merge the next block into intro.
+ * - Remaining non-FAQ blocks are distributed without duplication:
+ *   - 0 remaining → why/closing empty
+ *   - 1 remaining → closing only
+ *   - 2+ remaining → why gets middle blocks, closing gets last block
+ * - FAQ remains only in faqSection.
  */
 function allocateForAreaPage(
   normalized: NormalizedContent,
   slug: string
 ): Record<string, unknown> {
+  const pageTitle = normalized.chosenTitle || normalized.h1 || '';
+  const seoTitle = normalized.cleanedMetaTitle || pageTitle || '';
   const blocks = normalized.sectionBlocks;
-  const hasAiClassification = blocks.some((b) => b.classification);
+  const allocationLog = {
+    intro: [] as number[],
+    why: [] as number[],
+    closing: [] as number[],
+  };
 
-  let introBody = '';
+  let introBody = normalized.leadHtml.trim();
   let introHeading = '';
-  let introImages: ImageCandidate[] = [];
+  let introImages: ImageCandidate[] = introBody ? extractImagesFromHtml(introBody) : [];
   let whyBody = '';
   let whyHeading = '';
   let whyImages: ImageCandidate[] = [];
@@ -111,59 +120,57 @@ function allocateForAreaPage(
   let closingHeading = '';
   let closingImages: ImageCandidate[] = [];
 
-  if (hasAiClassification) {
-    // Use AI classification hints
-    const introBlocks = blocks.filter((b) => b.classification === 'intro');
-    const whyBlocks = blocks.filter((b) => b.classification === 'why');
-    const closingBlocks = blocks.filter((b) => b.classification === 'closing');
-    const generalBlocks = blocks.filter((b) => b.classification === 'general' || !b.classification);
+  let introSource: 'preH2' | 'firstBlockFallback' | 'empty' = 'empty';
+  let remainingStartIndex = 0;
 
-    // Intro gets lead + classified intro blocks + unclassified general blocks
-    introBody = joinBlockBodies([...introBlocks, ...generalBlocks], normalized.leadHtml);
-    introHeading = introBlocks[0]?.heading || '';
-    introImages = collectImages([...introBlocks, ...generalBlocks]);
+  if (normalized.leadHtml.trim()) {
+    introSource = 'preH2';
+  } else if (blocks.length > 0) {
+    introSource = 'firstBlockFallback';
 
-    whyBody = joinBlockBodies(whyBlocks);
-    whyHeading = whyBlocks[0]?.heading || '';
-    whyImages = collectImages(whyBlocks);
+    const introBlocks = [blocks[0]];
+    allocationLog.intro.push(0);
 
-    closingBody = joinBlockBodies(closingBlocks);
-    closingHeading = closingBlocks[0]?.heading || '';
-    closingImages = collectImages(closingBlocks);
-  } else {
-    // Positional fallback
-    if (blocks.length === 0) {
-      // No H2 blocks — all content goes to intro
-      introBody = normalized.leadHtml;
-    } else if (blocks.length === 1) {
-      introBody = prependLead(normalized.leadHtml, blocks[0].bodyHtml);
-      introHeading = blocks[0].heading;
-      introImages = blocks[0].images;
-    } else if (blocks.length === 2) {
-      introBody = prependLead(normalized.leadHtml, blocks[0].bodyHtml);
-      introHeading = blocks[0].heading;
-      introImages = blocks[0].images;
-
-      closingBody = blocks[1].bodyHtml;
-      closingHeading = blocks[1].heading;
-      closingImages = blocks[1].images;
-    } else {
-      // 3+ blocks: first → intro, middle → why, last → closing
-      introBody = prependLead(normalized.leadHtml, blocks[0].bodyHtml);
-      introHeading = blocks[0].heading;
-      introImages = blocks[0].images;
-
-      const middleBlocks = blocks.slice(1, -1);
-      whyBody = joinBlockBodies(middleBlocks);
-      whyHeading = middleBlocks[0]?.heading || '';
-      whyImages = collectImages(middleBlocks);
-
-      const lastBlock = blocks[blocks.length - 1];
-      closingBody = lastBlock.bodyHtml;
-      closingHeading = lastBlock.heading;
-      closingImages = lastBlock.images;
+    if (blocks[0].wordCount < 30 && blocks[1]) {
+      introBlocks.push(blocks[1]);
+      allocationLog.intro.push(1);
     }
+
+    introBody = joinBlockBodies(introBlocks);
+    introHeading = pickSectionHeading(introBlocks);
+    introImages = collectImages(introBlocks);
+    remainingStartIndex = introBlocks.length;
   }
+
+  const remainingBlocks = blocks.slice(remainingStartIndex);
+
+  if (remainingBlocks.length === 1) {
+    const closingIndex = remainingStartIndex;
+    const block = remainingBlocks[0];
+    allocationLog.closing.push(closingIndex);
+    closingBody = block.bodyHtml;
+    closingHeading = pickSectionHeading([block]);
+    closingImages = block.images;
+  } else if (remainingBlocks.length >= 2) {
+    const middleBlocks = remainingBlocks.slice(0, -1);
+    const closingBlock = remainingBlocks[remainingBlocks.length - 1];
+
+    allocationLog.why.push(...middleBlocks.map((_, index) => remainingStartIndex + index));
+    allocationLog.closing.push(remainingStartIndex + remainingBlocks.length - 1);
+
+    whyBody = joinBlockBodies(middleBlocks);
+    whyHeading = pickSectionHeading(middleBlocks);
+    whyImages = collectImages(middleBlocks);
+
+    closingBody = closingBlock.bodyHtml;
+    closingHeading = pickSectionHeading([closingBlock]);
+    closingImages = closingBlock.images;
+  }
+
+  normalized.allocationDebug = {
+    introSource,
+    allocationLog,
+  };
 
   // Deduplicate images across sections
   const usedImageUrls = new Set<string>();
@@ -173,7 +180,7 @@ function allocateForAreaPage(
 
   const content = {
     hero: {
-      sectionLabel: normalized.h1 ? `\u2013 ${normalized.h1}` : '',
+      sectionLabel: pageTitle ? `– ${pageTitle}` : '',
       tagline: normalized.heroTagline || '',
     },
     introSection: {
@@ -208,14 +215,14 @@ function allocateForAreaPage(
   };
 
   return {
-    title: normalized.h1,
+    title: pageTitle,
     url_path: `/areas-we-serve/${slug}/`,
     page_type: 'area',
     content,
-    meta_title: normalized.metaTitle || normalized.h1 || '',
+    meta_title: seoTitle,
     meta_description: normalized.metaDescription || '',
     canonical_url: normalized.canonicalUrl || null,
-    og_title: normalized.metaTitle || normalized.h1 || null,
+    og_title: seoTitle || null,
     og_description: normalized.metaDescription || null,
     og_image: normalized.ogImage || null,
     noindex: false,
@@ -241,6 +248,8 @@ function allocateForPracticePage(
   normalized: NormalizedContent,
   slug: string
 ): Record<string, unknown> {
+  const pageTitle = normalized.chosenTitle || normalized.h1 || '';
+  const seoTitle = normalized.cleanedMetaTitle || pageTitle || '';
   const blocks = normalized.sectionBlocks;
 
   // Merge short adjacent blocks
@@ -256,27 +265,27 @@ function allocateForPracticePage(
   }[];
 
   if (mergedGroups.length > 0) {
-    contentSections = mergedGroups.map((group, i) => {
-      let body = group.map((b) => {
+    contentSections = mergedGroups.map((group, index) => {
+      let body = group.map((block) => {
         let html = '';
-        if (b.heading) html += `<h2>${b.heading}</h2>`;
-        html += b.bodyHtml;
+        if (block.heading) html += `<h2>${block.heading}</h2>`;
+        html += block.bodyHtml;
         return html;
       }).join('\n');
 
       // Prepend lead content to first section
-      if (i === 0 && normalized.leadHtml) {
+      if (index === 0 && normalized.leadHtml) {
         body = normalized.leadHtml + '\n' + body;
       }
 
       // Pick first image from the group
-      const img = group.flatMap((b) => b.images)[0];
+      const img = group.flatMap((block) => block.images)[0];
 
       return {
         body,
         image: img?.src || '',
         imageAlt: img?.alt || '',
-        imagePosition: (i % 2 === 0 ? 'right' : 'left') as 'right' | 'left',
+        imagePosition: (index % 2 === 0 ? 'right' : 'left') as 'right' | 'left',
         showCTAs: true,
       };
     });
@@ -293,10 +302,10 @@ function allocateForPracticePage(
   const content = {
     hero: {
       sectionLabel: '',
-      tagline: normalized.heroTagline || normalized.h1 || '',
+      tagline: normalized.heroTagline || pageTitle || '',
       description: normalized.heroDescription || '',
       backgroundImage: normalized.heroImage || '',
-      backgroundImageAlt: normalized.h1 || '',
+      backgroundImageAlt: pageTitle || '',
     },
     socialProof: {
       mode: 'none' as const,
@@ -314,14 +323,14 @@ function allocateForPracticePage(
   };
 
   return {
-    title: normalized.h1,
+    title: pageTitle,
     url_path: `/practice-areas/${slug}`,
     page_type: 'practice_detail',
     content,
-    meta_title: normalized.metaTitle || normalized.h1 || '',
+    meta_title: seoTitle,
     meta_description: normalized.metaDescription || '',
     canonical_url: normalized.canonicalUrl || null,
-    og_title: normalized.metaTitle || normalized.h1 || null,
+    og_title: seoTitle || null,
     og_description: normalized.metaDescription || null,
     og_image: normalized.ogImage || normalized.heroImage || null,
     noindex: false,
@@ -381,13 +390,27 @@ function joinBlockBodies(blocks: SectionBlock[], leadHtml?: string): string {
   return result.trim();
 }
 
-function prependLead(leadHtml: string, bodyHtml: string): string {
-  if (!leadHtml?.trim()) return bodyHtml;
-  return leadHtml + '\n' + bodyHtml;
+function collectImages(blocks: SectionBlock[]): ImageCandidate[] {
+  return blocks.flatMap((block) => block.images);
 }
 
-function collectImages(blocks: SectionBlock[]): ImageCandidate[] {
-  return blocks.flatMap((b) => b.images);
+function extractImagesFromHtml(html: string): ImageCandidate[] {
+  const images: ImageCandidate[] = [];
+  const re = /<img[^>]*\ssrc=["']([^"']+)["'][^>]*/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = re.exec(html)) !== null) {
+    const src = match[1];
+    const altMatch = match[0].match(/alt=["']([^"']*?)["']/i);
+    const alt = altMatch?.[1] ?? '';
+    if (src) images.push({ src, alt });
+  }
+
+  return images;
+}
+
+function pickSectionHeading(blocks: SectionBlock[]): string {
+  return blocks.find((block) => block.heading)?.heading || '';
 }
 
 function pickImage(

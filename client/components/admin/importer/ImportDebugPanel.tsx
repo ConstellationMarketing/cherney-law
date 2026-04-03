@@ -87,6 +87,30 @@ export default function ImportDebugPanel({ record, templateType }: Props) {
             </div>
           )}
 
+          {nc && (
+            <div>
+              <h5 className="font-semibold text-gray-700 mb-1">Title Resolution</h5>
+              <div className="space-y-1 rounded bg-gray-50 p-2">
+                <DebugRow label="chosenTitle" value={nc.chosenTitle} />
+                <DebugRow label="extractedH1" value={nc.extractedH1} />
+                <DebugRow label="rawMetaTitle" value={nc.rawMetaTitle} />
+                <DebugRow label="cleanedMetaTitle" value={nc.cleanedMetaTitle} />
+              </div>
+            </div>
+          )}
+
+          {templateType === 'area' && nc?.allocationDebug && (
+            <div>
+              <h5 className="font-semibold text-gray-700 mb-1">Area Allocation</h5>
+              <div className="space-y-1 rounded bg-gray-50 p-2">
+                <DebugRow label="introSource" value={nc.allocationDebug.introSource} />
+                <DebugRow label="intro" value={formatIndexes(nc.allocationDebug.allocationLog.intro)} />
+                <DebugRow label="why" value={formatIndexes(nc.allocationDebug.allocationLog.why)} />
+                <DebugRow label="closing" value={formatIndexes(nc.allocationDebug.allocationLog.closing)} />
+              </div>
+            </div>
+          )}
+
           {/* Section Breakdown (area/practice only) */}
           {stats.sections.length > 0 && (
             <div>
@@ -147,6 +171,19 @@ function StatBadge({ label, value }: { label: string; value: number }) {
       <div className="text-gray-500">{label}</div>
     </div>
   );
+}
+
+function DebugRow({ label, value }: { label: string; value?: string }) {
+  return (
+    <div className="flex gap-2">
+      <span className="font-medium text-gray-700 min-w-28">{label}:</span>
+      <span className="text-gray-500 break-all">{value || '—'}</span>
+    </div>
+  );
+}
+
+function formatIndexes(indexes: number[]): string {
+  return indexes.length > 0 ? `[${indexes.join(', ')}]` : '[]';
 }
 
 interface SectionInfo {

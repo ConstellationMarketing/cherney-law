@@ -101,6 +101,7 @@ export function transformRecords(
     const confidence = scoreConfidence(record, recordValidation, templateType);
 
     const status = confidence.overall >= confidenceThreshold ? 'approved' : 'flagged';
+    const normalizedContent = (record as unknown as Record<string, unknown>).normalizedContent as TransformedRecord['normalizedContent'];
 
     onProgress?.(Math.floor(total * 0.8 + (i / total) * total * 0.2), total);
 
@@ -118,6 +119,37 @@ export function transformRecords(
     const title = String(record.data.title ?? '');
     if (title) {
       transformationLog.push({ stage: 'prepare_records', field: 'title', action: `Title: ${title}` });
+    }
+
+    if (normalizedContent) {
+      transformationLog.push({
+        stage: 'prepare_records',
+        field: 'chosenTitle',
+        action: normalizedContent.chosenTitle || '(empty)',
+      });
+      transformationLog.push({
+        stage: 'prepare_records',
+        field: 'rawMetaTitle',
+        action: normalizedContent.rawMetaTitle || '(empty)',
+      });
+      transformationLog.push({
+        stage: 'prepare_records',
+        field: 'cleanedMetaTitle',
+        action: normalizedContent.cleanedMetaTitle || '(empty)',
+      });
+
+      if (normalizedContent.allocationDebug) {
+        transformationLog.push({
+          stage: 'prepare_records',
+          field: 'introSource',
+          action: normalizedContent.allocationDebug.introSource,
+        });
+        transformationLog.push({
+          stage: 'prepare_records',
+          field: 'allocation',
+          action: `intro=[${normalizedContent.allocationDebug.allocationLog.intro.join(', ')}], why=[${normalizedContent.allocationDebug.allocationLog.why.join(', ')}], closing=[${normalizedContent.allocationDebug.allocationLog.closing.join(', ')}]`,
+        });
+      }
     }
 
     const sections = record.contentSections ?? [];
@@ -176,7 +208,7 @@ export function transformRecords(
       status: status as 'approved' | 'flagged',
       transformationLog,
       // Store Layer 2 normalized content for debug visibility
-      normalizedContent: (record as unknown as Record<string, unknown>).normalizedContent as TransformedRecord['normalizedContent'],
+      normalizedContent,
     };
   });
 

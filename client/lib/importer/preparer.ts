@@ -28,15 +28,15 @@ export function prepareRecord(
 ): PreparedRecord & { normalizedContent?: NormalizedContent } {
   const { mappedData } = record;
 
-  // Generate slug
-  const slug = normalizeUrlSlug(
-    mappedData.slug || mappedData.title || '',
-    mappedData.title || '',
-    templateType
-  );
-
   // Layer 2: Build template-agnostic normalized content
   const normalized = buildNormalizedContent(mappedData, templateType);
+
+  // Generate slug
+  const slug = normalizeUrlSlug(
+    mappedData.slug || normalized.chosenTitle || mappedData.title || '',
+    normalized.chosenTitle || mappedData.title || '',
+    templateType
+  );
 
   // Layer 3: Allocate into template-specific CMS record
   const data = allocateForTemplate(normalized, templateType, slug);
