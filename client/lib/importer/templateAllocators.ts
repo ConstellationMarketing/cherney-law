@@ -3,6 +3,8 @@
 
 import type { NormalizedContent, SectionBlock, ImageCandidate } from './normalizedContent';
 import type { TemplateType } from './types';
+import { normalizeHtml } from './htmlNormalizer';
+import { defaultFilterOptions } from './types';
 
 // ─── Dispatch ────────────────────────────────────────────────────────────────
 
@@ -12,13 +14,14 @@ import type { TemplateType } from './types';
 export function allocateForTemplate(
   normalized: NormalizedContent,
   templateType: TemplateType,
-  slug: string
+  slug: string,
+  resolvedPath?: string
 ): Record<string, unknown> {
   switch (templateType) {
     case 'area':
-      return allocateForAreaPage(normalized, slug);
+      return allocateForAreaPage(normalized, slug, resolvedPath);
     case 'practice':
-      return allocateForPracticePage(normalized, slug);
+      return allocateForPracticePage(normalized, slug, resolvedPath);
     case 'post':
       return allocateForBlogPost(normalized, slug);
     default:
@@ -100,7 +103,8 @@ function allocateForBlogPost(
  */
 function allocateForAreaPage(
   normalized: NormalizedContent,
-  slug: string
+  slug: string,
+  resolvedPath?: string
 ): Record<string, unknown> {
   const pageTitle = normalized.chosenTitle || normalized.h1 || '';
   const seoTitle = normalized.cleanedMetaTitle || pageTitle || '';
@@ -162,6 +166,16 @@ function allocateForAreaPage(
     ];
   }
 
+  introBody = sanitizeFragmentHtml(introBody, normalized);
+  if (!introBody && firstBlock) {
+    introBody = sanitizeFragmentHtml(joinBlockBodies([firstBlock], leadHtml), normalized)
+      || sanitizeFragmentHtml(joinBlockBodies([firstBlock]), normalized)
+      || sanitizeFragmentHtml(firstBlock.bodyHtml, normalized);
+    if (introBody && allocationLog.intro.length === 0) {
+      allocationLog.intro.push(0);
+    }
+  }
+
   const remainingBlocks = blocks.slice(introBlocks.length);
   const remainingStartIndex = introBlocks.length;
 
@@ -169,7 +183,7 @@ function allocateForAreaPage(
     const closingIndex = remainingStartIndex;
     const block = remainingBlocks[0];
     allocationLog.closing.push(closingIndex);
-    closingBody = block.bodyHtml;
+    closingBody = sanitizeFragmentHtml(block.bodyHtml, normalized);
     closingHeading = pickSectionHeading([block]);
     closingImages = block.images;
   } else if (remainingBlocks.length >= 2) {
@@ -179,11 +193,11 @@ function allocateForAreaPage(
     allocationLog.why.push(...middleBlocks.map((_, index) => remainingStartIndex + index));
     allocationLog.closing.push(remainingStartIndex + remainingBlocks.length - 1);
 
-    whyBody = joinBlockBodies(middleBlocks);
+    whyBody = sanitizeFragmentHtml(joinBlockBodies(middleBlocks), normalized);
     whyHeading = pickSectionHeading(middleBlocks);
     whyImages = collectImages(middleBlocks);
 
-    closingBody = closingBlock.bodyHtml;
+    closingBody = sanitizeFragmentHtml(closingBlock.bodyHtml, normalized);
     closingHeading = pickSectionHeading([closingBlock]);
     closingImages = closingBlock.images;
   }
@@ -251,7 +265,7 @@ function allocateForAreaPage(
 
   return {
     title: pageTitle,
-    url_path: `/areas-we-serve/${slug}/`,
+    url_path: resolvedPath || `/areas-we-serve/${slug}/`,
     page_type: 'area',
     content,
     meta_title: seoTitle,
@@ -281,7 +295,8 @@ function allocateForAreaPage(
  */
 function allocateForPracticePage(
   normalized: NormalizedContent,
-  slug: string
+  slug: string,
+  resolvedPath?: string
 ): Record<string, unknown> {
   const pageTitle = normalized.chosenTitle || normalized.h1 || '';
   const seoTitle = normalized.cleanedMetaTitle || pageTitle || '';
@@ -359,7 +374,7 @@ function allocateForPracticePage(
 
   return {
     title: pageTitle,
-    url_path: `/practice-areas/${slug}`,
+    url_path: resolvedPath || `/practice-areas/${slug}`,
     page_type: 'practice_detail',
     content,
     meta_title: seoTitle,
@@ -415,6 +430,37 @@ function mergeShortBlocks(blocks: SectionBlock[]): SectionBlock[][] {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function looksLikeDocumentHtml(html: string): boolean {
+  if (!html?.trim()) return false;
+  return /<!doctype|<html\b|<head\b|<body\b/i.test(html)
+    || /\bet_pb_(section|row|column|module)\b/i.test(html)
+    || /\b(elementor-section|fl-row|builder-content|wp-site-blocks|site-content|page-container)\b/i.test(html);
+}
+
+function sanitizeFragmentHtml(html: string, normalized: NormalizedContent): string {
+  const value = html.trim();
+  if (!value) return '';
+  if (!looksLikeDocumentHtml(value)) return value;
+
+  const baseUrl = /^https?:\/\//i.test(normalized.sourceUrl || normalized.canonicalUrl)
+    ? (normalized.sourceUrl || normalized.canonicalUrl)
+    : undefined;
+  const sanitized = normalizeHtml(value, {
+    ...defaultFilterOptions.area,
+    ...(baseUrl ? { baseUrl } : {}),
+    skipSecondaryFilter: true,
+  }).trim();
+
+  if (sanitized && !looksLikeDocumentHtml(sanitized)) {
+    return sanitized;
+  }
+
+  return value
+    .replace(/<!doctype[^>]*>/gi, '')
+    .replace(/<\/?(?:html|head|body)[^>]*>/gi, '')
+    .trim();
+}
 
 function joinBlockBodies(blocks: SectionBlock[], leadHtml?: string): string {
   let result = leadHtml?.trim() || '';

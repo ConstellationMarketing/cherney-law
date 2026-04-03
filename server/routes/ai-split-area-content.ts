@@ -1,5 +1,7 @@
 import { RequestHandler } from "express";
 import OpenAI from "openai";
+import { normalizeHtml } from "../../client/lib/importer/htmlNormalizer";
+import { defaultFilterOptions } from "../../client/lib/importer/types";
 
 const DEFAULT_MODEL = "gpt-4o-mini";
 
@@ -359,7 +361,11 @@ export const handleAiSplitAreaContent: RequestHandler = async (req, res) => {
     return;
   }
 
-  const allSections = splitIntoH2Sections(html);
+  const cleanedHtml = normalizeHtml(html, {
+    ...defaultFilterOptions.area,
+    skipSecondaryFilter: true,
+  });
+  const allSections = splitIntoH2Sections(cleanedHtml || html);
 
   // Fix 3c: Pre-filter sections that are clearly "Recent Posts" / post listings
   // so they never reach the AI and don't pollute classified content.

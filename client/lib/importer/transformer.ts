@@ -14,7 +14,7 @@ import { cleanSourceRecords } from './sourceCleaner';
 import { normalizeHtml } from './htmlNormalizer';
 import { applyFieldMapping, applyFieldMappingSingle } from './fieldMapping';
 import { executeRecipe } from './recipeEngine';
-import { normalizeUrlSlug, prepareRecords } from './preparer';
+import { prepareRecords, resolveImportPath } from './preparer';
 import { scoreConfidence } from './confidenceScorer';
 import { validateRecords } from './validator';
 import { getContentFieldKeys } from './templateFields';
@@ -42,14 +42,50 @@ export interface SamplePreviewRecord {
   allocatedData: Record<string, unknown>;
   chosenTitle: string;
   slug: string;
+  resolvedPath: string;
+  previewDebug: {
+    aiSplitMode: boolean;
+    skipNormalizationKeys: string[];
+    introSourceField: 'raw' | 'cleaned' | 'corrections' | 'ai-split';
+    rawSourceHtmlLength: number;
+    cleanedBodyHtmlLength: number;
+    correctionsBodyLength: number;
+    originalSourceUrl: string;
+    resolvedUrlPath: string;
+    introPreview: string;
+  };
 }
 
 export const AREA_SKIP_NORMALIZATION_KEYS = ['body', 'why_body', 'closing_body'] as const;
+const AREA_AI_SPLIT_SIGNAL_KEYS = [
+  '__ai_split_mode',
+  'why_body',
+  'closing_body',
+  'faq',
+  'body_image',
+  'body_image_alt',
+  'why_image',
+  'why_image_alt',
+  'closing_image',
+  'closing_image_alt',
+] as const;
 
-export function getSkipNormalizationKeysForTemplate(
-  templateType: TemplateType
+function hasOwnKey(record: Record<string, string>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(record, key);
+}
+
+export function getSkipNormalizationKeysForRecord(
+  templateType: TemplateType,
+  data: Record<string, string>
 ): string[] | undefined {
-  return templateType === 'area' ? [...AREA_SKIP_NORMALIZATION_KEYS] : undefined;
+  if (templateType !== 'area') return undefined;
+
+  const hasExplicitAiSplit = data.__ai_split_mode === 'true' || AREA_AI_SPLIT_SIGNAL_KEYS.some((key) => {
+    if (key === '__ai_split_mode') return false;
+    return hasOwnKey(data, key);
+  });
+
+  return hasExplicitAiSplit ? [...AREA_SKIP_NORMALIZATION_KEYS] : undefined;
 }
 
 /**
@@ -92,10 +128,13 @@ export function transformRecords(
 
   // Stage 5: Normalize HTML for content fields (now keys match template field keys)
   // Skip normalization for AI-split fields that were already cleaned server-side
-  const normalized = mapped.map((record) => ({
-    ...record,
-    mappedData: normalizeContentFields(record.mappedData, contentFieldKeys, filterOptions, skipNormalizationKeys),
-  }));
+  const normalized = mapped.map((record) => {
+    const recordSkipNormalizationKeys = skipNormalizationKeys ?? getSkipNormalizationKeysForRecord(templateType, record.mappedData);
+    return {
+      ...record,
+      mappedData: normalizeContentFields(record.mappedData, contentFieldKeys, filterOptions, recordSkipNormalizationKeys),
+    };
+  });
   onProgress?.(Math.floor(total * 0.4), total);
 
   // Stage 7: Apply recipe rules
@@ -268,7 +307,9 @@ export function transformRecords(
 function buildPreviewMappedData(
   data: Record<string, string>,
   normalizedContent: NormalizedContent,
-  slug: string
+  slug: string,
+  resolvedPath: string,
+  templateType: TemplateType
 ): Record<string, string> {
   return {
     ...data,
@@ -276,7 +317,11 @@ function buildPreviewMappedData(
     ...(normalizedContent.cleanedMetaTitle || normalizedContent.metaTitle
       ? { meta_title: normalizedContent.cleanedMetaTitle || normalizedContent.metaTitle }
       : {}),
-    ...(slug ? { slug } : {}),
+    ...((templateType === 'area' || templateType === 'practice') && resolvedPath
+      ? { slug: resolvedPath }
+      : slug
+        ? { slug }
+        : {}),
   };
 }
 
@@ -295,20 +340,37 @@ export function getSamplePreviewRecord(
     ...mappedRecord.mappedData,
     ...overrides,
   };
+  const recordSkipNormalizationKeys = skipNormalizationKeys ?? getSkipNormalizationKeysForRecord(templateType, mergedMappedData);
   const normalizedMappedData = normalizeContentFields(
     mergedMappedData,
     contentFieldKeys,
     filterOptions,
-    skipNormalizationKeys
+    recordSkipNormalizationKeys
   );
   const normalizedContent = buildNormalizedContent(normalizedMappedData, templateType);
-  const slug = normalizeUrlSlug(
-    normalizedMappedData.slug || normalizedContent.chosenTitle || normalizedMappedData.title || '',
+  const resolvedPath = resolveImportPath(
+    normalizedMappedData.slug || normalizedContent.sourceUrl || '',
     normalizedContent.chosenTitle || normalizedMappedData.title || '',
     templateType
   );
-  const allocatedData = allocateForTemplate(normalizedContent, templateType, slug);
-  const mappedData = buildPreviewMappedData(normalizedMappedData, normalizedContent, slug);
+  const slug = resolvedPath.slug;
+  const allocatedData = allocateForTemplate(normalizedContent, templateType, slug, resolvedPath.path);
+  const mappedData = buildPreviewMappedData(normalizedMappedData, normalizedContent, slug, resolvedPath.path, templateType);
+  const introBody = templateType === 'area'
+    ? String(((allocatedData.content as Record<string, unknown> | undefined)?.introSection as Record<string, unknown> | undefined)?.body ?? '')
+    : String(allocatedData.body ?? '');
+  const bodyMapping = mappingConfig.mappings.find((mapping) => mapping.targetField === 'body');
+  const slugMapping = mappingConfig.mappings.find((mapping) => mapping.targetField === 'slug');
+  const rawSourceBody = bodyMapping ? String(sourceRecord.data[bodyMapping.sourceColumn] ?? '') : '';
+  const originalSourceUrl = slugMapping
+    ? String(sourceRecord.data[slugMapping.sourceColumn] ?? '')
+    : String(normalizedMappedData.slug || '');
+  const bodyWasCorrected = hasOwnKey(overrides, 'body') && (overrides.body ?? '') !== (mappedRecord.mappedData.body ?? '');
+  const introSourceField: 'raw' | 'cleaned' | 'corrections' | 'ai-split' = normalizedContent.segmentation.method === 'ai-split'
+    ? 'ai-split'
+    : bodyWasCorrected
+      ? 'corrections'
+      : 'cleaned';
 
   return {
     rowIndex: sourceRecord.rowIndex,
@@ -318,7 +380,19 @@ export function getSamplePreviewRecord(
     normalizedContent,
     allocatedData,
     chosenTitle: normalizedContent.chosenTitle,
-    slug,
+    slug: templateType === 'post' ? slug : resolvedPath.path,
+    resolvedPath: resolvedPath.path,
+    previewDebug: {
+      aiSplitMode: normalizedContent.segmentation.method === 'ai-split',
+      skipNormalizationKeys: recordSkipNormalizationKeys ?? [],
+      introSourceField,
+      rawSourceHtmlLength: rawSourceBody.length,
+      cleanedBodyHtmlLength: String(normalizedMappedData.body ?? '').length,
+      correctionsBodyLength: String(overrides.body ?? '').length,
+      originalSourceUrl,
+      resolvedUrlPath: String((allocatedData.url_path as string | undefined) ?? resolvedPath.path),
+      introPreview: introBody.substring(0, 200),
+    },
   };
 }
 

@@ -6,6 +6,12 @@ import { buildNormalizedContent } from './normalizedContent';
 import type { NormalizedContent } from './normalizedContent';
 import { allocateForTemplate } from './templateAllocators';
 
+export interface ResolvedImportPath {
+  slug: string;
+  path: string;
+  usedSourcePath: boolean;
+}
+
 
 /**
  * Prepare mapped records for import.
@@ -31,26 +37,22 @@ export function prepareRecord(
   // Layer 2: Build template-agnostic normalized content
   const normalized = buildNormalizedContent(mappedData, templateType);
 
-  // Generate slug
-  const slug = normalizeUrlSlug(
-    mappedData.slug || normalized.chosenTitle || mappedData.title || '',
+  const resolvedPath = resolveImportPath(
+    mappedData.slug || normalized.sourceUrl || '',
     normalized.chosenTitle || mappedData.title || '',
     templateType
   );
+  const slug = resolvedPath.slug;
 
   // Layer 3: Allocate into template-specific CMS record
-  const data = allocateForTemplate(normalized, templateType, slug);
+  const data = allocateForTemplate(normalized, templateType, slug, resolvedPath.path);
 
-  // Build full-path slug for display and logging (includes template prefix + trailing slash)
-  let fullSlug: string;
-  if (templateType === 'area') {
-    fullSlug = `/areas-we-serve/${slug}/`;
-  } else if (templateType === 'practice') {
-    fullSlug = `/practice-areas/${slug}/`;
-  } else {
-    // posts: slug already has trailing slash, just prepend /
-    fullSlug = slug.endsWith('/') ? `/${slug}` : `/${slug}/`;
-  }
+  // Build full-path slug for display and logging using the same shared resolver
+  const fullSlug = templateType === 'post'
+    ? (slug.endsWith('/') ? `/${slug}` : `/${slug}/`)
+    : templateType === 'practice'
+      ? (resolvedPath.path.endsWith('/') ? resolvedPath.path : `${resolvedPath.path}/`)
+      : resolvedPath.path;
 
   // Map normalized content back to legacy ContentSection format for compatibility
   const contentSections = normalized.sectionBlocks.map((block) => ({
@@ -71,6 +73,74 @@ export function prepareRecord(
 }
 
 // ─── Slug Normalization ──────────────────────────────────────────────────────
+
+function extractSourcePath(rawValue: string): string {
+  const value = rawValue.trim();
+  if (!value) return '';
+
+  try {
+    if (/^https?:\/\//i.test(value)) {
+      return new URL(value).pathname || '';
+    }
+  } catch {
+    // Fall through to best-effort parsing below
+  }
+
+  const withoutQuery = value.split('#')[0].split('?')[0].trim();
+  if (!withoutQuery) return '';
+
+  if (withoutQuery.startsWith('/') || withoutQuery.includes('/')) {
+    return withoutQuery;
+  }
+
+  return '';
+}
+
+function normalizeTemplatePath(path: string, templateType: TemplateType): string {
+  let normalizedPath = path.trim();
+  if (!normalizedPath) return '';
+
+  normalizedPath = normalizedPath.replace(/\/+/g, '/');
+  if (!normalizedPath.startsWith('/')) {
+    normalizedPath = `/${normalizedPath}`;
+  }
+  normalizedPath = normalizedPath.split('#')[0].split('?')[0].replace(/\/+/g, '/');
+
+  if (templateType === 'practice') {
+    return normalizedPath === '/' ? '/' : normalizedPath.replace(/\/+$/, '');
+  }
+
+  return normalizedPath === '/' ? '/' : `${normalizedPath.replace(/\/+$/, '')}/`;
+}
+
+export function resolveImportPath(
+  rawSlug: string,
+  title: string,
+  templateType: TemplateType
+): ResolvedImportPath {
+  const sourcePath = extractSourcePath(rawSlug);
+  const slug = normalizeUrlSlug(rawSlug, title, templateType);
+
+  if (sourcePath) {
+    return {
+      slug,
+      path: normalizeTemplatePath(sourcePath, templateType),
+      usedSourcePath: true,
+    };
+  }
+
+  const fallbackPath = templateType === 'area'
+    ? `/areas-we-serve/${slug}/`
+    : templateType === 'practice'
+      ? `/practice-areas/${slug}`
+      : `/${slug.replace(/^\/+/, '')}`;
+
+  return {
+    slug,
+    path: normalizeTemplatePath(fallbackPath, templateType),
+    usedSourcePath: false,
+  };
+}
 
 /**
  * Normalize a URL slug from various input formats.

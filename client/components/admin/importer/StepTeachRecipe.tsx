@@ -4,7 +4,7 @@ import { createDefaultRecipe } from '@site/lib/importer/recipeEngine';
 import { supabase } from '@/lib/supabase';
 import { computeFieldDiffs, inferRulesFromDiff } from '@site/lib/importer/recipeInference';
 import { getTemplateFields, getContentFieldKeys } from '@site/lib/importer/templateFields';
-import { getSamplePreviewRecord, getSkipNormalizationKeysForTemplate } from '@site/lib/importer/transformer';
+import { getSamplePreviewRecord } from '@site/lib/importer/transformer';
 import type { SamplePreviewRecord } from '@site/lib/importer/transformer';
 
 interface Props {
@@ -49,11 +49,6 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
   const sampleRecord =
     state.sourceRecords.find((r) => r.rowIndex === chosenSampleIndex) ??
     state.sourceRecords[0];
-  const previewSkipNormalizationKeys = useMemo(
-    () => getSkipNormalizationKeysForTemplate(state.templateType!),
-    [state.templateType]
-  );
-
   const samplePreviewMap = useMemo(() => {
     if (!state.mappingConfig || !state.templateType) return new Map<number, SamplePreviewRecord>();
 
@@ -65,12 +60,11 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
           state.mappingConfig,
           state.templateType,
           state.filterOptions,
-          {},
-          previewSkipNormalizationKeys
+          {}
         ),
       ])
     );
-  }, [state.sourceRecords, state.mappingConfig, state.templateType, state.filterOptions, previewSkipNormalizationKeys]);
+  }, [state.sourceRecords, state.mappingConfig, state.templateType, state.filterOptions]);
 
   const mappedSample = sampleRecord ? (samplePreviewMap.get(sampleRecord.rowIndex) ?? null) : null;
 
@@ -94,10 +88,9 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
       state.mappingConfig,
       state.templateType,
       state.filterOptions,
-      corrections,
-      previewSkipNormalizationKeys
+      corrections
     );
-  }, [sampleRecord, state.mappingConfig, state.templateType, state.filterOptions, corrections, previewSkipNormalizationKeys]);
+  }, [sampleRecord, state.mappingConfig, state.templateType, state.filterOptions, corrections]);
 
   // AI split state (only relevant for 'area' template)
   const [aiSplitting, setAiSplitting] = useState(false);
@@ -520,7 +513,6 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
         preview={correctedPreview}
         templateType={state.templateType!}
         corrections={corrections}
-        skipNormalizationKeys={previewSkipNormalizationKeys}
       />
 
       <div className="flex justify-between items-center">
@@ -596,12 +588,10 @@ function AllocatedPreviewPanel({
   preview,
   templateType,
   corrections,
-  skipNormalizationKeys,
 }: {
   preview: SamplePreviewRecord | null;
   templateType: import('@site/lib/importer/types').TemplateType;
   corrections: Record<string, string>;
-  skipNormalizationKeys?: string[];
 }) {
   const [open, setOpen] = useState(false);
 
@@ -644,8 +634,8 @@ function AllocatedPreviewPanel({
               <span className="font-medium text-gray-700">leadHtmlLength:</span> {preview.normalizedContent.allocationDebug?.leadHtmlLength ?? '—'}
             </div>
             <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
-              <span className="font-medium text-gray-700">skipNormalizationKeys:</span>{' '}
-              {skipNormalizationKeys?.length ? skipNormalizationKeys.join(', ') : '—'}
+              <span className="font-medium text-gray-700">previewMode:</span>{' '}
+              {preview.previewDebug.aiSplitMode ? 'AI split ON' : 'AI split OFF'}
             </div>
             <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
               <span className="font-medium text-gray-700">splitSignals:</span>{' '}
@@ -654,6 +644,31 @@ function AllocatedPreviewPanel({
                 : '—'}
             </div>
             <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">introSourceField:</span> {preview.previewDebug.introSourceField}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">skipNormalizationKeys:</span>{' '}
+              {preview.previewDebug.skipNormalizationKeys.length ? preview.previewDebug.skipNormalizationKeys.join(', ') : '—'}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">rawSourceHtmlLength:</span> {preview.previewDebug.rawSourceHtmlLength}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">cleanedBodyHtmlLength:</span> {preview.previewDebug.cleanedBodyHtmlLength}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">correctionsBodyLength:</span> {preview.previewDebug.correctionsBodyLength}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">originalSourceUrl:</span> {preview.previewDebug.originalSourceUrl || '—'}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">resolvedUrlPath:</span> {preview.previewDebug.resolvedUrlPath || '—'}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2 sm:col-span-3">
+              <span className="font-medium text-gray-700">introPreview:</span> {preview.previewDebug.introPreview || '—'}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2 sm:col-span-3">
               <span className="font-medium text-gray-700">correctedLengths:</span>{' '}
               body={(corrections.body ?? '').length}, why={(corrections.why_body ?? '').length}, closing={(corrections.closing_body ?? '').length}
             </div>
