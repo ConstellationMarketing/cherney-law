@@ -57,8 +57,78 @@ function extractFaqZones(html: string): string {
   return parts.join('\n');
 }
 
+export interface NormalizedHtmlResult {
+  html: string;
+  preservedHeading: string;
+  preservedH1: string;
+  preservedH2: string;
+  hadH1BeforeStrip: boolean;
+}
+
+function stripTagsToText(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function countWords(text: string): number {
+  return text ? text.split(/\s+/).filter(Boolean).length : 0;
+}
+
+function extractTagTexts(html: string, tagName: 'h1' | 'h2'): string[] {
+  if (!html?.trim()) return [];
+
+  const pattern = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)<\\/${tagName}>`, 'gi');
+  const results: string[] = [];
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(html)) !== null) {
+    const text = stripTagsToText(match[1]);
+    if (text) results.push(text);
+  }
+
+  return results;
+}
+
+function findMeaningfulHeading(candidates: string[]): string {
+  return candidates.find((candidate) => countWords(candidate) >= 3) || '';
+}
+
+function extractPreservedHeadingData(html: string): Omit<NormalizedHtmlResult, 'html'> {
+  const h1Candidates = extractTagTexts(html, 'h1');
+  const h2Candidates = extractTagTexts(html, 'h2');
+  const meaningfulH1 = findMeaningfulHeading(h1Candidates);
+  const meaningfulH2 = findMeaningfulHeading(h2Candidates);
+  const preservedH1 = meaningfulH1 || (!meaningfulH2 ? h1Candidates[0] || '' : '');
+  const preservedH2 = meaningfulH2 || (!preservedH1 ? h2Candidates[0] || '' : '');
+
+  return {
+    preservedHeading: preservedH1 || preservedH2 || '',
+    preservedH1,
+    preservedH2,
+    hadH1BeforeStrip: h1Candidates.length > 0,
+  };
+}
+
 export function normalizeHtml(html: string, options: FilterOptions): string {
-  if (!html?.trim()) return '';
+  return normalizeHtmlWithMetadata(html, options).html;
+}
+
+export function normalizeHtmlWithMetadata(html: string, options: FilterOptions): NormalizedHtmlResult {
+  if (!html?.trim()) {
+    return {
+      html: '',
+      preservedHeading: '',
+      preservedH1: '',
+      preservedH2: '',
+      hadH1BeforeStrip: false,
+    };
+  }
 
   const debug = !!(options as any).debug;
   const faqBefore = hasFaqHeading(html);
@@ -110,6 +180,11 @@ export function normalizeHtml(html: string, options: FilterOptions): string {
   result = cleanInlineMarkup(result);
   debugCheck('cleanInlineMarkup', result);
 
+  // Preserve the first meaningful heading from the cleaned main-content stream
+  // BEFORE H1 stripping. This keeps title resolution stable without reintroducing
+  // duplicate H1 markup into final body HTML.
+  const preservedHeadingData = extractPreservedHeadingData(result);
+
   // 5e: Normalize headings
   result = normalizeHeadings(result);
   debugCheck('normalizeHeadings', result);
@@ -122,7 +197,10 @@ export function normalizeHtml(html: string, options: FilterOptions): string {
   result = removeEmptyElements(result);
   debugCheck('removeEmptyElements', result);
 
-  return result.trim();
+  return {
+    html: result.trim(),
+    ...preservedHeadingData,
+  };
 }
 
 // ─── 5c: Normalize URLs ──────────────────────────────────────────────────────

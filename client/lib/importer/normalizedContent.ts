@@ -29,6 +29,8 @@ export interface AllocationDebug {
   closingBodyLength: number;
 }
 
+export type TitleSource = 'preserved-h1' | 'preserved-h2' | 'cleaned-meta-title' | 'empty';
+
 export interface NormalizedContent {
   sourceUrl: string;
   h1: string;
@@ -36,6 +38,11 @@ export interface NormalizedContent {
   rawMetaTitle: string;
   cleanedMetaTitle: string;
   extractedH1: string;
+  preservedHeading: string;
+  preservedH1: string;
+  preservedH2: string;
+  hadH1BeforeStrip: boolean;
+  titleSource: TitleSource;
   chosenTitle: string;
   metaDescription: string;
   canonicalUrl: string;
@@ -443,8 +450,25 @@ export function buildNormalizedContent(
   const body = mappedData.body || '';
   const rawMetaTitle = mappedData.meta_title || mappedData.title || '';
   const extractedH1 = extractPrimaryHeading(body);
+  const preservedH1 = normalizeText(mappedData.__body_preserved_h1 || '');
+  const preservedH2 = normalizeText(mappedData.__body_preserved_h2 || '');
+  const preservedHeading = normalizeText(mappedData.__body_preserved_heading || preservedH1 || preservedH2 || '');
+  const hadH1BeforeStrip = mappedData.__body_had_h1_before_strip === 'true' || Boolean(preservedH1);
   const cleanedMetaTitle = cleanMetadataTitle(rawMetaTitle, mappedData.canonical_url || sourceUrl || '');
-  const chosenTitle = extractedH1 || cleanedMetaTitle || '';
+  let chosenTitle = '';
+  let titleSource: TitleSource = 'empty';
+
+  if (preservedH1) {
+    chosenTitle = preservedH1;
+    titleSource = 'preserved-h1';
+  } else if (preservedH2) {
+    chosenTitle = preservedH2;
+    titleSource = 'preserved-h2';
+  } else if (cleanedMetaTitle) {
+    chosenTitle = cleanedMetaTitle;
+    titleSource = 'cleaned-meta-title';
+  }
+
   const h1 = chosenTitle;
   const metaTitle = cleanedMetaTitle || chosenTitle;
   const metaDescription = mappedData.meta_description || '';
@@ -572,6 +596,11 @@ export function buildNormalizedContent(
     rawMetaTitle,
     cleanedMetaTitle,
     extractedH1,
+    preservedHeading,
+    preservedH1,
+    preservedH2,
+    hadH1BeforeStrip,
+    titleSource,
     chosenTitle,
     metaDescription,
     canonicalUrl,

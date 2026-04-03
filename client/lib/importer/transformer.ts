@@ -15,7 +15,7 @@ import type {
   TransformedRecord,
 } from './types';
 import { cleanSourceRecords } from './sourceCleaner';
-import { normalizeHtml } from './htmlNormalizer';
+import { normalizeHtml, normalizeHtmlWithMetadata } from './htmlNormalizer';
 import { applyFieldMapping, applyFieldMappingSingle } from './fieldMapping';
 import { executeRecipe } from './recipeEngine';
 import { prepareRecords, resolveImportPath } from './preparer';
@@ -302,6 +302,26 @@ export function transformRecords(
         field: 'cleanedMetaTitle',
         action: normalizedContent.cleanedMetaTitle || '(empty)',
       });
+      transformationLog.push({
+        stage: 'prepare_records',
+        field: 'titleSource',
+        action: normalizedContent.titleSource,
+      });
+      transformationLog.push({
+        stage: 'prepare_records',
+        field: 'preservedH1',
+        action: normalizedContent.preservedH1 || '(empty)',
+      });
+      transformationLog.push({
+        stage: 'prepare_records',
+        field: 'preservedH2',
+        action: normalizedContent.preservedH2 || '(empty)',
+      });
+      transformationLog.push({
+        stage: 'prepare_records',
+        field: 'hadH1BeforeStrip',
+        action: normalizedContent.hadH1BeforeStrip ? 'true' : 'false',
+      });
 
       if (normalizedContent.allocationDebug) {
         transformationLog.push({
@@ -544,7 +564,16 @@ function normalizeContentFields(
       // Already cleaned server-side (e.g. AI-split fields) — pass through
       result[key] = value;
     } else if (contentFieldKeys.includes(key) && value) {
-      result[key] = normalizeHtml(value, filterOptions);
+      if (key === 'body') {
+        const normalized = normalizeHtmlWithMetadata(value, filterOptions);
+        result[key] = normalized.html;
+        result.__body_preserved_heading = normalized.preservedHeading;
+        result.__body_preserved_h1 = normalized.preservedH1;
+        result.__body_preserved_h2 = normalized.preservedH2;
+        result.__body_had_h1_before_strip = normalized.hadH1BeforeStrip ? 'true' : 'false';
+      } else {
+        result[key] = normalizeHtml(value, filterOptions);
+      }
     } else {
       result[key] = value;
     }

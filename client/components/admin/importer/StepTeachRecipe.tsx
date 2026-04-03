@@ -610,6 +610,18 @@ function AllocatedPreviewPanel({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-gray-600">
             <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">titleSource:</span> {preview.normalizedContent.titleSource}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">preservedH1:</span> {preview.normalizedContent.preservedH1 || '—'}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">preservedH2:</span> {preview.normalizedContent.preservedH2 || '—'}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-medium text-gray-700">hadH1BeforeStrip:</span> {preview.normalizedContent.hadH1BeforeStrip ? 'true' : 'false'}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
               <span className="font-medium text-gray-700">rawMetaTitle:</span> {preview.normalizedContent.rawMetaTitle || '—'}
             </div>
             <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
