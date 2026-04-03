@@ -1,8 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { WizardState } from '@site/lib/importer/recipeTypes';
-import type { SourceRecord, MappingConfig } from '@site/lib/importer/types';
+import type { AreaAiSplitResult, WizardState } from '@site/lib/importer/recipeTypes';
 import { createDefaultRecipe } from '@site/lib/importer/recipeEngine';
-import { transformRecords } from '@site/lib/importer/transformer';
+import { buildPreprocessedPipelineRecords, transformRecords } from '@site/lib/importer/transformer';
 
 interface Props {
   state: WizardState;
@@ -11,116 +10,46 @@ interface Props {
   onBack: () => void;
 }
 
-/**
- * Find the source column name mapped to a given template field key.
- */
-function findSourceColumnForField(mappingConfig: MappingConfig, fieldKey: string): string | null {
-  const mapping = mappingConfig.mappings.find((m) => m.targetField === fieldKey);
-  return mapping?.sourceColumn ?? null;
-}
-
-/**
- * Call /api/ai-split-area-batch for all area records.
- * Returns enriched source records with AI-split fields injected as synthetic columns.
- */
 async function runAiBatchSplit(
-  records: SourceRecord[],
-  mappingConfig: MappingConfig,
+  records: Array<{ rowIndex: number; bodyHtml: string }>,
   onProgress: (current: number, total: number) => void
-): Promise<{ enrichedRecords: SourceRecord[]; enrichedMapping: MappingConfig }> {
-  const bodyColumn = findSourceColumnForField(mappingConfig, 'body');
-
-  if (!bodyColumn) {
-    return { enrichedRecords: records, enrichedMapping: mappingConfig };
-  }
-
-  // Build batch payload
-  const batchPayload = records.map((r) => ({
-    rowIndex: r.rowIndex,
-    bodyHtml: r.data[bodyColumn] ?? '',
-  }));
+): Promise<Record<number, AreaAiSplitResult>> {
+  if (records.length === 0) return {};
 
   onProgress(0, records.length);
-
-  let results: Array<{
-    rowIndex: number;
-    body: string;
-    why_body: string;
-    closing_body: string;
-    faq: string;
-    body_image: string;
-    body_image_alt: string;
-    why_image: string;
-    why_image_alt: string;
-    closing_image: string;
-    closing_image_alt: string;
-  }>;
 
   try {
     const resp = await fetch('/api/ai-split-area-batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ records: batchPayload }),
+      body: JSON.stringify({ records }),
     });
 
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const json = await resp.json();
-    results = json.results ?? [];
+    const json = await resp.json() as { results?: Array<AreaAiSplitResult & { rowIndex: number }> };
+    const resultMap = new Map<number, AreaAiSplitResult>();
+
+    for (const [index, result] of (json.results ?? []).entries()) {
+      onProgress(index + 1, records.length);
+      resultMap.set(result.rowIndex, {
+        body: result.body,
+        why_body: result.why_body,
+        closing_body: result.closing_body,
+        faq: result.faq,
+        body_image: result.body_image,
+        body_image_alt: result.body_image_alt,
+        why_image: result.why_image,
+        why_image_alt: result.why_image_alt,
+        closing_image: result.closing_image,
+        closing_image_alt: result.closing_image_alt,
+      });
+    }
+
+    return Object.fromEntries(resultMap.entries());
   } catch (err) {
-    console.warn('ai-split-area-batch failed, skipping pre-split:', err);
-    return { enrichedRecords: records, enrichedMapping: mappingConfig };
+    console.warn('ai-split-area-batch failed, skipping shared pre-split:', err);
+    return {};
   }
-
-  // Build lookup by rowIndex
-  const resultMap = new Map(results.map((r) => [r.rowIndex, r]));
-
-  // Inject synthetic columns into each source record
-  const enrichedRecords: SourceRecord[] = records.map((r, i) => {
-    const split = resultMap.get(r.rowIndex);
-    onProgress(i + 1, records.length);
-    if (!split) return r;
-
-    return {
-      ...r,
-      data: {
-        ...r.data,
-        // Override body column with AI-cleaned body
-        [bodyColumn]: split.body,
-        // Inject split sections as synthetic columns
-        __ai_why_body: split.why_body,
-        __ai_closing_body: split.closing_body,
-        __ai_faq: split.faq,
-        __ai_body_image: split.body_image,
-        __ai_body_image_alt: split.body_image_alt,
-        __ai_why_image: split.why_image,
-        __ai_why_image_alt: split.why_image_alt,
-        __ai_closing_image: split.closing_image,
-        __ai_closing_image_alt: split.closing_image_alt,
-      },
-    };
-  });
-
-  // Add mappings for the synthetic columns (only if not already mapped)
-  const existingTargets = new Set(mappingConfig.mappings.map((m) => m.targetField));
-
-  const syntheticMappings = [
-    { sourceColumn: '__ai_why_body', targetField: 'why_body' },
-    { sourceColumn: '__ai_closing_body', targetField: 'closing_body' },
-    { sourceColumn: '__ai_faq', targetField: 'faq' },
-    { sourceColumn: '__ai_body_image', targetField: 'body_image' },
-    { sourceColumn: '__ai_body_image_alt', targetField: 'body_image_alt' },
-    { sourceColumn: '__ai_why_image', targetField: 'why_image' },
-    { sourceColumn: '__ai_why_image_alt', targetField: 'why_image_alt' },
-    { sourceColumn: '__ai_closing_image', targetField: 'closing_image' },
-    { sourceColumn: '__ai_closing_image_alt', targetField: 'closing_image_alt' },
-  ].filter((m) => !existingTargets.has(m.targetField));
-
-  const enrichedMapping: MappingConfig = {
-    ...mappingConfig,
-    mappings: [...mappingConfig.mappings, ...syntheticMappings],
-  };
-
-  return { enrichedRecords, enrichedMapping };
 }
 
 export default function StepAutoTransform({ state, updateState, onNext, onBack }: Props) {
@@ -136,23 +65,32 @@ export default function StepAutoTransform({ state, updateState, onNext, onBack }
     setTotal(state.sourceRecords.length);
 
     try {
-      let sourceRecords = state.sourceRecords;
-      let mappingConfig = state.mappingConfig!;
+      const sourceRecords = state.sourceRecords;
+      const mappingConfig = state.mappingConfig!;
+      const recipe = state.recipe ?? createDefaultRecipe(state.templateType!);
+      const threshold = recipe.confidenceThreshold;
 
-      // For area template: run AI batch split to enrich records with why/closing/faq/images
-      if (state.templateType === 'area') {
+      setStatusLabel('Preparing canonical pipeline…');
+      const preprocessedPipeline = buildPreprocessedPipelineRecords(sourceRecords, {
+        templateType: state.templateType!,
+        mappingConfig,
+        recipe,
+        filterOptions: state.filterOptions,
+      });
+
+      let areaAiSplitResultsByRow: Record<number, AreaAiSplitResult> | undefined;
+
+      if (state.templateType === 'area' && state.pipelineContext.areaAiSplitEnabled) {
         setStatusLabel('AI splitting content sections…');
-        const { enrichedRecords, enrichedMapping } = await runAiBatchSplit(
-          sourceRecords,
-          mappingConfig,
-          (current, total) => {
-            setProgress(current);
-            setTotal(total);
-          }
-        );
-        sourceRecords = enrichedRecords;
-        mappingConfig = enrichedMapping;
-        setProgress(sourceRecords.length);
+        const splitInput = preprocessedPipeline.recipedRecords.map((record) => ({
+          rowIndex: record.rowIndex,
+          bodyHtml: record.mappedData.body ?? '',
+        }));
+
+        areaAiSplitResultsByRow = await runAiBatchSplit(splitInput, (current, total) => {
+          setProgress(current);
+          setTotal(total);
+        });
       }
 
       setStatusLabel('Transforming records…');
@@ -162,15 +100,15 @@ export default function StepAutoTransform({ state, updateState, onNext, onBack }
       // Small delay to let UI update
       await new Promise((r) => setTimeout(r, 50));
 
-      const recipe = state.recipe ?? createDefaultRecipe(state.templateType!);
-      const threshold = recipe.confidenceThreshold;
-
       const results = transformRecords(sourceRecords, {
         templateType: state.templateType!,
         mappingConfig,
         recipe,
         filterOptions: state.filterOptions,
         confidenceThreshold: threshold,
+        preprocessedPipeline,
+        areaAiSplitResultsByRow,
+        previewSnapshot: state.pipelineContext.samplePreviewSnapshot,
         onProgress: (current, total) => {
           setProgress(current);
           setTotal(total);

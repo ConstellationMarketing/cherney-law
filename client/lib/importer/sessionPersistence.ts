@@ -1,7 +1,7 @@
 // Session persistence — Save/resume import sessions to Supabase
 
 import { supabase } from '@/lib/supabase';
-import type { MigrationSession, WizardState } from './recipeTypes';
+import { defaultImportPipelineContext, type MigrationSession, type WizardState } from './recipeTypes';
 import type { WizardStep } from './types';
 
 /**
@@ -127,6 +127,7 @@ export async function loadSession(sessionId: string): Promise<WizardState | null
       temperature: 0.3,
     },
     aiAvailable: false,
+    pipelineContext: defaultImportPipelineContext,
   };
 }
 

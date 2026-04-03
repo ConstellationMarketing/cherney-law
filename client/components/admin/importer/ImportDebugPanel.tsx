@@ -22,6 +22,8 @@ export default function ImportDebugPanel({ record, templateType }: Props) {
   const content = record.preparedData.content as Record<string, unknown> | undefined;
   const log = record.transformationLog ?? [];
   const nc = record.normalizedContent;
+  const previewParityEntry = log.find((entry) => entry.field === 'previewBatchParity');
+  const pipelineAiSplitEntry = log.find((entry) => entry.field === 'pipelineAiSplit');
 
   // Compute stats — prefer normalizedContent if available
   const stats = nc
@@ -83,6 +85,16 @@ export default function ImportDebugPanel({ record, templateType }: Props) {
                 <span className="text-gray-500">
                   FAQ detection: {nc.segmentation.faqDetectionMethod}
                 </span>
+              </div>
+            </div>
+          )}
+
+          {(previewParityEntry || pipelineAiSplitEntry) && (
+            <div>
+              <h5 className="font-semibold text-gray-700 mb-1">Shared Pipeline</h5>
+              <div className="space-y-1 rounded bg-gray-50 p-2">
+                {pipelineAiSplitEntry && <DebugRow label="pipelineAiSplit" value={pipelineAiSplitEntry.action} />}
+                {previewParityEntry && <DebugRow label="previewBatchParity" value={previewParityEntry.action} />}
               </div>
             </div>
           )}

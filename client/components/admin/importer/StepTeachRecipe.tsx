@@ -4,7 +4,7 @@ import { createDefaultRecipe } from '@site/lib/importer/recipeEngine';
 import { supabase } from '@/lib/supabase';
 import { computeFieldDiffs, inferRulesFromDiff } from '@site/lib/importer/recipeInference';
 import { getTemplateFields, getContentFieldKeys } from '@site/lib/importer/templateFields';
-import { getSamplePreviewRecord } from '@site/lib/importer/transformer';
+import { buildSamplePreviewSnapshot, getSamplePreviewRecord } from '@site/lib/importer/transformer';
 import type { SamplePreviewRecord } from '@site/lib/importer/transformer';
 
 interface Props {
@@ -12,28 +12,6 @@ interface Props {
   updateState: (u: Partial<WizardState>) => void;
   onNext: () => void;
   onBack: () => void;
-}
-
-/** Extract all img src URLs from an HTML string */
-function extractImageUrls(html: string): string[] {
-  const urls: string[] = [];
-  const re = /<img[^>]+src=["']([^"']+)["']/gi;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(html)) !== null) {
-    const src = m[1];
-    if (src && src.startsWith('http')) {
-      urls.push(src);
-    }
-  }
-  return [...new Set(urls)];
-}
-
-/** Replace image src URLs in HTML using the given mapping */
-function replaceImageUrls(html: string, mapping: Record<string, string>): string {
-  return html.replace(/<img([^>]+)src=["']([^"']+)["']/gi, (_match, attrs, src) => {
-    const newSrc = mapping[src] ?? src;
-    return `<img${attrs}src="${newSrc}"`;
-  });
 }
 
 function buildEditableCorrections(preview: SamplePreviewRecord | null): Record<string, string> {
@@ -189,8 +167,8 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
     'closing_image', 'closing_image_alt',
   ]);
 
-  const handleInferRules = () => {
-    if (!mappedSample) return;
+  const buildUpdatedRecipe = () => {
+    if (!mappedSample) return null;
 
     const diffs = computeFieldDiffs(initialCorrections, corrections);
     // Strip AI-split fields so their content never becomes a recipe rule
@@ -199,50 +177,33 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
     const contentFieldKeys = getContentFieldKeys(state.templateType!);
     const newRules = inferRulesFromDiff(filteredDiffs, contentFieldKeys);
 
-    const updatedRecipe = {
+    return {
       ...recipe,
       rules: [...recipe.rules, ...newRules],
     };
+  };
 
+  const handleInferRules = () => {
+    const updatedRecipe = buildUpdatedRecipe();
+    if (!updatedRecipe) return;
     updateState({ recipe: updatedRecipe });
   };
 
-  /** Re-host images then call the AI content splitter */
+  /** Run the shared batch AI splitter with the exact same cleaned body input used by batch transform */
   const handleAiSplit = async () => {
     const bodyHtml = corrections.body ?? '';
-    if (!bodyHtml.trim()) return;
+    if (!bodyHtml.trim() || !sampleRecord) return;
 
     setAiSplitting(true);
     setAiSplitError(null);
 
     try {
-      // Step 1: extract + re-host any external images
-      const imageUrls = extractImageUrls(bodyHtml);
-      let processedHtml = bodyHtml;
-
-      if (imageUrls.length > 0) {
-        const imgRes = await fetch('/api/bulk-import-images', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageUrls }),
-        });
-
-        if (imgRes.ok) {
-          const imgData = await imgRes.json() as { mappings: { originalUrl: string; newUrl: string }[] };
-          const urlMap: Record<string, string> = {};
-          for (const { originalUrl, newUrl } of imgData.mappings) {
-            urlMap[originalUrl] = newUrl;
-          }
-          processedHtml = replaceImageUrls(processedHtml, urlMap);
-        }
-        // Non-fatal: if image re-hosting fails, continue with original URLs
-      }
-
-      // Step 2: AI content split
-      const splitRes = await fetch('/api/ai-split-area-content', {
+      const splitRes = await fetch('/api/ai-split-area-batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html: processedHtml }),
+        body: JSON.stringify({
+          records: [{ rowIndex: sampleRecord.rowIndex, bodyHtml }],
+        }),
       });
 
       if (!splitRes.ok) {
@@ -250,18 +211,26 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
         throw new Error((err as { error?: string }).error ?? 'AI split failed');
       }
 
-      const splitData = await splitRes.json() as {
-        body: string;
-        why_body: string;
-        closing_body: string;
-        faq?: string;
-        body_image?: string;
-        body_image_alt?: string;
-        why_image?: string;
-        why_image_alt?: string;
-        closing_image?: string;
-        closing_image_alt?: string;
+      const splitJson = await splitRes.json() as {
+        results?: Array<{
+          rowIndex: number;
+          body: string;
+          why_body: string;
+          closing_body: string;
+          faq?: string;
+          body_image?: string;
+          body_image_alt?: string;
+          why_image?: string;
+          why_image_alt?: string;
+          closing_image?: string;
+          closing_image_alt?: string;
+        }>;
       };
+      const splitData = splitJson.results?.find((result) => result.rowIndex === sampleRecord.rowIndex);
+
+      if (!splitData) {
+        throw new Error('AI split returned no result for the selected sample row');
+      }
 
       setCorrections((prev) => ({
         ...prev,
@@ -270,31 +239,17 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
         why_body: splitData.why_body,
         closing_body: splitData.closing_body,
         ...(splitData.faq !== undefined ? { faq: splitData.faq } : {}),
-        ...(splitData.body_image    ? { body_image: splitData.body_image, body_image_alt: splitData.body_image_alt ?? '' } : {}),
-        ...(splitData.why_image     ? { why_image:  splitData.why_image,  why_image_alt:  splitData.why_image_alt  ?? '' } : {}),
+        ...(splitData.body_image ? { body_image: splitData.body_image, body_image_alt: splitData.body_image_alt ?? '' } : {}),
+        ...(splitData.why_image ? { why_image: splitData.why_image, why_image_alt: splitData.why_image_alt ?? '' } : {}),
         ...(splitData.closing_image ? { closing_image: splitData.closing_image, closing_image_alt: splitData.closing_image_alt ?? '' } : {}),
       }));
 
-      // Rehost OG image if it's an external URL
-      const ogImage = corrections.og_image ?? '';
-      if (ogImage.startsWith('http')) {
-        try {
-          const ogRes = await fetch('/api/bulk-import-images', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ imageUrls: [ogImage] }),
-          });
-          if (ogRes.ok) {
-            const ogData = await ogRes.json() as { mappings: { originalUrl: string; newUrl: string }[] };
-            const newOg = ogData.mappings.find((m) => m.originalUrl === ogImage)?.newUrl;
-            if (newOg) {
-              setCorrections((prev) => ({ ...prev, og_image: newOg }));
-            }
-          }
-        } catch {
-          // Non-fatal: OG image rehosting failed, keep original URL
-        }
-      }
+      updateState({
+        pipelineContext: {
+          ...state.pipelineContext,
+          areaAiSplitEnabled: true,
+        },
+      });
     } catch (err) {
       console.error('AI split error:', err);
       setAiSplitError(err instanceof Error ? err.message : 'AI split failed');
@@ -307,12 +262,16 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
     // Always flush any pending corrections as rules before moving on,
     // so edits the user made (e.g. stripping the firm name from the title)
     // are saved even if they didn't click "Learn from Corrections" first.
-    if (hasChanges) {
-      handleInferRules();
-    }
-    if (!state.recipe) {
-      updateState({ recipe });
-    }
+    const nextRecipe = hasChanges ? (buildUpdatedRecipe() ?? (state.recipe ?? recipe)) : (state.recipe ?? recipe);
+
+    updateState({
+      recipe: nextRecipe,
+      pipelineContext: {
+        ...state.pipelineContext,
+        areaAiSplitEnabled: state.pipelineContext.areaAiSplitEnabled || corrections.__ai_split_mode === 'true',
+        samplePreviewSnapshot: correctedPreview ? buildSamplePreviewSnapshot(correctedPreview) : state.pipelineContext.samplePreviewSnapshot,
+      },
+    });
     onNext();
   };
 
@@ -328,6 +287,32 @@ export default function StepTeachRecipe({ state, updateState, onNext, onBack }: 
 
     return false;
   }, [corrections, initialCorrections, mappedSample]);
+
+  useEffect(() => {
+    if (!correctedPreview) return;
+
+    const nextSnapshot = buildSamplePreviewSnapshot(correctedPreview);
+    const nextAiSplitEnabled = state.pipelineContext.areaAiSplitEnabled || corrections.__ai_split_mode === 'true';
+    const currentSnapshot = state.pipelineContext.samplePreviewSnapshot;
+    const snapshotChanged = !currentSnapshot
+      || currentSnapshot.rowIndex !== nextSnapshot.rowIndex
+      || currentSnapshot.chosenTitle !== nextSnapshot.chosenTitle
+      || currentSnapshot.resolvedPath !== nextSnapshot.resolvedPath
+      || currentSnapshot.aiSplitMode !== nextSnapshot.aiSplitMode
+      || JSON.stringify(currentSnapshot.preparedData) !== JSON.stringify(nextSnapshot.preparedData);
+
+    if (!snapshotChanged && nextAiSplitEnabled === state.pipelineContext.areaAiSplitEnabled) {
+      return;
+    }
+
+    updateState({
+      pipelineContext: {
+        ...state.pipelineContext,
+        areaAiSplitEnabled: nextAiSplitEnabled,
+        samplePreviewSnapshot: nextSnapshot,
+      },
+    });
+  }, [correctedPreview, corrections.__ai_split_mode, state.pipelineContext.areaAiSplitEnabled, state.pipelineContext.samplePreviewSnapshot, updateState]);
 
   const isAreaTemplate = state.templateType === 'area';
   const aiAvailable = state.aiAvailable ?? false;

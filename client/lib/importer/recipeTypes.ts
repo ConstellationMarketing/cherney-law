@@ -191,6 +191,37 @@ export interface ReviewState {
   decisions: Record<number, ReviewDecision>;
 }
 
+export interface AreaAiSplitResult {
+  body: string;
+  why_body: string;
+  closing_body: string;
+  faq?: string;
+  body_image?: string;
+  body_image_alt?: string;
+  why_image?: string;
+  why_image_alt?: string;
+  closing_image?: string;
+  closing_image_alt?: string;
+}
+
+export interface PreviewPipelineSnapshot {
+  rowIndex: number;
+  chosenTitle: string;
+  resolvedPath: string;
+  aiSplitMode: boolean;
+  preparedData: Record<string, unknown>;
+}
+
+export interface ImportPipelineContext {
+  areaAiSplitEnabled: boolean;
+  samplePreviewSnapshot: PreviewPipelineSnapshot | null;
+}
+
+export const defaultImportPipelineContext: ImportPipelineContext = {
+  areaAiSplitEnabled: false,
+  samplePreviewSnapshot: null,
+};
+
 /** Review decision for a single record */
 export interface ReviewDecision {
   action: 'approve' | 'edit' | 'skip';
@@ -236,4 +267,6 @@ export interface WizardState {
   aiAvailable: boolean;
   /** Row index of the record chosen as the Build Recipe sample (defaults to 0) */
   sampleRowIndex?: number;
+  /** Shared importer pipeline state used by preview and batch */
+  pipelineContext: ImportPipelineContext;
 }

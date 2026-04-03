@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { WizardState } from '@site/lib/importer/recipeTypes';
+import { defaultImportPipelineContext, type WizardState } from '@site/lib/importer/recipeTypes';
 import type { WizardStep } from '@site/lib/importer/types';
 import { defaultFilterOptions } from '@site/lib/importer/types';
 import { defaultAiSettings } from '@site/lib/importer/recipeTypes';
@@ -43,6 +43,7 @@ const initialState: WizardState = {
   filterOptions: defaultFilterOptions.practice,
   aiSettings: defaultAiSettings,
   aiAvailable: false,
+  pipelineContext: defaultImportPipelineContext,
 };
 
 export default function ImportWizard() {

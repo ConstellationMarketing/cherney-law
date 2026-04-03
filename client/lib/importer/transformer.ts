@@ -1,10 +1,14 @@
-// Transformer — Full pipeline orchestrator
 // Runs all stages in sequence on source records to produce TransformedRecords
 // CRITICAL Rule 3: ONE canonical pipeline for all paths
 
-import type { Recipe } from './recipeTypes';
+import type {
+  AreaAiSplitResult,
+  PreviewPipelineSnapshot,
+  Recipe,
+} from './recipeTypes';
 import type {
   FilterOptions,
+  MappedRecord,
   MappingConfig,
   SourceRecord,
   TemplateType,
@@ -30,7 +34,17 @@ export interface TransformOptions {
   confidenceThreshold: number;
   /** Keys to skip HTML normalization for (e.g. AI-split fields already cleaned server-side) */
   skipNormalizationKeys?: string[];
+  areaAiSplitResultsByRow?: Record<number, AreaAiSplitResult>;
+  preprocessedPipeline?: PreprocessedPipelineRecords;
+  previewSnapshot?: PreviewPipelineSnapshot | null;
   onProgress?: (current: number, total: number) => void;
+}
+
+export interface PreprocessedPipelineRecords {
+  cleanedRecords: SourceRecord[];
+  mappedRecords: MappedRecord[];
+  normalizedRecords: MappedRecord[];
+  recipedRecords: MappedRecord[];
 }
 
 export interface SamplePreviewRecord {
@@ -90,10 +104,103 @@ export function getSkipNormalizationKeysForRecord(
   return hasExplicitAiSplit ? [...AREA_SKIP_NORMALIZATION_KEYS] : undefined;
 }
 
+export function buildPreprocessedPipelineRecords(
+  records: SourceRecord[],
+  options: Pick<TransformOptions, 'templateType' | 'mappingConfig' | 'recipe' | 'filterOptions' | 'skipNormalizationKeys'>
+): PreprocessedPipelineRecords {
+  const {
+    templateType,
+    mappingConfig,
+    recipe,
+    filterOptions,
+    skipNormalizationKeys,
+  } = options;
+  const contentFieldKeys = getContentFieldKeys(templateType);
+
+  const cleanedRecords = cleanSourceRecords(records, contentFieldKeys, filterOptions);
+  const mappedRecords = applyFieldMapping(cleanedRecords, mappingConfig);
+  const normalizedRecords = mappedRecords.map((record) => {
+    const recordSkipNormalizationKeys = skipNormalizationKeys ?? getSkipNormalizationKeysForRecord(templateType, record.mappedData);
+    return {
+      ...record,
+      mappedData: normalizeContentFields(record.mappedData, contentFieldKeys, filterOptions, recordSkipNormalizationKeys),
+    };
+  });
+  const recipedRecords = executeRecipe(normalizedRecords, recipe);
+
+  return {
+    cleanedRecords,
+    mappedRecords,
+    normalizedRecords,
+    recipedRecords,
+  };
+}
+
+function applyAreaAiSplitResults(
+  records: MappedRecord[],
+  areaAiSplitResultsByRow?: Record<number, AreaAiSplitResult>
+): MappedRecord[] {
+  if (!areaAiSplitResultsByRow) return records;
+
+  return records.map((record) => {
+    const splitResult = areaAiSplitResultsByRow[record.rowIndex];
+    if (!splitResult) return record;
+
+    return {
+      ...record,
+      mappedData: {
+        ...record.mappedData,
+        __ai_split_mode: 'true',
+        body: splitResult.body ?? '',
+        why_body: splitResult.why_body ?? '',
+        closing_body: splitResult.closing_body ?? '',
+        ...(splitResult.faq !== undefined ? { faq: splitResult.faq } : {}),
+        ...(splitResult.body_image !== undefined ? { body_image: splitResult.body_image } : {}),
+        ...(splitResult.body_image_alt !== undefined ? { body_image_alt: splitResult.body_image_alt } : {}),
+        ...(splitResult.why_image !== undefined ? { why_image: splitResult.why_image } : {}),
+        ...(splitResult.why_image_alt !== undefined ? { why_image_alt: splitResult.why_image_alt } : {}),
+        ...(splitResult.closing_image !== undefined ? { closing_image: splitResult.closing_image } : {}),
+        ...(splitResult.closing_image_alt !== undefined ? { closing_image_alt: splitResult.closing_image_alt } : {}),
+      },
+    };
+  });
+}
+
+function getAreaSectionBody(data: Record<string, unknown>, key: 'introSection' | 'whySection' | 'closingSection'): string {
+  const content = data.content as Record<string, unknown> | undefined;
+  return String((content?.[key] as Record<string, unknown> | undefined)?.body ?? '');
+}
+
+function buildPreviewComparisonAction(
+  snapshot: PreviewPipelineSnapshot,
+  preparedData: Record<string, unknown>
+): string {
+  const titleMatches = String(preparedData.title ?? '') === snapshot.chosenTitle;
+  const pathMatches = String(preparedData.url_path ?? '') === snapshot.resolvedPath;
+  const snapshotHasAreaContent = Boolean((snapshot.preparedData.content as Record<string, unknown> | undefined)?.introSection);
+
+  if (!snapshotHasAreaContent) {
+    const matches = JSON.stringify(preparedData) === JSON.stringify(snapshot.preparedData);
+    return matches
+      ? 'MATCH — build recipe preview and batch preparedData are identical for this row'
+      : 'MISMATCH — build recipe preview and batch preparedData differ for this row';
+  }
+
+  const introMatches = getAreaSectionBody(preparedData, 'introSection') === getAreaSectionBody(snapshot.preparedData, 'introSection');
+  const whyMatches = getAreaSectionBody(preparedData, 'whySection') === getAreaSectionBody(snapshot.preparedData, 'whySection');
+  const closingMatches = getAreaSectionBody(preparedData, 'closingSection') === getAreaSectionBody(snapshot.preparedData, 'closingSection');
+  const faqMatches = JSON.stringify((preparedData.content as Record<string, unknown> | undefined)?.faq ?? null) === JSON.stringify((snapshot.preparedData.content as Record<string, unknown> | undefined)?.faq ?? null);
+  const isMatch = titleMatches && pathMatches && introMatches && whyMatches && closingMatches && faqMatches;
+
+  return isMatch
+    ? 'MATCH — build recipe preview and batch preparedData are identical for this row'
+    : `MISMATCH — title=${titleMatches ? 'ok' : 'diff'}, path=${pathMatches ? 'ok' : 'diff'}, intro=${introMatches ? 'ok' : 'diff'}, why=${whyMatches ? 'ok' : 'diff'}, closing=${closingMatches ? 'ok' : 'diff'}, faq=${faqMatches ? 'ok' : 'diff'}`;
+}
+
 /**
  * Run the full transformation pipeline on source records.
  * This is the ONE canonical pipeline — all paths must use this.
- * 
+ *
  * Pipeline order:
  * 1-4: Source cleaning (shortcodes, encoding, whitespace, empty wrappers)
  * 5:   HTML normalization (content extraction, filtering, URL normalization, etc.)
@@ -118,30 +225,25 @@ export function transformRecords(
   } = options;
 
   const total = records.length;
-  const contentFieldKeys = getContentFieldKeys(templateType);
-
-  // Stage 1-4: Clean source records
-  const cleaned = cleanSourceRecords(records, contentFieldKeys, filterOptions);
-  onProgress?.(Math.floor(total * 0.1), total);
-
-  // Stage 6: Apply field mapping (BEFORE HTML normalization so keys become template field keys)
-  const mapped = applyFieldMapping(cleaned, mappingConfig);
-  onProgress?.(Math.floor(total * 0.3), total);
-
-  // Stage 5: Normalize HTML for content fields (now keys match template field keys)
-  // Skip normalization for AI-split fields that were already cleaned server-side
-  const normalized = mapped.map((record) => {
-    const recordSkipNormalizationKeys = skipNormalizationKeys ?? getSkipNormalizationKeysForRecord(templateType, record.mappedData);
-    return {
-      ...record,
-      mappedData: normalizeContentFields(record.mappedData, contentFieldKeys, filterOptions, recordSkipNormalizationKeys),
-    };
+  const preprocessed = options.preprocessedPipeline ?? buildPreprocessedPipelineRecords(records, {
+    templateType,
+    mappingConfig,
+    recipe,
+    filterOptions,
+    skipNormalizationKeys,
   });
-  onProgress?.(Math.floor(total * 0.4), total);
 
-  // Stage 7: Apply recipe rules
-  const reciped = executeRecipe(normalized, recipe);
+  onProgress?.(Math.floor(total * 0.1), total);
+  onProgress?.(Math.floor(total * 0.3), total);
+  onProgress?.(Math.floor(total * 0.4), total);
   onProgress?.(Math.floor(total * 0.5), total);
+
+  const cleaned = preprocessed.cleanedRecords;
+  const mapped = preprocessed.mappedRecords;
+  const recipedBase = preprocessed.recipedRecords;
+  const reciped = templateType === 'area'
+    ? applyAreaAiSplitResults(recipedBase, options.areaAiSplitResultsByRow)
+    : recipedBase;
 
   // Stage 8: Prepare records (H2 split, FAQ, slug)
   const prepared = prepareRecords(reciped, templateType);
@@ -265,12 +367,27 @@ export function transformRecords(
           action: `Intro: ${countWords(introBody)} words, Why: ${countWords(whyBody)} words, Closing: ${countWords(closingBody)} words`,
         });
       }
+
+      const splitApplied = Boolean(options.areaAiSplitResultsByRow?.[record.rowIndex]);
+      transformationLog.push({
+        stage: 'prepare_records',
+        field: 'pipelineAiSplit',
+        action: splitApplied ? 'enabled — batch used shared post-normalization/post-recipe body input' : 'disabled',
+      });
+    }
+
+    if (options.previewSnapshot && options.previewSnapshot.rowIndex === record.rowIndex) {
+      transformationLog.push({
+        stage: 'prepare_records',
+        field: 'previewBatchParity',
+        action: buildPreviewComparisonAction(options.previewSnapshot, record.data),
+      });
     }
 
     // Log recipe rules that affected this record's content fields
     if (recipe.rules.length > 0) {
       const mappedBefore = mapped[i]?.mappedData ?? {};
-      const mappedAfter = reciped[i]?.mappedData ?? {};
+      const mappedAfter = preprocessed.recipedRecords[i]?.mappedData ?? {};
       for (const rule of recipe.rules) {
         if (!rule.enabled) continue;
         const field = rule.targetField;
@@ -304,6 +421,16 @@ export function transformRecords(
 
   onProgress?.(total, total);
   return results;
+}
+
+export function buildSamplePreviewSnapshot(preview: SamplePreviewRecord): PreviewPipelineSnapshot {
+  return {
+    rowIndex: preview.rowIndex,
+    chosenTitle: preview.chosenTitle,
+    resolvedPath: preview.resolvedPath,
+    aiSplitMode: preview.previewDebug.aiSplitMode,
+    preparedData: preview.allocatedData,
+  };
 }
 
 function buildPreviewMappedData(
