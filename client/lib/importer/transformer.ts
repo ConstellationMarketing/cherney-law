@@ -52,7 +52,9 @@ export interface SamplePreviewRecord {
     correctionsBodyLength: number;
     originalSourceUrl: string;
     resolvedUrlPath: string;
+    inputBodyPreview: string;
     introPreview: string;
+    allocatedIntroPath: string;
   };
 }
 
@@ -391,7 +393,9 @@ export function getSamplePreviewRecord(
       correctionsBodyLength: String(overrides.body ?? '').length,
       originalSourceUrl,
       resolvedUrlPath: String((allocatedData.url_path as string | undefined) ?? resolvedPath.path),
+      inputBodyPreview: String(normalizedMappedData.body ?? '').substring(0, 300),
       introPreview: introBody.substring(0, 200),
+      allocatedIntroPath: templateType === 'area' ? 'allocatedData.content.introSection.body' : 'allocatedData.body',
     },
   };
 }

@@ -160,6 +160,80 @@ function joinSections(sections: H2Section[]): string {
   return sections.map((s) => s.html).join("\n\n");
 }
 
+function isPreambleSection(section: H2Section): boolean {
+  return /^\(preamble\)$/i.test(section.heading.trim());
+}
+
+function isFaqHeading(heading: string): boolean {
+  return /faq|frequent|frequently\s+asked|q\s*&\s*a|common\s+question/i.test(heading);
+}
+
+function buildDeterministicAreaSplit(
+  sections: H2Section[],
+  classifications?: string[] | null
+): {
+  body: string;
+  why_body: string;
+  closing_body: string;
+  faq: string;
+} {
+  const faqSections: H2Section[] = [];
+  const contentSections: H2Section[] = [];
+
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i];
+    const classifiedAsFaq = classifications?.[i] === 'faq';
+    const heuristicFaq = !classifications && (isFaqHeading(section.heading) || section.hasQaStructure);
+
+    if (classifiedAsFaq || heuristicFaq) {
+      faqSections.push(section);
+    } else {
+      contentSections.push(section);
+    }
+  }
+
+  const faqHtml = faqSections.length ? stripResourceSubSections(joinSections(faqSections)) : '';
+  const faqItems = faqHtml ? extractFaqItems(faqHtml) : [];
+
+  if (contentSections.length === 0) {
+    return {
+      body: '',
+      why_body: '',
+      closing_body: '',
+      faq: JSON.stringify(faqItems),
+    };
+  }
+
+  const introSections: H2Section[] = [];
+  let contentCursor = 0;
+
+  if (isPreambleSection(contentSections[0])) {
+    introSections.push(contentSections[0]);
+    contentCursor = 1;
+  }
+
+  if (contentSections[contentCursor]) {
+    introSections.push(contentSections[contentCursor]);
+    contentCursor += 1;
+  }
+
+  if (introSections.length === 0 && contentSections[0]) {
+    introSections.push(contentSections[0]);
+    contentCursor = 1;
+  }
+
+  const remainingSections = contentSections.slice(contentCursor);
+  const closingSections = remainingSections.length > 0 ? [remainingSections[remainingSections.length - 1]] : [];
+  const whySections = remainingSections.length > 1 ? remainingSections.slice(0, -1) : [];
+
+  return {
+    body: joinSections(introSections),
+    why_body: joinSections(whySections),
+    closing_body: joinSections(closingSections),
+    faq: JSON.stringify(faqItems),
+  };
+}
+
 /**
  * Extract the first image from an HTML string.
  * Returns the image src, alt text, and HTML with the image removed.
@@ -268,71 +342,16 @@ function smartFallbackSplit(sections: H2Section[]): {
   closing_image: string;
   closing_image_alt: string;
 } {
-  const empty = {
-    body: '', why_body: '', closing_body: '', faq: '[]',
-    body_image: '', body_image_alt: '',
-    why_image: '', why_image_alt: '',
-    closing_image: '', closing_image_alt: '',
-  };
-
-  const faqSections: H2Section[] = [];
-  const contentSections: H2Section[] = [];
-
-  for (const s of sections) {
-    if (/faq|frequent|question/i.test(s.heading)) {
-      faqSections.push(s);
-    } else {
-      contentSections.push(s);
-    }
-  }
-
-  const faqHtml = faqSections.length ? stripResourceSubSections(joinSections(faqSections)) : '';
-  const faqItems = faqHtml ? extractFaqItems(faqHtml) : [];
-
-  const n = contentSections.length;
-  if (n === 0) return { ...empty, faq: JSON.stringify(faqItems) };
-
-  if (n === 1) {
-    const bodyImg = extractFirstImage(contentSections[0].html);
-    return {
-      ...empty,
-      body: bodyImg.cleanedHtml,
-      body_image: bodyImg.src,
-      body_image_alt: bodyImg.alt,
-      faq: JSON.stringify(faqItems),
-    };
-  }
-
-  if (n === 2) {
-    const bodyImg = extractFirstImage(contentSections[0].html);
-    const closingImg = extractFirstImage(contentSections[1].html);
-    return {
-      ...empty,
-      body: bodyImg.cleanedHtml,
-      body_image: bodyImg.src,
-      body_image_alt: bodyImg.alt,
-      closing_body: closingImg.cleanedHtml,
-      closing_image: closingImg.src,
-      closing_image_alt: closingImg.alt,
-      faq: JSON.stringify(faqItems),
-    };
-  }
-
-  // 3+: 1 in intro, last in closing, middle in why
-  const introSection = contentSections[0];
-  const closingSection = contentSections[n - 1];
-  const whySectionsList = contentSections.slice(1, n - 1);
-
-  const bodyImg = extractFirstImage(introSection.html);
-  const closingImg = extractFirstImage(closingSection.html);
-  const whyHtml = joinSections(whySectionsList);
-  const whyImg = extractFirstImage(whyHtml);
+  const split = buildDeterministicAreaSplit(sections);
+  const bodyImg = extractFirstImage(split.body);
+  const whyImg = extractFirstImage(split.why_body);
+  const closingImg = extractFirstImage(split.closing_body);
 
   return {
     body: bodyImg.cleanedHtml,
     why_body: whyImg.cleanedHtml,
     closing_body: closingImg.cleanedHtml,
-    faq: JSON.stringify(faqItems),
+    faq: split.faq,
     body_image: bodyImg.src,
     body_image_alt: bodyImg.alt,
     why_image: whyImg.src,
@@ -442,37 +461,16 @@ The array must have exactly ${sections.length} entries, one per section, in orde
       return;
     }
 
-    const introSections: H2Section[] = [];
-    const whySections: H2Section[] = [];
-    const closingSections: H2Section[] = [];
-    const faqSections: H2Section[] = [];
-
-    for (let i = 0; i < sections.length; i++) {
-      const cls = classifications[i];
-      if (cls === "why") whySections.push(sections[i]);
-      else if (cls === "closing") closingSections.push(sections[i]);
-      else if (cls === "faq") faqSections.push(sections[i]);
-      else introSections.push(sections[i]); // "intro" or unrecognized → intro
-    }
-
-    const faqHtml = faqSections.length ? stripResourceSubSections(joinSections(faqSections)) : '';
-    const faqItems = faqHtml ? extractFaqItems(faqHtml) : [];
-
-    // Assemble grouped HTML strings
-    const bodyHtml = joinSections(introSections);
-    const whyHtml = joinSections(whySections);
-    const closingHtml = joinSections(closingSections);
-
-    // Extract first image from each group, removing it from the HTML
-    const bodyImg = extractFirstImage(bodyHtml);
-    const whyImg = extractFirstImage(whyHtml);
-    const closingImg = extractFirstImage(closingHtml);
+    const split = buildDeterministicAreaSplit(sections, classifications);
+    const bodyImg = extractFirstImage(split.body);
+    const whyImg = extractFirstImage(split.why_body);
+    const closingImg = extractFirstImage(split.closing_body);
 
     res.json({
       body: bodyImg.cleanedHtml,
       why_body: whyImg.cleanedHtml,
       closing_body: closingImg.cleanedHtml,
-      faq: JSON.stringify(faqItems),
+      faq: split.faq,
       body_image: bodyImg.src,
       body_image_alt: bodyImg.alt,
       why_image: whyImg.src,

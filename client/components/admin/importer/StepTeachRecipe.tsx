@@ -666,6 +666,12 @@ function AllocatedPreviewPanel({
               <span className="font-medium text-gray-700">resolvedUrlPath:</span> {preview.previewDebug.resolvedUrlPath || '—'}
             </div>
             <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2 sm:col-span-3">
+              <span className="font-medium text-gray-700">inputBodyPreview:</span> {preview.previewDebug.inputBodyPreview || '—'}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2 sm:col-span-3">
+              <span className="font-medium text-gray-700">allocatedIntroPath:</span> {preview.previewDebug.allocatedIntroPath}
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2 sm:col-span-3">
               <span className="font-medium text-gray-700">introPreview:</span> {preview.previewDebug.introPreview || '—'}
             </div>
             <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2 sm:col-span-3">

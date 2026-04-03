@@ -168,11 +168,20 @@ function allocateForAreaPage(
 
   introBody = sanitizeFragmentHtml(introBody, normalized);
   if (!introBody && firstBlock) {
-    introBody = sanitizeFragmentHtml(joinBlockBodies([firstBlock], leadHtml), normalized)
+    const hardFallbackBody = sanitizeFragmentHtml(joinBlockBodies([firstBlock], leadHtml), normalized)
       || sanitizeFragmentHtml(joinBlockBodies([firstBlock]), normalized)
       || sanitizeFragmentHtml(firstBlock.bodyHtml, normalized);
-    if (introBody && allocationLog.intro.length === 0) {
-      allocationLog.intro.push(0);
+
+    if (hardFallbackBody) {
+      introBody = hardFallbackBody;
+      introHeading = introHeading || pickSectionHeading([firstBlock]);
+      introImages = introImages.length > 0 ? introImages : collectImages([firstBlock]);
+      introSource = leadHtml ? 'preH2' : 'firstBlockFallback';
+      fallbackRan = true;
+      fallbackReason = 'Hard invariant applied: intro was empty after sanitization, so the first non-FAQ block was forced into intro';
+      if (allocationLog.intro.length === 0) {
+        allocationLog.intro.push(0);
+      }
     }
   }
 

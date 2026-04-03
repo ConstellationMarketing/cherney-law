@@ -182,6 +182,70 @@ function joinSections(sections: H2Section[]): string {
   return sections.map((s) => s.html).join("\n\n");
 }
 
+function isPreambleSection(section: H2Section): boolean {
+  return /^\(preamble\)$/i.test(section.heading.trim());
+}
+
+function isFaqHeading(heading: string): boolean {
+  return /faq|frequent|frequently\s+asked|q\s*&\s*a|common\s+question/i.test(heading);
+}
+
+function buildDeterministicAreaSplit(
+  sections: H2Section[],
+  classifications?: string[] | null
+): SplitResult {
+  const faqSections: H2Section[] = [];
+  const contentSections: H2Section[] = [];
+
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i];
+    const classifiedAsFaq = classifications?.[i] === 'faq';
+    const heuristicFaq = !classifications && (isFaqHeading(section.heading) || section.hasQaStructure);
+
+    if (classifiedAsFaq || heuristicFaq) {
+      faqSections.push(section);
+    } else {
+      contentSections.push(section);
+    }
+  }
+
+  const faqHtml = faqSections.length ? stripResourceSubSections(joinSections(faqSections)) : '';
+  const faqItems = faqHtml ? extractFaqItems(faqHtml) : [];
+
+  if (contentSections.length === 0) {
+    return { body: '', why_body: '', closing_body: '', faq: JSON.stringify(faqItems) };
+  }
+
+  const introSections: H2Section[] = [];
+  let contentCursor = 0;
+
+  if (isPreambleSection(contentSections[0])) {
+    introSections.push(contentSections[0]);
+    contentCursor = 1;
+  }
+
+  if (contentSections[contentCursor]) {
+    introSections.push(contentSections[contentCursor]);
+    contentCursor += 1;
+  }
+
+  if (introSections.length === 0 && contentSections[0]) {
+    introSections.push(contentSections[0]);
+    contentCursor = 1;
+  }
+
+  const remainingSections = contentSections.slice(contentCursor);
+  const closingSections = remainingSections.length > 0 ? [remainingSections[remainingSections.length - 1]] : [];
+  const whySections = remainingSections.length > 1 ? remainingSections.slice(0, -1) : [];
+
+  return {
+    body: joinSections(introSections),
+    why_body: joinSections(whySections),
+    closing_body: joinSections(closingSections),
+    faq: JSON.stringify(faqItems),
+  };
+}
+
 // Fix 3 — Proper heading boundary finder (avoids matching <header>, <hr>, etc.)
 function indexOfNextHeading(html: string, from: number): number {
   const pattern = /<h[2-4][^>]*>/gi;
@@ -403,32 +467,7 @@ function emptyImages(): {
 
 // Fix 7 — Smart fallback that does FAQ keyword detection and reasonable section assignment
 function smartFallbackSplit(sections: H2Section[]): SplitResult {
-  const faqSections: H2Section[] = [];
-  const contentSections: H2Section[] = [];
-
-  for (const s of sections) {
-    if (/faq|frequent|frequently\s+asked|q\s*&\s*a|common\s+question/i.test(s.heading) || s.hasQaStructure) {
-      faqSections.push(s);
-    } else {
-      contentSections.push(s);
-    }
-  }
-
-  const faqHtml = faqSections.length ? stripResourceSubSections(joinSections(faqSections)) : '';
-  const faqItems = faqHtml ? extractFaqItems(faqHtml) : [];
-  const faqJson = JSON.stringify(faqItems);
-  const n = contentSections.length;
-
-  if (n === 0) return { body: "", why_body: "", closing_body: "", faq: faqJson };
-  if (n === 1) return { body: contentSections[0].html, why_body: "", closing_body: "", faq: faqJson };
-  if (n === 2) return { body: contentSections[0].html, why_body: "", closing_body: contentSections[1].html, faq: faqJson };
-
-  return {
-    body: contentSections[0].html,
-    why_body: contentSections.slice(1, n - 1).map((s) => s.html).join("\n\n"),
-    closing_body: contentSections[n - 1].html,
-    faq: faqJson,
-  };
+  return buildDeterministicAreaSplit(sections);
 }
 
 // ─── Per-record processing ───────────────────────────────────────────────────
@@ -474,28 +513,7 @@ async function processRecord(
   let split: SplitResult;
 
   if (classifications) {
-    const introSections: H2Section[] = [];
-    const whySections: H2Section[] = [];
-    const closingSections: H2Section[] = [];
-    const faqSections: H2Section[] = [];
-
-    for (let i = 0; i < sections.length; i++) {
-      const cls = classifications[i];
-      if (cls === "why") whySections.push(sections[i]);
-      else if (cls === "closing") closingSections.push(sections[i]);
-      else if (cls === "faq") faqSections.push(sections[i]);
-      else introSections.push(sections[i]);
-    }
-
-    const faqHtml = faqSections.length ? stripResourceSubSections(joinSections(faqSections)) : '';
-    const faqItems = faqHtml ? extractFaqItems(faqHtml) : [];
-
-    split = {
-      body: joinSections(introSections),
-      why_body: joinSections(whySections),
-      closing_body: joinSections(closingSections),
-      faq: JSON.stringify(faqItems),
-    };
+    split = buildDeterministicAreaSplit(sections, classifications);
   } else {
     // Fix 7: use smartFallbackSplit instead of evenSplit
     split = smartFallbackSplit(sections);
