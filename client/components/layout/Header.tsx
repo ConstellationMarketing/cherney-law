@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, ArrowRight, ChevronDown } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -21,6 +22,22 @@ interface HeaderProps {
   /** When true, the green top bar is made transparent so an underlying
    *  hero background image shows through (used on Homepage-2). */
   transparentTopBar?: boolean;
+}
+
+function normalizeInternalHref(href?: string, external?: boolean) {
+  if (!href || external) return href || "#";
+  if (
+    href.startsWith("/") ||
+    href.startsWith("#") ||
+    href.startsWith("http://") ||
+    href.startsWith("https://") ||
+    href.startsWith("mailto:") ||
+    href.startsWith("tel:")
+  ) {
+    return href;
+  }
+
+  return `/${href}`;
 }
 
 export default function Header({ transparentTopBar = false }: HeaderProps) {
@@ -90,7 +107,7 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                                 asChild
                               >
                                 <Link
-                                  to={child.href || "#"}
+                                  to={normalizeInternalHref(child.href, child.external || child.openInNewTab)}
                                   className="font-outfit text-[19px] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer px-4 py-3"
                                   target={
                                     child.external || child.openInNewTab
@@ -112,7 +129,7 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                       ) : (
                         // Simple link (no dropdown)
                         <Link
-                          to={item.href || "#"}
+                          to={normalizeInternalHref(item.href, item.external || item.openInNewTab)}
                           className={navItemClass}
                           target={
                             item.external || item.openInNewTab
@@ -136,7 +153,7 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
 
             {/* Contact CTA Button - Desktop */}
             <div className="hidden md:block w-[280px] ml-6">
-              <Link to={settings.headerCtaUrl}>
+              <Link to={normalizeInternalHref(settings.headerCtaUrl)}>
                 <Button className="bg-white text-black font-outfit text-[22px] py-[25px] px-[15.4px] h-auto w-[200px] border-2 border-transparent hover:border-black hover:bg-law-accent hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
                   {settings.headerCtaText}
                   <ArrowRight className="w-5 h-5 group-hover:text-white" />
@@ -171,7 +188,7 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                           <AccordionTrigger className="font-outfit text-[20px] text-white py-[10px] px-[5%] hover:no-underline hover:opacity-80">
                             {item.href ? (
                               <Link
-                                to={item.href}
+                                to={normalizeInternalHref(item.href, item.external || item.openInNewTab)}
                                 className="flex-1 text-left"
                                 onClick={(e) => e.stopPropagation()}
                                 target={
@@ -197,7 +214,7 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                             {item.children.map((child) => (
                               <Link
                                 key={child.id || child.href}
-                                to={child.href || "#"}
+                                to={normalizeInternalHref(child.href, child.external || child.openInNewTab)}
                                 className="block font-outfit text-[18px] text-gray-300 py-2 hover:text-law-accent transition-colors"
                                 target={
                                   child.external || child.openInNewTab
@@ -220,7 +237,7 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                       // Simple link (no accordion)
                       <Link
                         key={item.id || item.href}
-                        to={item.href || "#"}
+                        to={normalizeInternalHref(item.href, item.external || item.openInNewTab)}
                         className="font-outfit text-[20px] text-white py-[10px] px-[5%] border-b border-black/5 hover:opacity-80 transition-opacity"
                         target={
                           item.external || item.openInNewTab
@@ -237,7 +254,7 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                       </Link>
                     )
                   )}
-                  <Link to={settings.headerCtaUrl} className="mt-4">
+                  <Link to={normalizeInternalHref(settings.headerCtaUrl)} className="mt-4">
                     <Button className="bg-white text-black font-outfit text-[22px] py-[25px] w-full border-2 border-transparent hover:border-black hover:bg-law-accent hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
                       {settings.headerCtaText}
                       <ArrowRight className="w-5 w-5 group-hover:text-white" />

@@ -53,13 +53,23 @@ export default function DynamicCmsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let isActive = true;
+
     // Normalise path for lookup (ensure trailing slash)
     const normPath = pathname.endsWith("/") ? pathname : `${pathname}/`;
 
+    setIsLoading(true);
+    setPage(undefined);
+    setIsBlogPost(false);
+
     if (cmsPageCache.has(normPath)) {
+      if (!isActive) return;
       setPage(cmsPageCache.get(normPath)!);
+      setIsBlogPost(false);
       setIsLoading(false);
-      return;
+      return () => {
+        isActive = false;
+      };
     }
 
     async function fetchPage() {
@@ -90,6 +100,8 @@ export default function DynamicCmsPage() {
 
         const data = await response.json();
 
+        if (!isActive) return;
+
         if (Array.isArray(data) && data.length > 0) {
           const p = data[0] as CmsPage;
           cmsPageCache.set(normPath, p);
@@ -106,16 +118,20 @@ export default function DynamicCmsPage() {
             if (!isBlog) setPage(null);
           } else {
             const found = await checkBlogPost(slug);
+            if (!isActive) return;
             blogSlugCache.set(slug, found);
             setIsBlogPost(found);
             if (!found) setPage(null);
           }
         }
       } catch (err) {
+        if (!isActive) return;
         console.error(`[DynamicCmsPage] Error loading ${normPath}:`, err);
         setPage(null);
       } finally {
-        setIsLoading(false);
+        if (isActive) {
+          setIsLoading(false);
+        }
       }
     }
 
@@ -141,6 +157,10 @@ export default function DynamicCmsPage() {
     }
 
     fetchPage();
+
+    return () => {
+      isActive = false;
+    };
   }, [pathname]);
 
   // Loading state
