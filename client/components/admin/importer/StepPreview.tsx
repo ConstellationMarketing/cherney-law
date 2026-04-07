@@ -27,6 +27,7 @@ interface SectionPreview {
   label: string;
   heading?: string;
   bodyPreview?: string;
+  note?: string;
   empty: boolean;
   itemCount?: number;
   firstItem?: string;
@@ -134,10 +135,37 @@ function getPracticeSections(content: Record<string, unknown>): SectionPreview[]
 function getPostSections(preparedData: Record<string, unknown>): SectionPreview[] {
   const body = stripTags(String(preparedData.body ?? ''));
   const excerpt = String(preparedData.excerpt ?? '');
+  const excerptSource = String(preparedData.excerpt_source ?? '');
+  const status = String(preparedData.status ?? 'draft');
+  const publishedAt = String(preparedData.published_at ?? '');
+  const categoryName = String(preparedData.category_name ?? '');
+  const categorySlug = String(preparedData.category_slug ?? '');
+
   return [
     {
-      label: 'Excerpt',
+      label: 'Status',
+      heading: status || 'draft',
+      note: publishedAt
+        ? `Publish date: ${publishedAt}`
+        : status === 'published'
+          ? 'Publish date will default to import time'
+          : 'No publish date provided',
+      empty: false,
+    },
+    {
+      label: 'Category',
+      heading: categoryName || categorySlug || undefined,
+      note: categoryName && categorySlug ? `Slug: ${categorySlug}` : undefined,
+      empty: !categoryName && !categorySlug,
+    },
+    {
+      label: excerptSource === 'mapped' ? 'Excerpt (Source)' : 'Excerpt',
       bodyPreview: excerpt ? truncate(excerpt, 200) : undefined,
+      note: excerpt
+        ? excerptSource === 'mapped'
+          ? 'Using source excerpt'
+          : 'Generated fallback excerpt'
+        : undefined,
       empty: !excerpt,
     },
     {
@@ -213,6 +241,9 @@ function ContentPreviewCard({ record, templateType }: ContentPreviewCardProps) {
                     )}
                     {s.bodyPreview && (
                       <p className="text-gray-600 leading-snug">{s.bodyPreview}</p>
+                    )}
+                    {s.note && (
+                      <p className="text-gray-500 mt-1 leading-snug">{s.note}</p>
                     )}
                     {s.itemCount !== undefined && (
                       <p className="text-gray-700">
@@ -318,6 +349,7 @@ export default function StepPreview({ state, updateState, onNext, onBack }: Prop
           <tbody className="divide-y divide-gray-100">
             {importReady.map((record) => {
               const title = String(record.preparedData.title ?? record.normalizedContent?.chosenTitle ?? '');
+              const cmsStatus = String(record.preparedData.status ?? 'draft');
               return (
                 <tr key={record.rowIndex} className="hover:bg-gray-50">
                   <td className="px-3 py-2 text-gray-400">{record.rowIndex + 1}</td>
@@ -325,7 +357,7 @@ export default function StepPreview({ state, updateState, onNext, onBack }: Prop
                   <td className="px-3 py-2 text-gray-600 font-mono max-w-[220px] truncate">{record.slug}</td>
                   <td className="px-3 py-2">
                     <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700">
-                      Ready
+                      Ready · {cmsStatus}
                     </span>
                   </td>
                   <td className="px-3 py-2">
@@ -365,7 +397,7 @@ export default function StepPreview({ state, updateState, onNext, onBack }: Prop
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
-        Clicking "Start Import" will create {importReady.length} {templateLabel} in draft status.
+        Clicking "Start Import" will import {importReady.length} {templateLabel} using each record&apos;s mapped CMS status.
         Records will be sent to the server in batches of 15.
       </div>
 

@@ -70,6 +70,86 @@ async function uploadSingleImage(supabase: ServiceClient, imageUrl: string): Pro
   }
 }
 
+function normalizeOptionalText(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+async function findPostCategoryBySlug(supabase: ServiceClient, slug: string) {
+  const { data, error } = await supabase
+    .from("post_categories")
+    .select("id, name, slug")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) throw new Error(`Category lookup failed: ${error.message}`);
+  return data;
+}
+
+async function findPostCategoryByName(supabase: ServiceClient, name: string) {
+  const { data, error } = await supabase
+    .from("post_categories")
+    .select("id, name, slug")
+    .ilike("name", name)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw new Error(`Category lookup failed: ${error.message}`);
+  return data;
+}
+
+async function resolvePostCategoryId(
+  supabase: ServiceClient,
+  categoryNameValue: unknown,
+  categorySlugValue: unknown
+): Promise<string | null> {
+  const categoryName = normalizeOptionalText(categoryNameValue);
+  const categorySlug = normalizeOptionalText(categorySlugValue);
+
+  if (categorySlug) {
+    const slugMatch = await findPostCategoryBySlug(supabase, categorySlug);
+    if (slugMatch) return slugMatch.id;
+  }
+
+  if (categoryName) {
+    const nameMatch = await findPostCategoryByName(supabase, categoryName);
+    if (nameMatch) return nameMatch.id;
+
+    const generatedSlug = slugify(categoryName);
+    if (!generatedSlug) return null;
+
+    const existingSlugMatch = await findPostCategoryBySlug(supabase, generatedSlug);
+    if (existingSlugMatch) return existingSlugMatch.id;
+
+    const { data, error } = await supabase
+      .from("post_categories")
+      .insert({
+        name: categoryName,
+        slug: categorySlug || generatedSlug,
+        description: null,
+      })
+      .select("id")
+      .single();
+
+    if (error) throw new Error(`Category creation failed: ${error.message}`);
+    return data.id;
+  }
+
+  return null;
+}
+
 interface ImportRecord {
   rowIndex: number;
   slug: string;
@@ -301,20 +381,11 @@ async function importPost(
   record: ImportRecord,
   mode: string
 ): Promise<string> {
-  // Resolve category if provided
-  let categoryId: string | null = null;
-  const categoryName = record.data.category_name as string | null;
-  if (categoryName) {
-    const { data: cat } = await supabase
-      .from("post_categories")
-      .select("id")
-      .ilike("name", categoryName)
-      .single();
-
-    if (cat) {
-      categoryId = cat.id;
-    }
-  }
+  const categoryId = await resolvePostCategoryId(
+    supabase,
+    record.data.category_name,
+    record.data.category_slug
+  );
 
   // Upload featured_image and og_image to media library
   let featuredImage = (record.data.featured_image as string) || null;
@@ -322,6 +393,12 @@ async function importPost(
 
   let ogImage = (record.data.og_image as string) || null;
   if (ogImage) ogImage = await uploadSingleImage(supabase, ogImage).catch(() => ogImage);
+
+  const status = record.data.status || "draft";
+  const providedPublishedAt = normalizeOptionalText(record.data.published_at);
+  const publishedAt = status === "published"
+    ? providedPublishedAt || new Date().toISOString()
+    : providedPublishedAt;
 
   const postData = {
     title: record.data.title as string,
@@ -337,8 +414,8 @@ async function importPost(
     og_description: record.data.og_description || null,
     og_image: ogImage,
     noindex: record.data.noindex || false,
-    status: record.data.status || "draft",
-    published_at: record.data.published_at || null,
+    status,
+    published_at: publishedAt,
   };
 
   if (mode === "update" || mode === "upsert") {

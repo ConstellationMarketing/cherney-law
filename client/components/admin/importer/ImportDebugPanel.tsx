@@ -133,6 +133,19 @@ export default function ImportDebugPanel({ record, templateType }: Props) {
             </div>
           )}
 
+          {templateType === 'post' && (
+            <div>
+              <h5 className="font-semibold text-gray-700 mb-1">Post Import Metadata</h5>
+              <div className="space-y-1 rounded bg-gray-50 p-2">
+                <DebugRow label="status" value={String(record.preparedData.status ?? 'draft')} />
+                <DebugRow label="publishedAt" value={String(record.preparedData.published_at ?? '') || '— fallback on import if published'} />
+                <DebugRow label="categoryName" value={String(record.preparedData.category_name ?? '')} />
+                <DebugRow label="categorySlug" value={String(record.preparedData.category_slug ?? '')} />
+                <DebugRow label="excerptSource" value={String(record.preparedData.excerpt_source ?? '')} />
+              </div>
+            </div>
+          )}
+
           {templateType === 'area' && nc?.allocationDebug && (
             <div>
               <h5 className="font-semibold text-gray-700 mb-1">Area Allocation</h5>

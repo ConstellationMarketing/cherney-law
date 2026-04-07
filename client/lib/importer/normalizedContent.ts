@@ -32,6 +32,7 @@ export interface AllocationDebug {
 export type TitleSource = 'early-preserved-h1' | 'early-preserved-h2' | 'cleaned-meta-title' | 'empty';
 
 export type HeroTaglineSource = 'mapped-hero-tagline' | 'early-hero-tagline' | 'empty';
+export type ExcerptSource = 'mapped' | 'generated' | 'empty';
 
 export interface NormalizedContent {
   sourceUrl: string;
@@ -65,6 +66,11 @@ export interface NormalizedContent {
   heroDescription: string;
   heroImage: string;
   heroImageAlt: string;
+  excerpt: string;
+  excerptSource: ExcerptSource;
+  publishedAt: string;
+  categoryName: string;
+  categorySlug: string;
   /** HTML of content before the first H2 heading */
   leadHtml: string;
   /** Plain text of leadHtml */
@@ -511,6 +517,11 @@ export function buildNormalizedContent(
   const heroDescription = mappedData.hero_description || '';
   const heroImage = mappedData.hero_image || '';
   const heroImageAlt = chosenTitle;
+  const mappedExcerpt = normalizeText(mappedData.excerpt || '');
+  const excerptSource: ExcerptSource = mappedExcerpt ? 'mapped' : 'empty';
+  const publishedAt = normalizeText(mappedData.published_at || '');
+  const categoryName = normalizeText(mappedData.category || '');
+  const categorySlug = normalizeText(mappedData.category_slug || '');
   const areaSplitSignals = templateType === 'area'
     ? [
         ...(mappedData.__ai_split_mode === 'true' ? ['__ai_split_mode'] : []),
@@ -652,6 +663,11 @@ export function buildNormalizedContent(
     heroDescription,
     heroImage,
     heroImageAlt,
+    excerpt: mappedExcerpt,
+    excerptSource,
+    publishedAt,
+    categoryName,
+    categorySlug,
     leadHtml,
     leadText,
     sectionBlocks,

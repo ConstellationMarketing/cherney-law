@@ -29,6 +29,27 @@ export function allocateForTemplate(
   }
 }
 
+function truncateExcerpt(text: string, maxLength = 160): string | null {
+  if (!text) return null;
+  return text.length <= maxLength ? text : text.substring(0, maxLength).trimEnd();
+}
+
+function pickPrimaryCategoryValue(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const arrayMatch = trimmed.match(/^\[(.*)\]$/s);
+  if (arrayMatch) {
+    const inner = arrayMatch[1].trim();
+    if (!inner) return null;
+    const firstQuoted = inner.match(/^"([^"]+)"|^'([^']+)'/);
+    if (firstQuoted) return (firstQuoted[1] || firstQuoted[2] || '').trim() || null;
+  }
+
+  const [firstValue] = trimmed.split(/\s*,\s*|\s*\|\s*|\s*;\s*/);
+  return firstValue?.trim() || null;
+}
+
 // ─── Blog Post Allocator ─────────────────────────────────────────────────────
 
 /**
@@ -53,12 +74,20 @@ function allocateForBlogPost(
   }
   body = body.trim() || null;
 
-  // Excerpt: first ~160 chars of plain text
-  const plainText = normalized.leadText || (normalized.sectionBlocks[0]?.plainText ?? '');
-  const excerpt = plainText ? plainText.substring(0, 160).trimEnd() : null;
+  const generatedExcerptSource = normalized.leadText || (normalized.sectionBlocks[0]?.plainText ?? '');
+  const generatedExcerpt = truncateExcerpt(generatedExcerptSource);
+  const excerpt = normalized.excerpt || generatedExcerpt;
+  const excerptSource = normalized.excerpt
+    ? 'mapped'
+    : generatedExcerpt
+      ? 'generated'
+      : 'empty';
 
   // Featured image
   const featuredImage = normalized.featuredImageCandidates[0]?.src || null;
+  const categoryName = pickPrimaryCategoryValue(normalized.categoryName);
+  const categorySlug = pickPrimaryCategoryValue(normalized.categorySlug);
+  const publishedAt = normalized.publishedAt || null;
 
   const fullSlug = slug.endsWith('/') ? slug : slug + '/';
 
@@ -67,8 +96,10 @@ function allocateForBlogPost(
     slug: fullSlug,
     body,
     excerpt,
+    excerpt_source: excerptSource,
     featured_image: featuredImage,
-    category_name: null,
+    category_name: categoryName,
+    category_slug: categorySlug,
     meta_title: seoTitle,
     meta_description: normalized.metaDescription || null,
     canonical_url: normalized.canonicalUrl || null,
@@ -77,7 +108,7 @@ function allocateForBlogPost(
     og_image: normalized.ogImage || featuredImage || null,
     noindex: false,
     status: normalized.status === 'published' ? 'published' : 'draft',
-    published_at: null,
+    published_at: publishedAt,
   };
 }
 
