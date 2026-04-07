@@ -106,12 +106,14 @@ export interface MappedRecord {
   mappedData: Record<string, string>;
 }
 
-/** Content section after H2 splitting */
+/** Content section after heading-based normalization */
 export interface ContentSection {
-  /** Section heading (H2 text) */
+  /** Section heading text */
   heading: string;
   /** Section body HTML */
   body: string;
+  /** Original heading level used when one was promoted */
+  headingLevel?: 2 | 3 | 4;
   /** Original heading tag used */
   headingTag?: string;
 }

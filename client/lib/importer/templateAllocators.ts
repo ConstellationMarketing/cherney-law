@@ -1,7 +1,7 @@
 // Template Allocators — Layer 3 of the import pipeline
 // Template-specific allocation of NormalizedContent into CMS record shapes.
 
-import type { NormalizedContent, SectionBlock, ImageCandidate } from './normalizedContent';
+import type { NormalizedContent, SectionBlock, ImageCandidate, SectionHeadingLevel } from './normalizedContent';
 import type { TemplateType } from './types';
 import { normalizeHtml } from './htmlNormalizer';
 import { defaultFilterOptions } from './types';
@@ -49,10 +49,7 @@ function allocateForBlogPost(
     body += normalized.leadHtml;
   }
   for (const block of normalized.sectionBlocks) {
-    if (block.heading) {
-      body += `<h2>${block.heading}</h2>`;
-    }
-    body += block.bodyHtml;
+    body += renderSectionBlockHtml(block);
   }
   body = body.trim() || null;
 
@@ -120,12 +117,15 @@ function allocateForAreaPage(
   let introBody = '';
   let introHeading = '';
   let introImages: ImageCandidate[] = [];
+  let introHeadingLevel: SectionHeadingLevel = 2;
   let whyBody = '';
   let whyHeading = '';
   let whyImages: ImageCandidate[] = [];
+  let whyHeadingLevel: SectionHeadingLevel = 2;
   let closingBody = '';
   let closingHeading = '';
   let closingImages: ImageCandidate[] = [];
+  let closingHeadingLevel: SectionHeadingLevel = 2;
 
   let introSource: 'preH2' | 'firstBlockFallback' | 'empty' = 'empty';
   let fallbackRan = false;
@@ -160,6 +160,7 @@ function allocateForAreaPage(
   if (leadHtml || introBlocks.length > 0) {
     introBody = joinBlockBodies(introBlocks, leadHtml);
     introHeading = pickSectionHeading(introBlocks);
+    introHeadingLevel = pickSectionHeadingLevel(introBlocks);
     introImages = [
       ...(leadHtml ? extractImagesFromHtml(leadHtml) : []),
       ...collectImages(introBlocks),
@@ -174,7 +175,10 @@ function allocateForAreaPage(
 
     if (hardFallbackBody) {
       introBody = hardFallbackBody;
-      introHeading = introHeading || pickSectionHeading([firstBlock]);
+      if (!introHeading) {
+        introHeading = pickSectionHeading([firstBlock]);
+        introHeadingLevel = pickSectionHeadingLevel([firstBlock]);
+      }
       introImages = introImages.length > 0 ? introImages : collectImages([firstBlock]);
       introSource = leadHtml ? 'preH2' : 'firstBlockFallback';
       fallbackRan = true;
@@ -194,6 +198,7 @@ function allocateForAreaPage(
     allocationLog.closing.push(closingIndex);
     closingBody = sanitizeFragmentHtml(block.bodyHtml, normalized);
     closingHeading = pickSectionHeading([block]);
+    closingHeadingLevel = pickSectionHeadingLevel([block]);
     closingImages = block.images;
   } else if (remainingBlocks.length >= 2) {
     const middleBlocks = remainingBlocks.slice(0, -1);
@@ -204,10 +209,12 @@ function allocateForAreaPage(
 
     whyBody = sanitizeFragmentHtml(joinBlockBodies(middleBlocks), normalized);
     whyHeading = pickSectionHeading(middleBlocks);
+    whyHeadingLevel = pickSectionHeadingLevel(middleBlocks);
     whyImages = collectImages(middleBlocks);
 
     closingBody = sanitizeFragmentHtml(closingBlock.bodyHtml, normalized);
     closingHeading = pickSectionHeading([closingBlock]);
+    closingHeadingLevel = pickSectionHeadingLevel([closingBlock]);
     closingImages = closingBlock.images;
   }
 
@@ -243,21 +250,21 @@ function allocateForAreaPage(
     },
     introSection: {
       heading: introHeading,
-      headingLevel: 2,
+      headingLevel: introHeadingLevel,
       body: introBody,
       image: introImg.src,
       imageAlt: introImg.alt,
     },
     whySection: {
       heading: whyHeading,
-      headingLevel: 2,
+      headingLevel: whyHeadingLevel,
       body: whyBody,
       image: whyImg.src,
       imageAlt: whyImg.alt,
     },
     closingSection: {
       heading: closingHeading,
-      headingLevel: 2,
+      headingLevel: closingHeadingLevel,
       body: closingBody,
       image: closingImg.src,
       imageAlt: closingImg.alt,
@@ -325,12 +332,7 @@ function allocateForPracticePage(
 
   if (mergedGroups.length > 0) {
     contentSections = mergedGroups.map((group, index) => {
-      let body = group.map((block) => {
-        let html = '';
-        if (block.heading) html += `<h2>${block.heading}</h2>`;
-        html += block.bodyHtml;
-        return html;
-      }).join('\n');
+      let body = group.map((block) => renderSectionBlockHtml(block)).join('\n');
 
       // Prepend lead content to first section
       if (index === 0 && normalized.leadHtml) {
@@ -474,7 +476,6 @@ function sanitizeFragmentHtml(html: string, normalized: NormalizedContent): stri
 function joinBlockBodies(blocks: SectionBlock[], leadHtml?: string): string {
   let result = leadHtml?.trim() || '';
   for (const block of blocks) {
-    if (block.heading) result += `<h2>${block.heading}</h2>`;
     result += block.bodyHtml;
   }
   return result.trim();
@@ -501,6 +502,17 @@ function extractImagesFromHtml(html: string): ImageCandidate[] {
 
 function pickSectionHeading(blocks: SectionBlock[]): string {
   return blocks.find((block) => block.heading)?.heading || '';
+}
+
+function pickSectionHeadingLevel(blocks: SectionBlock[]): SectionHeadingLevel {
+  return blocks.find((block) => block.headingLevel)?.headingLevel || 2;
+}
+
+function renderSectionBlockHtml(block: SectionBlock): string {
+  if (!block.heading) return block.bodyHtml;
+
+  const level = block.headingLevel || 2;
+  return `<h${level}>${block.heading}</h${level}>${block.bodyHtml}`;
 }
 
 function pickImage(

@@ -277,6 +277,89 @@ describe('FAQ extraction', () => {
   });
 });
 
+describe('Area heading normalization', () => {
+  it('keeps promoted section headings out of intro, why, and closing bodies', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Cobb County Personal Injury Lawyer',
+        slug: '/areas-we-serve/cobb-county/',
+        body: '<p>Lead intro.</p><h2>Introduction Title</h2><p>Intro body with enough words to stay in its own section and avoid the short block merge heuristic during allocation for this regression test, while also proving the promoted heading is removed from the body without affecting the remaining introduction copy that follows it.</p><h2>Why Title</h2><p>Why body with enough words to remain separated from the introduction and prove that duplicate section headings are stripped only from the promoted section start.</p><h2>Closing Title</h2><p>Closing body with enough words to stay independent and verify the allocator keeps the structured heading while removing the duplicate opening body heading.</p>',
+      },
+    }, 'area');
+
+    const content = (prepared.data as { content: any }).content;
+
+    expect(content.introSection.heading).toBe('Introduction Title');
+    expect(content.introSection.body).toContain('<p>Lead intro.</p>');
+    expect(content.introSection.body).toContain('Intro body with enough words');
+    expect(content.introSection.body).not.toContain('<h2>Introduction Title</h2>');
+
+    expect(content.whySection.heading).toBe('Why Title');
+    expect(content.whySection.body).toContain('Why body with enough words');
+    expect(content.whySection.body).not.toContain('<h2>Why Title</h2>');
+
+    expect(content.closingSection.heading).toBe('Closing Title');
+    expect(content.closingSection.body).toContain('Closing body with enough words');
+    expect(content.closingSection.body).not.toContain('<h2>Closing Title</h2>');
+  });
+
+  it('promotes opening H4 headings while preserving later body headings', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Roswell DUI Lawyer',
+        slug: '/areas-we-serve/roswell/',
+        __ai_split_mode: 'true',
+        body: '<h4>Introduction Title</h4><p>Intro copy with enough words to avoid the allocator folding the next section into intro while still preserving the later nested heading inside the body content for this regression case.</p><h4>Nested body heading</h4><p>Nested body copy.</p>',
+        why_body: '<h3>Why Title</h3><p>Why copy with enough words to remain its own section and verify opening headings are promoted without being duplicated in the body content during import.</p>',
+        closing_body: '<h4>Closing Title</h4><p>Closing copy with enough words to remain independent and verify the promoted H4 is not duplicated inside the closing body.</p>',
+      },
+    }, 'area');
+
+    const content = (prepared.data as { content: any }).content;
+    const contentSections = prepared.contentSections ?? [];
+
+    expect(content.introSection.heading).toBe('Introduction Title');
+    expect(content.introSection.headingLevel).toBe(4);
+    expect(content.introSection.body).not.toContain('<h4>Introduction Title</h4>');
+    expect(content.introSection.body).toContain('<h4>Nested body heading</h4>');
+
+    expect(content.whySection.heading).toBe('Why Title');
+    expect(content.whySection.headingLevel).toBe(3);
+    expect(content.whySection.body).not.toContain('<h3>Why Title</h3>');
+
+    expect(content.closingSection.heading).toBe('Closing Title');
+    expect(content.closingSection.headingLevel).toBe(4);
+    expect(content.closingSection.body).not.toContain('<h4>Closing Title</h4>');
+
+    expect(contentSections[0].headingLevel).toBe(4);
+    expect(contentSections[0].headingTag).toBe('<h4>Introduction Title</h4>');
+  });
+
+  it('rebuilds practice content with the original promoted heading level', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'DUI Defense',
+        slug: '/practice-areas/dui-defense/',
+        body: '<h4>Case Strategy</h4><p>Detailed defense content.</p>',
+      },
+    }, 'practice');
+
+    const content = (prepared.data as { content: { contentSections: Array<{ body: string }> } }).content;
+
+    expect(prepared.contentSections?.[0].heading).toBe('Case Strategy');
+    expect(prepared.contentSections?.[0].headingLevel).toBe(4);
+    expect(prepared.contentSections?.[0].headingTag).toBe('<h4>Case Strategy</h4>');
+    expect(content.contentSections[0].body).toContain('<h4>Case Strategy</h4>');
+    expect(content.contentSections[0].body).toContain('<p>Detailed defense content.</p>');
+  });
+});
+
 // ─── 13. URL slug normalization ─────────────────────────────────────────────
 
 describe('URL slug normalization', () => {

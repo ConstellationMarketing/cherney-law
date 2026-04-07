@@ -79,8 +79,12 @@ export interface NormalizedContent {
   allocationDebug?: AllocationDebug;
 }
 
+export type SectionHeadingLevel = 2 | 3 | 4;
+
 export interface SectionBlock {
   heading: string;
+  headingLevel?: SectionHeadingLevel;
+  headingTag?: string;
   bodyHtml: string;
   /** Stripped plain text of bodyHtml */
   plainText: string;
@@ -587,7 +591,7 @@ export function buildNormalizedContent(
           }
           continue; // Don't add FAQ section as a content block
         }
-        sectionBlocks.push(buildSectionBlock(section.bodyHtml, order, undefined, section.heading));
+        sectionBlocks.push(buildSectionBlock(section.bodyHtml, order, undefined, section.heading, 2));
         order++;
       }
     }
@@ -678,16 +682,26 @@ function buildSectionBlock(
   bodyHtml: string,
   order: number,
   classification?: SectionBlock['classification'],
-  heading?: string
+  heading?: string,
+  headingLevel?: SectionHeadingLevel
 ): SectionBlock {
-  // Extract heading from body if not provided
-  const resolvedHeading = heading || extractFirstH2Text(bodyHtml) || '';
-  const plainText = stripTagsToText(bodyHtml);
-  const images = extractImages(bodyHtml);
+  const normalizedBodyHtml = bodyHtml.trim();
+  const extractedOpeningHeading = heading
+    ? null
+    : extractLeadingSectionHeading(normalizedBodyHtml);
+  const resolvedHeading = heading || extractedOpeningHeading?.text || '';
+  const resolvedHeadingLevel = headingLevel || extractedOpeningHeading?.level;
+  const resolvedBodyHtml = extractedOpeningHeading?.remainingHtml ?? normalizedBodyHtml;
+  const plainText = stripTagsToText(resolvedBodyHtml);
+  const images = extractImages(resolvedBodyHtml);
 
   return {
     heading: resolvedHeading,
-    bodyHtml,
+    headingLevel: resolvedHeadingLevel,
+    headingTag: resolvedHeading && resolvedHeadingLevel
+      ? `<h${resolvedHeadingLevel}>${resolvedHeading}</h${resolvedHeadingLevel}>`
+      : '',
+    bodyHtml: resolvedBodyHtml,
     plainText,
     images,
     order,
@@ -696,9 +710,18 @@ function buildSectionBlock(
   };
 }
 
-function extractFirstH2Text(html: string): string {
-  if (!html) return '';
-  const match = html.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i);
-  if (!match) return '';
-  return stripTagsToText(match[1]);
+function extractLeadingSectionHeading(html: string): { text: string; level: SectionHeadingLevel; remainingHtml: string } | null {
+  if (!html) return null;
+
+  const match = html.match(/^\s*(?:<p[^>]*>(?:\s|&nbsp;|<br\s*\/?>)*<\/p>\s*)*(<h([2-4])[^>]*>([\s\S]*?)<\/h\2>)([\s\S]*)$/i);
+  if (!match) return null;
+
+  const text = stripTagsToText(match[3]);
+  if (!text) return null;
+
+  return {
+    text,
+    level: Number(match[2]) as SectionHeadingLevel,
+    remainingHtml: match[4].trim(),
+  };
 }

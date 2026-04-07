@@ -14,6 +14,7 @@ import {
   Italic,
   Heading2,
   Heading3,
+  Heading4,
   List,
   ListOrdered,
   Link as LinkIcon,
@@ -79,6 +80,7 @@ export default function RichTextEditor({
   const handleItalic = () => editor.chain().focus().toggleItalic().run();
   const handleH2 = () => editor.chain().focus().toggleHeading({ level: 2 }).run();
   const handleH3 = () => editor.chain().focus().toggleHeading({ level: 3 }).run();
+  const handleH4 = () => editor.chain().focus().toggleHeading({ level: 4 }).run();
   const handleBulletList = () =>
     editor.chain().focus().toggleBulletList().run();
   const handleOrderedList = () =>
@@ -124,6 +126,7 @@ export default function RichTextEditor({
   const isItalicActive = editor.isActive("italic");
   const isH2Active = editor.isActive("heading", { level: 2 });
   const isH3Active = editor.isActive("heading", { level: 3 });
+  const isH4Active = editor.isActive("heading", { level: 4 });
   const isBulletListActive = editor.isActive("bulletList");
   const isOrderedListActive = editor.isActive("orderedList");
   const isAlignLeftActive = editor.isActive({ textAlign: 'left' });
@@ -160,6 +163,12 @@ export default function RichTextEditor({
           onClick={handleH3}
           active={isH3Active}
           title="Heading 3"
+        />
+        <ToolbarButton
+          icon={Heading4}
+          onClick={handleH4}
+          active={isH4Active}
+          title="Heading 4"
         />
 
         <div className="w-px bg-gray-300 mx-1" />

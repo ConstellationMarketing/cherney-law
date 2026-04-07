@@ -58,7 +58,8 @@ export function prepareRecord(
   const contentSections = normalized.sectionBlocks.map((block) => ({
     heading: block.heading,
     body: block.bodyHtml,
-    headingTag: block.heading ? `<h2>${block.heading}</h2>` : '',
+    headingLevel: block.headingLevel,
+    headingTag: block.headingTag || '',
   }));
 
   return {
