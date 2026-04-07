@@ -20,7 +20,7 @@ import { applyFieldMapping, applyFieldMappingSingle } from './fieldMapping';
 import { executeRecipe } from './recipeEngine';
 import { prepareRecords, resolveImportPath } from './preparer';
 import { scoreConfidence } from './confidenceScorer';
-import { validateRecords } from './validator';
+import { buildSlugCounts, validateRecords } from './validator';
 import { getContentFieldKeys } from './templateFields';
 import { buildNormalizedContent } from './normalizedContent';
 import type { NormalizedContent } from './normalizedContent';
@@ -250,13 +250,8 @@ export function transformRecords(
   onProgress?.(Math.floor(total * 0.7), total);
 
   // Stage 10: Validation
-  const slugSet = new Set<string>();
-  const validation = validateRecords(prepared, templateType, slugSet);
-
-  // Build slug set for duplicate detection
-  for (const r of prepared) {
-    slugSet.add(r.slug);
-  }
+  const batchSlugCounts = buildSlugCounts(prepared);
+  const validation = validateRecords(prepared, templateType, { batchSlugCounts });
 
   onProgress?.(Math.floor(total * 0.8), total);
 

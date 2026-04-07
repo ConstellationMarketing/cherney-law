@@ -2,6 +2,7 @@
 // Validates transformed records against template requirements
 
 import type {
+  ImportMode,
   PreparedRecord,
   RecordValidation,
   TemplateType,
@@ -11,16 +12,33 @@ import type {
 } from './types';
 import { getRequiredFieldKeys, getTemplateFields } from './templateFields';
 
+export interface ValidationOptions {
+  batchSlugCounts?: Map<string, number>;
+  existingCmsSlugs?: Set<string>;
+  importMode?: ImportMode;
+}
+
+export function buildSlugCounts(records: Pick<PreparedRecord, 'slug'>[]): Map<string, number> {
+  const counts = new Map<string, number>();
+
+  for (const record of records) {
+    if (!record.slug) continue;
+    counts.set(record.slug, (counts.get(record.slug) ?? 0) + 1);
+  }
+
+  return counts;
+}
+
 /**
  * Validate all prepared records against template requirements.
  */
 export function validateRecords(
   records: PreparedRecord[],
   templateType: TemplateType,
-  existingSlugs?: Set<string>
+  options: ValidationOptions = {}
 ): ValidationResult {
   const results = records.map((r) =>
-    validateRecord(r, templateType, existingSlugs)
+    validateRecord(r, templateType, options)
   );
 
   const totalErrors = results.reduce((sum, r) => sum + r.errorCount, 0);
@@ -40,7 +58,7 @@ export function validateRecords(
 export function validateRecord(
   record: PreparedRecord,
   templateType: TemplateType,
-  existingSlugs?: Set<string>
+  options: ValidationOptions = {}
 ): RecordValidation {
   const issues: ValidationIssue[] = [];
   const fields = getTemplateFields(templateType);
@@ -90,8 +108,20 @@ export function validateRecord(
   }
 
   // Check for duplicate slugs within the import batch
-  if (existingSlugs?.has(record.slug)) {
-    issues.push(issue('error', 'slug', `Duplicate slug: "${record.slug}"`));
+  const duplicateCount = options.batchSlugCounts?.get(record.slug) ?? 0;
+  if (duplicateCount > 1) {
+    issues.push(issue('error', 'slug', `Duplicate slug in this import batch: "${record.slug}" (${duplicateCount} rows resolve to the same final slug)`));
+  }
+
+  if (
+    duplicateCount <= 1
+    && templateType === 'post'
+    && options.existingCmsSlugs?.has(record.slug)
+  ) {
+    const message = options.importMode === 'create'
+      ? 'Slug already exists in CMS. This row will update the existing blog post instead of creating a duplicate.'
+      : 'Slug matches an existing blog post in CMS and will update that post during import.';
+    issues.push(issue('warning', 'slug', message));
   }
 
   // Validate title length

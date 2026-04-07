@@ -1,6 +1,6 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { WizardState } from '@site/lib/importer/recipeTypes';
-import { validateRecords } from '@site/lib/importer/validator';
+import { buildSlugCounts, validateRecords } from '@site/lib/importer/validator';
 
 interface Props {
   state: WizardState;
@@ -10,6 +10,10 @@ interface Props {
 }
 
 export default function StepValidation({ state, updateState, onNext, onBack }: Props) {
+  const [existingPostSlugs, setExistingPostSlugs] = useState<Set<string>>(new Set());
+  const [isCheckingExistingPostSlugs, setIsCheckingExistingPostSlugs] = useState(false);
+  const [existingPostSlugLookupError, setExistingPostSlugLookupError] = useState<string | null>(null);
+
   // Only validate approved records
   const approvedRecords = useMemo(
     () => state.transformedRecords.filter((r) => r.status === 'approved'),
@@ -27,9 +31,69 @@ export default function StepValidation({ state, updateState, onNext, onBack }: P
     [approvedRecords]
   );
 
+  useEffect(() => {
+    if (state.templateType !== 'post' || preparedForValidation.length === 0) {
+      setExistingPostSlugs(new Set());
+      setIsCheckingExistingPostSlugs(false);
+      setExistingPostSlugLookupError(null);
+      return;
+    }
+
+    const uniqueSlugs = Array.from(new Set(preparedForValidation.map((record) => record.slug).filter(Boolean)));
+    let cancelled = false;
+
+    setIsCheckingExistingPostSlugs(true);
+    setExistingPostSlugLookupError(null);
+
+    fetch('/api/bulk-import/post-slugs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slugs: uniqueSlugs }),
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          let message = `HTTP ${response.status}`;
+          try {
+            const body = await response.json();
+            if (body && typeof body === 'object' && 'error' in body && typeof body.error === 'string') {
+              message = body.error;
+            }
+          } catch {
+            // Ignore parse failures and keep the HTTP status message.
+          }
+          throw new Error(message);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (cancelled) return;
+        const slugs = Array.isArray(data?.slugs)
+          ? data.slugs.filter((value): value is string => typeof value === 'string')
+          : [];
+        setExistingPostSlugs(new Set(slugs));
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error('Failed to check existing blog slugs:', error);
+        setExistingPostSlugs(new Set());
+        setExistingPostSlugLookupError('Could not check existing blog post slugs. Existing-post updates will still be handled during import.');
+      })
+      .finally(() => {
+        if (!cancelled) setIsCheckingExistingPostSlugs(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [preparedForValidation, state.templateType]);
+
   const validationResult = useMemo(
-    () => validateRecords(preparedForValidation, state.templateType!),
-    [preparedForValidation, state.templateType]
+    () => validateRecords(preparedForValidation, state.templateType!, {
+      batchSlugCounts: buildSlugCounts(preparedForValidation),
+      existingCmsSlugs: state.templateType === 'post' ? existingPostSlugs : undefined,
+      importMode: state.importMode,
+    }),
+    [existingPostSlugs, preparedForValidation, state.importMode, state.templateType]
   );
 
   useEffect(() => {
@@ -47,6 +111,16 @@ export default function StepValidation({ state, updateState, onNext, onBack }: P
           Checking {approvedRecords.length} approved records for errors and warnings.
         </p>
       </div>
+
+      {state.templateType === 'post' && (isCheckingExistingPostSlugs || existingPostSlugLookupError) && (
+        <div className={`rounded-lg border px-4 py-3 text-sm ${
+          existingPostSlugLookupError
+            ? 'border-yellow-200 bg-yellow-50 text-yellow-800'
+            : 'border-blue-200 bg-blue-50 text-blue-700'
+        }`}>
+          {existingPostSlugLookupError || 'Checking existing blog post slugs in CMS so updates can be identified before import.'}
+        </div>
+      )}
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">

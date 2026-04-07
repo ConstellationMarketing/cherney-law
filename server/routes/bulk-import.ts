@@ -237,6 +237,17 @@ interface ImportBody {
   mode: "create" | "update" | "upsert";
 }
 
+interface ExistingPostSlugsBody {
+  slugs: string[];
+}
+
+type ImportAction = "created" | "updated";
+
+interface ImportExecutionResult {
+  entityId: string;
+  action: ImportAction;
+}
+
 const EMPTY_JOB_ID = "00000000-0000-0000-0000-000000000000";
 
 function estimatePayloadBytes(value: unknown): number {
@@ -252,6 +263,73 @@ function summarizeSlugs(records: ImportRecord[], limit = 5): string[] {
   if (slugs.length <= limit) return slugs;
   return [...slugs.slice(0, limit), `+${slugs.length - limit} more`];
 }
+
+function chunkValues<T>(values: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size));
+  }
+  return chunks;
+}
+
+function collectDuplicateRecordSlugs(records: ImportRecord[]): Set<string> {
+  const slugCounts = new Map<string, number>();
+
+  for (const record of records) {
+    if (!record.slug) continue;
+    slugCounts.set(record.slug, (slugCounts.get(record.slug) ?? 0) + 1);
+  }
+
+  return new Set(
+    Array.from(slugCounts.entries())
+      .filter(([, count]) => count > 1)
+      .map(([slug]) => slug)
+  );
+}
+
+export const handleGetExistingPostSlugs: RequestHandler = async (req, res) => {
+  try {
+    const { slugs } = req.body as ExistingPostSlugsBody;
+    if (!Array.isArray(slugs)) {
+      res.status(400).json({ error: "Missing slugs array" });
+      return;
+    }
+
+    const uniqueSlugs = Array.from(new Set(
+      slugs
+        .filter((slug): slug is string => typeof slug === "string")
+        .map((slug) => slug.trim())
+        .filter(Boolean)
+    ));
+
+    if (uniqueSlugs.length === 0) {
+      res.json({ slugs: [] });
+      return;
+    }
+
+    const supabase = getServiceClient();
+    const matchedSlugs = new Set<string>();
+
+    for (const slugChunk of chunkValues(uniqueSlugs, 500)) {
+      const { data, error } = await supabase
+        .from("posts")
+        .select("slug")
+        .in("slug", slugChunk);
+
+      if (error) throw new Error(`Existing post slug lookup failed: ${error.message}`);
+
+      for (const row of data ?? []) {
+        if (typeof row.slug === "string" && row.slug.trim()) {
+          matchedSlugs.add(row.slug);
+        }
+      }
+    }
+
+    res.json({ slugs: Array.from(matchedSlugs) });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : "Internal server error" });
+  }
+};
 
 /**
  * POST /api/bulk-import
@@ -280,18 +358,23 @@ export const handleBulkImport: RequestHandler = async (req, res) => {
     });
 
     const supabase = getServiceClient();
-    const results: { rowIndex: number; status: "success" | "failed"; error?: string; entityId?: string }[] = [];
+    const duplicateRecordSlugs = collectDuplicateRecordSlugs(records);
+    const results: { rowIndex: number; status: "success" | "failed"; error?: string; entityId?: string; action?: ImportAction }[] = [];
 
     for (const record of records) {
       try {
-        let entityId: string | undefined;
+        if (duplicateRecordSlugs.has(record.slug)) {
+          throw new Error(`Duplicate slug in this import batch: "${record.slug}". Multiple imported rows resolve to the same final slug.`);
+        }
+
+        let execution: ImportExecutionResult;
 
         if (templateType === "practice") {
-          entityId = await importPracticePage(supabase, record, mode);
+          execution = await importPracticePage(supabase, record, mode);
         } else if (templateType === "area") {
-          entityId = await importAreaPage(supabase, record, mode);
+          execution = await importAreaPage(supabase, record, mode);
         } else {
-          entityId = await importPost(supabase, record, mode);
+          execution = await importPost(supabase, record, mode);
         }
 
         if (shouldTrackJob) {
@@ -301,11 +384,11 @@ export const handleBulkImport: RequestHandler = async (req, res) => {
             source_data: record.sourceData,
             target_slug: record.slug,
             status: "success",
-            created_entity_id: entityId,
+            created_entity_id: execution.entityId,
           });
         }
 
-        results.push({ rowIndex: record.rowIndex, status: "success", entityId });
+        results.push({ rowIndex: record.rowIndex, status: "success", entityId: execution.entityId, action: execution.action });
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : "Unknown error";
         console.warn(`[bulk-import:${requestId}] record failed`, {
@@ -331,6 +414,8 @@ export const handleBulkImport: RequestHandler = async (req, res) => {
 
     const successCount = results.filter((r) => r.status === "success").length;
     const failedCount = results.filter((r) => r.status === "failed").length;
+    const createdCount = results.filter((r) => r.status === "success" && r.action === "created").length;
+    const updatedCount = results.filter((r) => r.status === "success" && r.action === "updated").length;
 
     if (shouldTrackJob) {
       const { data: job } = await supabase
@@ -342,12 +427,9 @@ export const handleBulkImport: RequestHandler = async (req, res) => {
       if (job) {
         const updates: Record<string, number | string> = {
           failed_count: (job.failed_count || 0) + failedCount,
+          created_count: (job.created_count || 0) + createdCount,
+          updated_count: (job.updated_count || 0) + updatedCount,
         };
-        if (mode === "update") {
-          updates.updated_count = (job.updated_count || 0) + successCount;
-        } else {
-          updates.created_count = (job.created_count || 0) + successCount;
-        }
 
         const totalProcessed =
           (updates.created_count as number ?? job.created_count ?? 0) +
@@ -370,6 +452,8 @@ export const handleBulkImport: RequestHandler = async (req, res) => {
       recordCount: records.length,
       successCount,
       failedCount,
+      createdCount,
+      updatedCount,
     });
 
     res.json({ results });
@@ -391,7 +475,7 @@ async function importPracticePage(
   supabase: ServiceClient,
   record: ImportRecord,
   mode: string
-): Promise<string> {
+): Promise<ImportExecutionResult> {
   // Upload og_image to media library
   let ogImage = (record.data.og_image as string) || null;
   if (ogImage) ogImage = await uploadSingleImage(supabase, ogImage).catch(() => ogImage);
@@ -425,7 +509,7 @@ async function importPracticePage(
         .update(pageData)
         .eq("id", existing.id);
       if (error) throw new Error(`Update failed: ${error.message}`);
-      return existing.id;
+      return { entityId: existing.id, action: "updated" };
     }
 
     if (mode === "update") {
@@ -440,14 +524,14 @@ async function importPracticePage(
     .single();
 
   if (error) throw new Error(`Insert failed: ${error.message}`);
-  return data.id;
+  return { entityId: data.id, action: "created" };
 }
 
 async function importAreaPage(
   supabase: ServiceClient,
   record: ImportRecord,
   mode: string
-): Promise<string> {
+): Promise<ImportExecutionResult> {
   // Upload og_image to media library
   let ogImage = (record.data.og_image as string) || null;
   if (ogImage) ogImage = await uploadSingleImage(supabase, ogImage).catch(() => ogImage);
@@ -480,7 +564,7 @@ async function importAreaPage(
         .update(pageData)
         .eq("id", existing.id);
       if (error) throw new Error(`Update failed: ${error.message}`);
-      return existing.id;
+      return { entityId: existing.id, action: "updated" };
     }
 
     if (mode === "update") {
@@ -495,14 +579,14 @@ async function importAreaPage(
     .single();
 
   if (error) throw new Error(`Insert failed: ${error.message}`);
-  return data.id;
+  return { entityId: data.id, action: "created" };
 }
 
 async function importPost(
   supabase: ServiceClient,
   record: ImportRecord,
   mode: string
-): Promise<string> {
+): Promise<ImportExecutionResult> {
   const categoryId = await resolvePostCategoryId(
     supabase,
     record.data.category_name,
@@ -544,36 +628,34 @@ async function importPost(
     status,
   };
 
-  if (mode === "update" || mode === "upsert") {
-    const { data: existing, error: existingError } = await supabase
+  const { data: existing, error: existingError } = await supabase
+    .from("posts")
+    .select("id, published_at")
+    .eq("slug", basePostData.slug)
+    .maybeSingle();
+
+  if (existingError) {
+    throw new Error(`Existing post lookup failed: ${existingError.message}`);
+  }
+
+  if (existing) {
+    const publishedAt = providedPublishedAt
+      || existing.published_at
+      || (status === "published" ? new Date().toISOString() : null);
+
+    const { error } = await supabase
       .from("posts")
-      .select("id, published_at")
-      .eq("slug", basePostData.slug)
-      .maybeSingle();
+      .update({
+        ...basePostData,
+        published_at: publishedAt,
+      })
+      .eq("id", existing.id);
+    if (error) throw new Error(`Update failed: ${error.message}`);
+    return { entityId: existing.id, action: "updated" };
+  }
 
-    if (existingError) {
-      throw new Error(`Existing post lookup failed: ${existingError.message}`);
-    }
-
-    if (existing) {
-      const publishedAt = providedPublishedAt
-        || existing.published_at
-        || (status === "published" ? new Date().toISOString() : null);
-
-      const { error } = await supabase
-        .from("posts")
-        .update({
-          ...basePostData,
-          published_at: publishedAt,
-        })
-        .eq("id", existing.id);
-      if (error) throw new Error(`Update failed: ${error.message}`);
-      return existing.id;
-    }
-
-    if (mode === "update") {
-      throw new Error(`Post not found for update: ${basePostData.slug}`);
-    }
+  if (mode === "update") {
+    throw new Error(`Post not found for update: ${basePostData.slug}`);
   }
 
   const publishedAt = providedPublishedAt || (status === "published" ? new Date().toISOString() : null);
@@ -588,5 +670,5 @@ async function importPost(
     .single();
 
   if (error) throw new Error(`Insert failed: ${error.message}`);
-  return data.id;
+  return { entityId: data.id, action: "created" };
 }

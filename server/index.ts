@@ -3,7 +3,7 @@ import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
 import { handleGoogleReviews } from "./routes/google-reviews";
-import { handleBulkImport } from "./routes/bulk-import";
+import { handleBulkImport, handleGetExistingPostSlugs } from "./routes/bulk-import";
 import { handleBulkImportFetch } from "./routes/bulk-import-fetch";
 import { handleBulkImportImages } from "./routes/bulk-import-images";
 import { handleAiSplitAreaContent } from "./routes/ai-split-area-content";
@@ -72,6 +72,7 @@ export function createServer() {
   app.get("/api/demo", handleDemo);
   app.get("/api/google-reviews", handleGoogleReviews);
   app.post("/api/bulk-import", handleBulkImport);
+  app.post("/api/bulk-import/post-slugs", handleGetExistingPostSlugs);
   app.get("/api/import-sessions", handleListImportSessions);
   app.get("/api/import-sessions/:id", handleGetImportSession);
   app.post("/api/import-sessions", handleSaveImportSession);
