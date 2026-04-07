@@ -237,11 +237,30 @@ interface ImportBody {
   mode: "create" | "update" | "upsert";
 }
 
+const EMPTY_JOB_ID = "00000000-0000-0000-0000-000000000000";
+
+function estimatePayloadBytes(value: unknown): number {
+  try {
+    return Buffer.byteLength(JSON.stringify(value), "utf8");
+  } catch {
+    return 0;
+  }
+}
+
+function summarizeSlugs(records: ImportRecord[], limit = 5): string[] {
+  const slugs = records.map((record) => record.slug).filter(Boolean);
+  if (slugs.length <= limit) return slugs;
+  return [...slugs.slice(0, limit), `+${slugs.length - limit} more`];
+}
+
 /**
  * POST /api/bulk-import
  * Receives a batch of records, validates, and writes to Supabase.
  */
 export const handleBulkImport: RequestHandler = async (req, res) => {
+  const requestId = randomUUID().slice(0, 8);
+  const startedAt = Date.now();
+
   try {
     const { records, templateType, jobId, mode } = req.body as ImportBody;
 
@@ -249,6 +268,16 @@ export const handleBulkImport: RequestHandler = async (req, res) => {
       res.status(400).json({ error: "Missing required fields: records, templateType, jobId" });
       return;
     }
+
+    const shouldTrackJob = jobId !== EMPTY_JOB_ID;
+    console.info(`[bulk-import:${requestId}] start`, {
+      templateType,
+      mode,
+      jobId: shouldTrackJob ? jobId : "tracking-disabled",
+      recordCount: records.length,
+      payloadBytes: estimatePayloadBytes(req.body),
+      slugs: summarizeSlugs(records),
+    });
 
     const supabase = getServiceClient();
     const results: { rowIndex: number; status: "success" | "failed"; error?: string; entityId?: string }[] = [];
@@ -265,75 +294,95 @@ export const handleBulkImport: RequestHandler = async (req, res) => {
           entityId = await importPost(supabase, record, mode);
         }
 
-        // Update import_job_items
-        await supabase.from("import_job_items").insert({
-          import_job_id: jobId,
-          row_index: record.rowIndex,
-          source_data: record.sourceData,
-          target_slug: record.slug,
-          status: "success",
-          created_entity_id: entityId,
-        });
+        if (shouldTrackJob) {
+          await supabase.from("import_job_items").insert({
+            import_job_id: jobId,
+            row_index: record.rowIndex,
+            source_data: record.sourceData,
+            target_slug: record.slug,
+            status: "success",
+            created_entity_id: entityId,
+          });
+        }
 
         results.push({ rowIndex: record.rowIndex, status: "success", entityId });
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : "Unknown error";
-
-        await supabase.from("import_job_items").insert({
-          import_job_id: jobId,
-          row_index: record.rowIndex,
-          source_data: record.sourceData,
-          target_slug: record.slug,
-          status: "failed",
-          error_message: errorMsg,
+        console.warn(`[bulk-import:${requestId}] record failed`, {
+          rowIndex: record.rowIndex,
+          slug: record.slug,
+          error: errorMsg,
         });
+
+        if (shouldTrackJob) {
+          await supabase.from("import_job_items").insert({
+            import_job_id: jobId,
+            row_index: record.rowIndex,
+            source_data: record.sourceData,
+            target_slug: record.slug,
+            status: "failed",
+            error_message: errorMsg,
+          });
+        }
 
         results.push({ rowIndex: record.rowIndex, status: "failed", error: errorMsg });
       }
     }
 
-    // Update job counters
     const successCount = results.filter((r) => r.status === "success").length;
     const failedCount = results.filter((r) => r.status === "failed").length;
 
-    const updateField = mode === "update" ? "updated_count" : "created_count";
+    if (shouldTrackJob) {
+      const { data: job } = await supabase
+        .from("import_jobs")
+        .select("created_count, updated_count, failed_count, total_records")
+        .eq("id", jobId)
+        .single();
 
-    // Use RPC or raw update
-    const { data: job } = await supabase
-      .from("import_jobs")
-      .select("created_count, updated_count, failed_count, total_records")
-      .eq("id", jobId)
-      .single();
+      if (job) {
+        const updates: Record<string, number | string> = {
+          failed_count: (job.failed_count || 0) + failedCount,
+        };
+        if (mode === "update") {
+          updates.updated_count = (job.updated_count || 0) + successCount;
+        } else {
+          updates.created_count = (job.created_count || 0) + successCount;
+        }
 
-    if (job) {
-      const updates: Record<string, number | string> = {
-        failed_count: (job.failed_count || 0) + failedCount,
-      };
-      if (mode === "update") {
-        updates.updated_count = (job.updated_count || 0) + successCount;
-      } else {
-        updates.created_count = (job.created_count || 0) + successCount;
+        const totalProcessed =
+          (updates.created_count as number ?? job.created_count ?? 0) +
+          (updates.updated_count as number ?? job.updated_count ?? 0) +
+          (updates.failed_count as number);
+
+        if (totalProcessed >= job.total_records) {
+          updates.status = "completed";
+          updates.completed_at = new Date().toISOString() as unknown as number;
+        } else {
+          updates.status = "processing";
+        }
+
+        await supabase.from("import_jobs").update(updates).eq("id", jobId);
       }
-
-      // Check if all records processed
-      const totalProcessed =
-        (updates.created_count as number ?? job.created_count ?? 0) +
-        (updates.updated_count as number ?? job.updated_count ?? 0) +
-        (updates.failed_count as number);
-
-      if (totalProcessed >= job.total_records) {
-        updates.status = "completed";
-        updates.completed_at = new Date().toISOString() as unknown as number;
-      } else {
-        updates.status = "processing";
-      }
-
-      await supabase.from("import_jobs").update(updates).eq("id", jobId);
     }
+
+    console.info(`[bulk-import:${requestId}] complete`, {
+      durationMs: Date.now() - startedAt,
+      recordCount: records.length,
+      successCount,
+      failedCount,
+    });
 
     res.json({ results });
   } catch (err) {
-    console.error("Bulk import error:", err);
+    const body = req.body as Partial<ImportBody> | undefined;
+    console.error(`[bulk-import:${requestId}] route failure`, {
+      durationMs: Date.now() - startedAt,
+      templateType: body?.templateType,
+      mode: body?.mode,
+      recordCount: Array.isArray(body?.records) ? body.records.length : 0,
+      payloadBytes: estimatePayloadBytes(body),
+      error: err instanceof Error ? err.message : err,
+    });
     res.status(500).json({ error: err instanceof Error ? err.message : "Internal server error" });
   }
 };

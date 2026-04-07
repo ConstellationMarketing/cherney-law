@@ -22,6 +22,12 @@ import {
   handleBulkPatchAdminPages,
   handleBulkDeleteAdminPages,
 } from "./routes/admin-pages";
+import {
+  handleGetImportSession,
+  handleListImportSessions,
+  handleSaveImportSession,
+  handleUpdateImportSessionStatus,
+} from "./routes/import-sessions";
 
 export function createServer() {
   const app = express();
@@ -46,7 +52,7 @@ export function createServer() {
       if (raw) {
         try {
           req.body = JSON.parse(raw);
-          (req as Record<string, unknown>)._body = true;
+          (req as unknown as Record<string, unknown>)._body = true;
         } catch { /* leave body as-is, express.json() will handle the error */ }
       }
       next();
@@ -66,6 +72,10 @@ export function createServer() {
   app.get("/api/demo", handleDemo);
   app.get("/api/google-reviews", handleGoogleReviews);
   app.post("/api/bulk-import", handleBulkImport);
+  app.get("/api/import-sessions", handleListImportSessions);
+  app.get("/api/import-sessions/:id", handleGetImportSession);
+  app.post("/api/import-sessions", handleSaveImportSession);
+  app.patch("/api/import-sessions/:id/status", handleUpdateImportSessionStatus);
   app.post("/api/bulk-import-fetch", handleBulkImportFetch);
   app.post("/api/bulk-import-images", handleBulkImportImages);
   app.post("/api/ai-split-area-content", handleAiSplitAreaContent);

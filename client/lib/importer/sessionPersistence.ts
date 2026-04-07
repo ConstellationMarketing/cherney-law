@@ -1,13 +1,46 @@
-// Session persistence — Save/resume import sessions to Supabase
-
-import { supabase } from '@/lib/supabase';
 import {
   defaultAiSettings,
   defaultImportPipelineContext,
   type MigrationSession,
   type WizardState,
-} from './recipeTypes';
-import type { WizardStep } from './types';
+} from './recipeTypes'
+import type { WizardStep } from './types'
+
+const loggedSessionWarnings = new Set<string>()
+
+function logSessionWarning(message: string, error?: unknown) {
+  if (loggedSessionWarnings.has(message)) return
+  loggedSessionWarnings.add(message)
+  console.warn(message, error)
+}
+
+async function requestJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
+  const response = await fetch(input, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+  })
+
+  if (!response.ok) {
+    let errorMessage = `HTTP ${response.status}`
+
+    try {
+      const body = await response.json()
+      if (body && typeof body === 'object' && 'error' in body && typeof body.error === 'string') {
+        errorMessage = body.error
+      }
+    } catch {
+      const bodyText = await response.text().catch(() => '')
+      if (bodyText.trim()) errorMessage = bodyText
+    }
+
+    throw new Error(errorMessage)
+  }
+
+  return response.json() as Promise<T>
+}
 
 /**
  * Save the current wizard state as a migration session.
@@ -47,94 +80,74 @@ export async function saveSession(
     review_state_json: state.reviewState,
     validation_result_json: state.validationResult,
     status: 'in_progress',
-  };
-
-  if (state.sessionId) {
-    // Update existing session
-    const { error } = await supabase
-      .from('migration_sessions')
-      .update({
-        ...sessionData,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', state.sessionId);
-
-    if (error) {
-      console.error('Failed to update session:', error);
-      return null;
-    }
-    return state.sessionId;
   }
 
-  // Create new session
-  const { data, error } = await supabase
-    .from('migration_sessions')
-    .insert(sessionData)
-    .select('id')
-    .single();
+  try {
+    const data = await requestJson<{ id: string }>('/api/import-sessions', {
+      method: 'POST',
+      body: JSON.stringify({
+        sessionId: state.sessionId,
+        sessionData,
+      }),
+    })
 
-  if (error) {
-    console.error('Failed to save session:', error);
-    return null;
+    return data.id ?? null
+  } catch (error) {
+    logSessionWarning('Failed to save import session via same-origin API.', error)
+    return null
   }
-
-  return data.id;
 }
 
 /**
  * Load a saved migration session.
  */
 export async function loadSession(sessionId: string): Promise<WizardState | null> {
-  const { data, error } = await supabase
-    .from('migration_sessions')
-    .select('*')
-    .eq('id', sessionId)
-    .single();
+  try {
+    const session = await requestJson<MigrationSession>(`/api/import-sessions/${sessionId}`, {
+      method: 'GET',
+    })
 
-  if (error || !data) {
-    console.error('Failed to load session:', error);
-    return null;
-  }
-
-  const session = data as MigrationSession;
-
-  return {
-    currentStep: session.current_step as WizardStep,
-    templateType: session.template_type,
-    sourceType: session.source_type,
-    importMode: session.source_summary_json?.importMode ?? 'create',
-    sourceRecords: (session.source_data_json ?? []).map((d, i) => ({
-      rowIndex: i,
-      data: d,
-    })),
-    sourceColumns: session.source_summary_json?.columns
-      ?? (session.source_summary_json?.columnNames ?? []).map((name) => ({
-        name,
-        sampleValues: [],
-        detectedType: 'text' as const,
+    return {
+      currentStep: session.current_step as WizardStep,
+      templateType: session.template_type,
+      sourceType: session.source_type,
+      importMode: session.source_summary_json?.importMode ?? 'create',
+      sourceRecords: (session.source_data_json ?? []).map((d, i) => ({
+        rowIndex: i,
+        data: d,
       })),
-    mappingConfig: session.mapping_json,
-    recipe: session.recipe_json,
-    transformedRecords: session.transformed_records_json ?? [],
-    exceptionIndices: session.exception_indices ?? [],
-    reviewState: session.review_state_json ?? { decisions: {} },
-    validationResult: session.validation_result_json,
-    importJobId: null,
-    sessionId: session.id,
-    filterOptions: session.source_summary_json?.filterOptions ?? {
-      removeContactBlocks: true,
-      removePostListings: true,
-      removeSidebarWidgets: true,
-      removeNewsletterBlocks: true,
-      removeCommentSections: true,
-      removeFormBlocks: true,
-      linkDensityThreshold: 0.6,
-    },
-    aiSettings: session.source_summary_json?.aiSettings ?? defaultAiSettings,
-    aiAvailable: false,
-    sampleRowIndex: session.source_summary_json?.sampleRowIndex,
-    pipelineContext: session.source_summary_json?.pipelineContext ?? defaultImportPipelineContext,
-  };
+      sourceColumns: session.source_summary_json?.columns
+        ?? (session.source_summary_json?.columnNames ?? []).map((name) => ({
+          name,
+          sampleValues: [],
+          detectedType: 'text' as const,
+        })),
+      mappingConfig: session.mapping_json,
+      recipe: session.recipe_json,
+      transformedRecords: session.transformed_records_json ?? [],
+      exceptionIndices: session.exception_indices ?? [],
+      reviewState: session.review_state_json ?? { decisions: {} },
+      validationResult: session.validation_result_json,
+      importJobId: null,
+      sessionId: session.id,
+      filterOptions: session.source_summary_json?.filterOptions ?? {
+        removeContactBlocks: true,
+        removePostListings: true,
+        removeSidebarWidgets: true,
+        removeNewsletterBlocks: true,
+        removeCommentSections: true,
+        removeFormBlocks: true,
+        linkDensityThreshold: 0.6,
+      },
+      aiSettings: session.source_summary_json?.aiSettings ?? defaultAiSettings,
+      aiAvailable: false,
+      sampleRowIndex: session.source_summary_json?.sampleRowIndex,
+      pipelineContext: session.source_summary_json?.pipelineContext ?? defaultImportPipelineContext,
+    }
+  } catch (error) {
+    logSessionWarning('Failed to load import session via same-origin API.', error)
+    return null
+  }
 }
 
 /**
@@ -143,19 +156,15 @@ export async function loadSession(sessionId: string): Promise<WizardState | null
 export async function listSessions(
   limit = 10
 ): Promise<{ id: string; name: string; template_type: string; current_step: string; updated_at: string; status: string }[]> {
-  const { data, error } = await supabase
-    .from('migration_sessions')
-    .select('id, name, template_type, current_step, updated_at, status')
-    .eq('status', 'in_progress')
-    .order('updated_at', { ascending: false })
-    .limit(limit);
-
-  if (error) {
-    console.error('Failed to list sessions:', error);
-    return [];
+  try {
+    return await requestJson<{ id: string; name: string; template_type: string; current_step: string; updated_at: string; status: string }[]>(
+      `/api/import-sessions?limit=${encodeURIComponent(String(limit))}`,
+      { method: 'GET' }
+    )
+  } catch (error) {
+    logSessionWarning('Failed to list import sessions via same-origin API.', error)
+    return []
   }
-
-  return data ?? [];
 }
 
 /**
@@ -165,8 +174,12 @@ export async function updateSessionStatus(
   sessionId: string,
   status: 'completed' | 'abandoned'
 ): Promise<void> {
-  await supabase
-    .from('migration_sessions')
-    .update({ status, updated_at: new Date().toISOString() })
-    .eq('id', sessionId);
+  try {
+    await requestJson<{ success: boolean }>(`/api/import-sessions/${sessionId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    })
+  } catch (error) {
+    logSessionWarning('Failed to update import session status via same-origin API.', error)
+  }
 }
