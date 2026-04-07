@@ -15,7 +15,6 @@ const ALWAYS_SKIP = new Set([
   'metadata_og_sitename',
   'metadata_article_publisher',
   'metadata_article_modified_time',
-  'metadata_article_published_time',
   'og_locale',
   'og_type',
   'og_site_name',

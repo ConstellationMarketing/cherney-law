@@ -120,6 +120,9 @@ export default function StepFieldDetection({ state, updateState, onNext, onBack 
     );
   }, [mappings, state.sourceRecords, state.templateType, state.filterOptions, state.sourceColumns, templateFields]);
 
+  const getMappedSourceColumn = (targetField: string) =>
+    mappings.find((mapping) => mapping.targetField === targetField)?.sourceColumn ?? '';
+
   const getSampleValue = (sourceColumn: string, targetField?: string) => {
     if (!samplePreview) return '—';
 
@@ -222,6 +225,55 @@ export default function StepFieldDetection({ state, updateState, onNext, onBack 
           >
             ×
           </button>
+        </div>
+      )}
+
+      {state.templateType === 'post' && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-3">
+          <div>
+            <h3 className="text-sm font-semibold text-blue-900">Blog import metadata</h3>
+            <p className="mt-1 text-sm text-blue-700">
+              Publish Date maps directly to the blog post&apos;s actual publish date in the CMS.
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            {[
+              {
+                label: 'Publish Date',
+                targetField: 'published_at',
+                fallback: 'Not mapped',
+                note: 'Used for the post publish date field.',
+              },
+              {
+                label: 'Category',
+                targetField: 'category',
+                fallback: 'Not mapped',
+                note: 'Used to find or create the post category.',
+              },
+              {
+                label: 'Status',
+                targetField: 'status',
+                fallback: 'Defaults to draft',
+                note: 'Controls whether the imported post stays draft or publishes.',
+              },
+            ].map((item) => {
+              const sourceColumn = getMappedSourceColumn(item.targetField);
+              const sampleValue = sourceColumn ? getSampleValue(sourceColumn, item.targetField) : '';
+
+              return (
+                <div key={item.targetField} className="rounded border border-blue-200 bg-white p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">{item.label}</p>
+                  <p className="mt-1 text-sm font-medium text-gray-900">{sourceColumn || item.fallback}</p>
+                  <p className="mt-1 text-xs text-gray-500">{item.note}</p>
+                  {sourceColumn && (
+                    <p className="mt-2 text-xs text-gray-600">
+                      Sample: <span className="font-medium text-gray-800">{String(sampleValue) || '—'}</span>
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

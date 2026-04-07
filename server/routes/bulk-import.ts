@@ -76,6 +76,25 @@ function normalizeOptionalText(value: unknown): string | null {
   return trimmed ? trimmed : null;
 }
 
+function normalizePublishedAt(value: unknown): string | null {
+  const textValue = normalizeOptionalText(value);
+  if (!textValue) return null;
+
+  const numericTimestamp = /^\d{10,13}$/.test(textValue)
+    ? Number(textValue)
+    : null;
+
+  const parsedDate = numericTimestamp !== null
+    ? new Date(textValue.length === 13 ? numericTimestamp : numericTimestamp * 1000)
+    : new Date(textValue);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null;
+  }
+
+  return parsedDate.toISOString();
+}
+
 function slugify(value: string): string {
   return value
     .toLowerCase()
@@ -456,13 +475,10 @@ async function importPost(
       || await uploadSingleImage(supabase, ogImage).catch(() => ogImage);
   }
 
-  const status = record.data.status || "draft";
-  const providedPublishedAt = normalizeOptionalText(record.data.published_at);
-  const publishedAt = status === "published"
-    ? providedPublishedAt || new Date().toISOString()
-    : providedPublishedAt;
+  const status = normalizeOptionalText(record.data.status) === "published" ? "published" : "draft";
+  const providedPublishedAt = normalizePublishedAt(record.data.published_at);
 
-  const postData = {
+  const basePostData = {
     title: record.data.title as string,
     slug: record.data.slug as string,
     body: bodyHtml,
@@ -477,33 +493,48 @@ async function importPost(
     og_image: ogImage,
     noindex: record.data.noindex || false,
     status,
-    published_at: publishedAt,
   };
 
   if (mode === "update" || mode === "upsert") {
-    const { data: existing } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from("posts")
-      .select("id")
-      .eq("slug", postData.slug)
-      .single();
+      .select("id, published_at")
+      .eq("slug", basePostData.slug)
+      .maybeSingle();
+
+    if (existingError) {
+      throw new Error(`Existing post lookup failed: ${existingError.message}`);
+    }
 
     if (existing) {
+      const publishedAt = providedPublishedAt
+        || existing.published_at
+        || (status === "published" ? new Date().toISOString() : null);
+
       const { error } = await supabase
         .from("posts")
-        .update(postData)
+        .update({
+          ...basePostData,
+          published_at: publishedAt,
+        })
         .eq("id", existing.id);
       if (error) throw new Error(`Update failed: ${error.message}`);
       return existing.id;
     }
 
     if (mode === "update") {
-      throw new Error(`Post not found for update: ${postData.slug}`);
+      throw new Error(`Post not found for update: ${basePostData.slug}`);
     }
   }
 
+  const publishedAt = providedPublishedAt || (status === "published" ? new Date().toISOString() : null);
+
   const { data, error } = await supabase
     .from("posts")
-    .insert(postData)
+    .insert({
+      ...basePostData,
+      published_at: publishedAt,
+    })
     .select("id")
     .single();
 

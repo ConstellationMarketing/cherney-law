@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { WizardState } from '@site/lib/importer/recipeTypes';
 import { supabase } from '@/lib/supabase';
+import { updateSessionStatus } from '@site/lib/importer/sessionPersistence';
 
 interface Props {
   state: WizardState;
@@ -147,6 +148,12 @@ export default function StepImportRun({ state, updateState, onBack }: Props) {
       }
     }
 
+    if (state.sessionId) {
+      await updateSessionStatus(state.sessionId, 'completed').catch((error) => {
+        console.error('Failed to mark import session completed:', error);
+      });
+    }
+
     setIsRunning(false);
     setIsDone(true);
   }, [state, approvedRecords, updateState]);
@@ -247,7 +254,7 @@ export default function StepImportRun({ state, updateState, onBack }: Props) {
               : `${successCount} imported, ${failedCount} failed`}
           </div>
           <p className="text-sm text-gray-500 mt-1">
-            Records were imported as drafts. Visit the {state.templateType === 'post' ? 'Blog Posts' : 'Pages'} section to review and publish.
+            Records were imported using their mapped CMS status and metadata. Visit the {state.templateType === 'post' ? 'Blog Posts' : 'Pages'} section to review the result.
           </p>
           {failedCount > 0 && (
             <p className="text-xs text-muted-foreground mt-2">

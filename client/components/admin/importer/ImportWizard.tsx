@@ -4,6 +4,12 @@ import type { WizardStep } from '@site/lib/importer/types';
 import { defaultFilterOptions } from '@site/lib/importer/types';
 import { defaultAiSettings } from '@site/lib/importer/recipeTypes';
 import { checkAiAvailability } from '@site/lib/importer/aiAssist';
+import {
+  listSessions,
+  loadSession,
+  saveSession,
+  updateSessionStatus,
+} from '@site/lib/importer/sessionPersistence';
 import StepSourceSelect from './StepSourceSelect';
 import StepFieldDetection from './StepFieldDetection';
 import StepTeachRecipe from './StepTeachRecipe';
@@ -24,6 +30,8 @@ const STEPS: { key: WizardStep; label: string }[] = [
   { key: 'preview', label: 'Preview' },
   { key: 'import', label: 'Import' },
 ];
+
+const SAVE_DEBOUNCE_MS = 800;
 
 const initialState: WizardState = {
   currentStep: 'template',
@@ -46,18 +54,119 @@ const initialState: WizardState = {
   pipelineContext: defaultImportPipelineContext,
 };
 
+function getStepLabel(step: WizardStep): string {
+  return STEPS.find((entry) => entry.key === step)?.label ?? step;
+}
+
 export default function ImportWizard() {
   const [state, setState] = useState<WizardState>(initialState);
+  const [isHydratingSession, setIsHydratingSession] = useState(true);
+  const [sessionNotice, setSessionNotice] = useState<string | null>(null);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
 
   const updateState = useCallback((updates: Partial<WizardState>) => {
     setState((prev) => ({ ...prev, ...updates }));
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
     checkAiAvailability().then((available) => {
-      updateState({ aiAvailable: available });
+      if (!cancelled) {
+        setState((prev) => ({ ...prev, aiAvailable: available }));
+      }
     });
-  }, [updateState]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const restoreLatestSession = async () => {
+      try {
+        const sessions = await listSessions(1);
+        const latestSession = sessions[0];
+
+        if (!latestSession) {
+          if (!cancelled) setIsHydratingSession(false);
+          return;
+        }
+
+        const restoredState = await loadSession(latestSession.id);
+        if (!restoredState) {
+          if (!cancelled) {
+            setSessionError('A saved import session was found, but it could not be restored.');
+            setIsHydratingSession(false);
+          }
+          return;
+        }
+
+        if (!cancelled) {
+          setState((prev) => ({
+            ...restoredState,
+            aiAvailable: prev.aiAvailable,
+          }));
+          setSessionNotice(
+            `Restored your latest ${latestSession.template_type} import at ${getStepLabel(restoredState.currentStep)}.`
+          );
+          setIsHydratingSession(false);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to restore import session:', error);
+          setSessionError('Could not restore the latest import session.');
+          setIsHydratingSession(false);
+        }
+      }
+    };
+
+    restoreLatestSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isHydratingSession) return;
+    if (!state.templateType || !state.sourceType) return;
+
+    const timeoutId = window.setTimeout(async () => {
+      const sessionId = await saveSession(state);
+      if (sessionId && sessionId !== state.sessionId) {
+        setState((prev) => ({
+          ...prev,
+          sessionId,
+        }));
+      }
+    }, SAVE_DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [state, isHydratingSession]);
+
+  const handleStartOver = useCallback(async () => {
+    setIsResetting(true);
+    setSessionError(null);
+
+    try {
+      if (state.sessionId) {
+        await updateSessionStatus(state.sessionId, 'abandoned');
+      }
+      setState(initialState);
+      setSessionNotice(null);
+    } catch (error) {
+      console.error('Failed to reset import session:', error);
+      setSessionError('Could not clear the saved import session.');
+    } finally {
+      setIsResetting(false);
+    }
+  }, [state.sessionId]);
 
   const goToStep = useCallback((step: WizardStep) => {
     setState((prev) => ({ ...prev, currentStep: step }));
@@ -79,9 +188,50 @@ export default function ImportWizard() {
     }
   }, [state.currentStep, goToStep]);
 
+  if (isHydratingSession) {
+    return (
+      <div className="rounded-lg border border-gray-200 bg-white p-6">
+        <h2 className="text-lg font-semibold text-gray-900">Restoring import session</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Checking for a saved bulk import session so the wizard can resume where it left off.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Step indicator */}
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          {state.sessionId ? (
+            <p className="text-xs font-medium uppercase tracking-wide text-blue-600">Autosave enabled</p>
+          ) : (
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">New import session</p>
+          )}
+        </div>
+        {(state.sessionId || state.currentStep !== 'template') && (
+          <button
+            onClick={handleStartOver}
+            disabled={isResetting}
+            className="rounded border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isResetting ? 'Resetting…' : 'Start Over'}
+          </button>
+        )}
+      </div>
+
+      {(sessionNotice || sessionError) && (
+        <div
+          className={`rounded-lg border px-4 py-3 text-sm ${
+            sessionError
+              ? 'border-red-200 bg-red-50 text-red-700'
+              : 'border-blue-200 bg-blue-50 text-blue-700'
+          }`}
+        >
+          {sessionError || sessionNotice}
+        </div>
+      )}
+
       <nav className="flex items-center gap-1 overflow-x-auto pb-2">
         {STEPS.map((step, i) => {
           const isActive = step.key === state.currentStep;
@@ -104,9 +254,15 @@ export default function ImportWizard() {
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 }`}
               >
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  isActive ? 'bg-white text-blue-600' : isPast ? 'bg-blue-200 text-blue-700' : 'bg-gray-200 text-gray-400'
-                }`}>
+                <span
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    isActive
+                      ? 'bg-white text-blue-600'
+                      : isPast
+                      ? 'bg-blue-200 text-blue-700'
+                      : 'bg-gray-200 text-gray-400'
+                  }`}
+                >
                   {isPast ? '✓' : i + 1}
                 </span>
                 {step.label}
@@ -116,7 +272,6 @@ export default function ImportWizard() {
         })}
       </nav>
 
-      {/* Step content */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         {state.currentStep === 'template' && (
           <StepTemplateSelect state={state} updateState={updateState} onNext={goNext} />

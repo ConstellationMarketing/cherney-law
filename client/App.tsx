@@ -5,7 +5,7 @@ import { createRoot } from "react-dom/client";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { SiteSettingsProvider } from "./contexts/SiteSettingsContext";
 import WcDniManager from "./components/WcDniManager";
@@ -95,31 +95,42 @@ class ErrorBoundary extends Component<
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
+function AppShell() {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith("/admin");
+
+  return (
+    <>
+      {!isAdminRoute && <GlobalScripts />}
+      {!isAdminRoute && <WcDniManager />}
+      <ScrollToTop />
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/about/" element={<AboutUs />} />
+        <Route path="/practice-areas/" element={<PracticeAreas />} />
+        <Route path="/contact/" element={<ContactPage />} />
+        <Route path="/testimonials/" element={<TestimonialsPage />} />
+        <Route path="/common-questions/" element={<CommonQuestionsPage />} />
+        <Route path="/areas-we-serve/" element={<AreasWeServePage />} />
+        <Route path="/homepage-2/" element={<Homepage2 />} />
+        {/* Blog posts now served at root level via DynamicCmsPage catch-all */}
+        <Route path="/admin/*" element={<AdminRoutes />} />
+        {/* Dynamic CMS pages — catches any URL not matched above */}
+        <Route path="*" element={<DynamicCmsPage />} />
+      </Routes>
+    </>
+  );
+}
+
 const App = () => (
   <HelmetProvider>
     <QueryClientProvider client={queryClient}>
       <SiteSettingsProvider>
-        <GlobalScripts />
         <TooltipProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <WcDniManager />
-            <ScrollToTop />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/about/" element={<AboutUs />} />
-              <Route path="/practice-areas/" element={<PracticeAreas />} />
-              <Route path="/contact/" element={<ContactPage />} />
-              <Route path="/testimonials/" element={<TestimonialsPage />} />
-              <Route path="/common-questions/" element={<CommonQuestionsPage />} />
-              <Route path="/areas-we-serve/" element={<AreasWeServePage />} />
-              <Route path="/homepage-2/" element={<Homepage2 />} />
-              {/* Blog posts now served at root level via DynamicCmsPage catch-all */}
-              <Route path="/admin/*" element={<AdminRoutes />} />
-              {/* Dynamic CMS pages — catches any URL not matched above */}
-              <Route path="*" element={<DynamicCmsPage />} />
-            </Routes>
+            <AppShell />
           </BrowserRouter>
         </TooltipProvider>
       </SiteSettingsProvider>

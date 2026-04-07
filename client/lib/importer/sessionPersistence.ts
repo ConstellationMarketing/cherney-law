@@ -1,7 +1,12 @@
 // Session persistence — Save/resume import sessions to Supabase
 
 import { supabase } from '@/lib/supabase';
-import { defaultImportPipelineContext, type MigrationSession, type WizardState } from './recipeTypes';
+import {
+  defaultAiSettings,
+  defaultImportPipelineContext,
+  type MigrationSession,
+  type WizardState,
+} from './recipeTypes';
 import type { WizardStep } from './types';
 
 /**
@@ -27,6 +32,12 @@ export async function saveSession(
       totalRows: state.sourceRecords.length,
       columnNames: state.sourceColumns.map((c) => c.name),
       sampleData: state.sourceRecords.slice(0, 3).map((r) => r.data),
+      columns: state.sourceColumns,
+      importMode: state.importMode,
+      filterOptions: state.filterOptions,
+      aiSettings: state.aiSettings,
+      sampleRowIndex: state.sampleRowIndex,
+      pipelineContext: state.pipelineContext,
     },
     source_data_json: state.sourceRecords.map((r) => r.data),
     mapping_json: state.mappingConfig,
@@ -91,16 +102,17 @@ export async function loadSession(sessionId: string): Promise<WizardState | null
     currentStep: session.current_step as WizardStep,
     templateType: session.template_type,
     sourceType: session.source_type,
-    importMode: 'create',
+    importMode: session.source_summary_json?.importMode ?? 'create',
     sourceRecords: (session.source_data_json ?? []).map((d, i) => ({
       rowIndex: i,
       data: d,
     })),
-    sourceColumns: (session.source_summary_json?.columnNames ?? []).map((name) => ({
-      name,
-      sampleValues: [],
-      detectedType: 'text' as const,
-    })),
+    sourceColumns: session.source_summary_json?.columns
+      ?? (session.source_summary_json?.columnNames ?? []).map((name) => ({
+        name,
+        sampleValues: [],
+        detectedType: 'text' as const,
+      })),
     mappingConfig: session.mapping_json,
     recipe: session.recipe_json,
     transformedRecords: session.transformed_records_json ?? [],
@@ -109,7 +121,7 @@ export async function loadSession(sessionId: string): Promise<WizardState | null
     validationResult: session.validation_result_json,
     importJobId: null,
     sessionId: session.id,
-    filterOptions: {
+    filterOptions: session.source_summary_json?.filterOptions ?? {
       removeContactBlocks: true,
       removePostListings: true,
       removeSidebarWidgets: true,
@@ -118,16 +130,10 @@ export async function loadSession(sessionId: string): Promise<WizardState | null
       removeFormBlocks: true,
       linkDensityThreshold: 0.6,
     },
-    aiSettings: {
-      useForMapping: true,
-      useForMeta: true,
-      useForScoring: false,
-      useForRewriting: false,
-      model: 'gpt-4o-mini',
-      temperature: 0.3,
-    },
+    aiSettings: session.source_summary_json?.aiSettings ?? defaultAiSettings,
     aiAvailable: false,
-    pipelineContext: defaultImportPipelineContext,
+    sampleRowIndex: session.source_summary_json?.sampleRowIndex,
+    pipelineContext: session.source_summary_json?.pipelineContext ?? defaultImportPipelineContext,
   };
 }
 

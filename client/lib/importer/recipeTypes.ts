@@ -183,6 +183,12 @@ export interface SourceSummary {
   totalRows: number;
   columnNames: string[];
   sampleData: Record<string, string>[];
+  columns?: import('./types').SourceColumn[];
+  importMode?: import('./types').ImportMode;
+  filterOptions?: import('./types').FilterOptions;
+  aiSettings?: AiSettings;
+  sampleRowIndex?: number;
+  pipelineContext?: ImportPipelineContext;
 }
 
 /** Review state for exception review step */

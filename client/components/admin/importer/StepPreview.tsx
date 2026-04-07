@@ -132,6 +132,10 @@ function getPracticeSections(content: Record<string, unknown>): SectionPreview[]
   return sections;
 }
 
+function getMappedSourceColumn(state: WizardState, targetField: string): string {
+  return state.mappingConfig?.mappings.find((mapping) => mapping.targetField === targetField)?.sourceColumn ?? '';
+}
+
 function getPostSections(preparedData: Record<string, unknown>): SectionPreview[] {
   const body = stripTags(String(preparedData.body ?? ''));
   const excerpt = String(preparedData.excerpt ?? '');
@@ -313,6 +317,43 @@ export default function StepPreview({ state, updateState, onNext, onBack }: Prop
           )}
         </p>
       </div>
+
+      {state.templateType === 'post' && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <h3 className="text-sm font-semibold text-blue-900">Blog metadata mapping</h3>
+          <div className="mt-3 grid gap-3 md:grid-cols-3 text-sm">
+            <div className="rounded border border-blue-200 bg-white p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Publish Date</p>
+              <p className="mt-1 font-medium text-gray-900">
+                {getMappedSourceColumn(state, 'published_at') || 'Not mapped'}
+              </p>
+              <p className="mt-1 text-xs text-gray-500">
+                {getMappedSourceColumn(state, 'published_at')
+                  ? 'This source column will populate the post publish date.'
+                  : 'If a post is imported as published without a mapped date, import time will be used.'}
+              </p>
+            </div>
+            <div className="rounded border border-blue-200 bg-white p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Category</p>
+              <p className="mt-1 font-medium text-gray-900">
+                {getMappedSourceColumn(state, 'category') || 'Not mapped'}
+              </p>
+              <p className="mt-1 text-xs text-gray-500">
+                Existing categories are reused, and missing ones are created during import.
+              </p>
+            </div>
+            <div className="rounded border border-blue-200 bg-white p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Status</p>
+              <p className="mt-1 font-medium text-gray-900">
+                {getMappedSourceColumn(state, 'status') || 'Default draft'}
+              </p>
+              <p className="mt-1 text-xs text-gray-500">
+                Status decides whether the imported post stays draft or publishes immediately.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Content sample cards */}
       {sampleRecords.length > 0 && (
