@@ -150,6 +150,60 @@ async function resolvePostCategoryId(
   return null;
 }
 
+function collectInlineImageUrls(html: string): string[] {
+  if (!html?.trim()) return [];
+
+  const imageUrls = new Set<string>();
+  const imgTagPattern = /<img\b[^>]*\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))[^>]*>/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = imgTagPattern.exec(html)) !== null) {
+    const src = (match[1] || match[2] || match[3] || "").trim();
+    if (src.startsWith("http://") || src.startsWith("https://")) {
+      imageUrls.add(src);
+    }
+  }
+
+  return Array.from(imageUrls);
+}
+
+async function rewriteBlogBodyImageUrls(
+  supabase: ServiceClient,
+  bodyHtmlValue: unknown
+): Promise<{ bodyHtml: string | null; uploadedUrlMap: Map<string, string> }> {
+  const bodyHtml = normalizeOptionalText(bodyHtmlValue);
+  if (!bodyHtml) {
+    return { bodyHtml: null, uploadedUrlMap: new Map() };
+  }
+
+  const uploadedUrlMap = new Map<string, string>();
+  const inlineImageUrls = collectInlineImageUrls(bodyHtml);
+
+  for (const imageUrl of inlineImageUrls) {
+    const uploadedUrl = await uploadSingleImage(supabase, imageUrl).catch(() => imageUrl);
+    uploadedUrlMap.set(imageUrl, uploadedUrl || imageUrl);
+  }
+
+  if (uploadedUrlMap.size === 0) {
+    return { bodyHtml, uploadedUrlMap };
+  }
+
+  const rewrittenBodyHtml = bodyHtml.replace(
+    /(<img\b[^>]*\bsrc\s*=\s*)("([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi,
+    (match, prefix, valueWithQuotes, doubleQuotedValue, singleQuotedValue, unquotedValue) => {
+      const originalUrl = (doubleQuotedValue || singleQuotedValue || unquotedValue || "").trim();
+      const uploadedUrl = uploadedUrlMap.get(originalUrl);
+      if (!uploadedUrl || uploadedUrl === originalUrl) return match;
+
+      if (doubleQuotedValue !== undefined) return `${prefix}"${uploadedUrl}"`;
+      if (singleQuotedValue !== undefined) return `${prefix}'${uploadedUrl}'`;
+      return `${prefix}${uploadedUrl}`;
+    }
+  );
+
+  return { bodyHtml: rewrittenBodyHtml, uploadedUrlMap };
+}
+
 interface ImportRecord {
   rowIndex: number;
   slug: string;
@@ -387,12 +441,20 @@ async function importPost(
     record.data.category_slug
   );
 
-  // Upload featured_image and og_image to media library
-  let featuredImage = (record.data.featured_image as string) || null;
-  if (featuredImage) featuredImage = await uploadSingleImage(supabase, featuredImage).catch(() => featuredImage);
+  const { bodyHtml, uploadedUrlMap } = await rewriteBlogBodyImageUrls(supabase, record.data.body);
 
-  let ogImage = (record.data.og_image as string) || null;
-  if (ogImage) ogImage = await uploadSingleImage(supabase, ogImage).catch(() => ogImage);
+  // Upload featured_image and og_image to media library
+  let featuredImage = normalizeOptionalText(record.data.featured_image);
+  if (featuredImage) {
+    featuredImage = uploadedUrlMap.get(featuredImage)
+      || await uploadSingleImage(supabase, featuredImage).catch(() => featuredImage);
+  }
+
+  let ogImage = normalizeOptionalText(record.data.og_image);
+  if (ogImage) {
+    ogImage = uploadedUrlMap.get(ogImage)
+      || await uploadSingleImage(supabase, ogImage).catch(() => ogImage);
+  }
 
   const status = record.data.status || "draft";
   const providedPublishedAt = normalizeOptionalText(record.data.published_at);
@@ -403,7 +465,7 @@ async function importPost(
   const postData = {
     title: record.data.title as string,
     slug: record.data.slug as string,
-    body: record.data.body || null,
+    body: bodyHtml,
     excerpt: record.data.excerpt || null,
     featured_image: featuredImage,
     category_id: categoryId,
