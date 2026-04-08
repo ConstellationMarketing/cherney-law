@@ -8,10 +8,39 @@ import type { WizardStep } from './types'
 
 const loggedSessionWarnings = new Set<string>()
 
+class SessionRequestError extends Error {
+  status?: number
+
+  constructor(message: string, status?: number) {
+    super(message)
+    this.name = 'SessionRequestError'
+    this.status = status
+  }
+}
+
+export interface SaveSessionOptions {
+  includeSourceSnapshot?: boolean
+  includeTransformedRecords?: boolean
+  includeValidationResult?: boolean
+}
+
+export interface SaveSessionResult {
+  id: string | null
+  error: string | null
+  payloadTooLarge: boolean
+}
+
 function logSessionWarning(message: string, error?: unknown) {
   if (loggedSessionWarnings.has(message)) return
   loggedSessionWarnings.add(message)
   console.warn(message, error)
+}
+
+function isPayloadTooLargeError(error: unknown) {
+  return (
+    (error instanceof SessionRequestError && error.status === 413)
+    || (error instanceof Error && /request entity too large|payload exceeded/i.test(error.message))
+  )
 }
 
 async function requestJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
@@ -36,7 +65,7 @@ async function requestJson<T>(input: RequestInfo, init?: RequestInit): Promise<T
       if (bodyText.trim()) errorMessage = bodyText
     }
 
-    throw new Error(errorMessage)
+    throw new SessionRequestError(errorMessage, response.status)
   }
 
   return response.json() as Promise<T>
@@ -47,8 +76,9 @@ async function requestJson<T>(input: RequestInfo, init?: RequestInit): Promise<T
  */
 export async function saveSession(
   state: WizardState,
+  options: SaveSessionOptions = {},
   name?: string
-): Promise<string | null> {
+): Promise<SaveSessionResult> {
   const sessionData: Partial<MigrationSession> = {
     name: name ?? `Import ${state.templateType} - ${new Date().toLocaleDateString()}`,
     template_type: state.templateType!,
@@ -72,14 +102,23 @@ export async function saveSession(
       sampleRowIndex: state.sampleRowIndex,
       pipelineContext: state.pipelineContext,
     },
-    source_data_json: state.sourceRecords.map((r) => r.data),
     mapping_json: state.mappingConfig,
     recipe_json: state.recipe,
-    transformed_records_json: state.transformedRecords,
     exception_indices: state.exceptionIndices,
     review_state_json: state.reviewState,
-    validation_result_json: state.validationResult,
     status: 'in_progress',
+  }
+
+  if (options.includeSourceSnapshot) {
+    sessionData.source_snapshot_json = state.sourceRecords.map((r) => r.data)
+  }
+
+  if (options.includeTransformedRecords) {
+    sessionData.transformed_records_json = state.transformedRecords
+  }
+
+  if (options.includeValidationResult) {
+    sessionData.validation_result_json = state.validationResult
   }
 
   try {
@@ -91,10 +130,24 @@ export async function saveSession(
       }),
     })
 
-    return data.id ?? null
+    return {
+      id: data.id ?? null,
+      error: null,
+      payloadTooLarge: false,
+    }
   } catch (error) {
     logSessionWarning('Failed to save import session via same-origin API.', error)
-    return null
+
+    const payloadTooLarge = isPayloadTooLargeError(error)
+    const fallbackMessage = payloadTooLarge
+      ? 'Autosave payload is too large right now. Your current import stays open, and autosave will retry with a lighter payload.'
+      : 'Autosave could not be saved right now. Your current import stays open, and autosave will retry automatically.'
+
+    return {
+      id: null,
+      error: error instanceof Error && error.message ? fallbackMessage : fallbackMessage,
+      payloadTooLarge,
+    }
   }
 }
 
@@ -107,12 +160,14 @@ export async function loadSession(sessionId: string): Promise<WizardState | null
       method: 'GET',
     })
 
+    const sourceSnapshot = session.source_snapshot_json ?? session.source_data_json ?? []
+
     return {
       currentStep: session.current_step as WizardStep,
       templateType: session.template_type,
       sourceType: session.source_type,
       importMode: session.source_summary_json?.importMode ?? 'create',
-      sourceRecords: (session.source_data_json ?? []).map((d, i) => ({
+      sourceRecords: sourceSnapshot.map((d, i) => ({
         rowIndex: i,
         data: d,
       })),

@@ -64,6 +64,7 @@ export interface NormalizedContent {
   heroTagline: string;
   heroTaglineSource: HeroTaglineSource;
   heroDescription: string;
+  featuredImage: string;
   heroImage: string;
   heroImageAlt: string;
   excerpt: string;
@@ -883,6 +884,7 @@ export function buildNormalizedContent(
   const metaTitle = cleanedMetaTitle || chosenTitle;
   const metaDescription = mappedData.meta_description || '';
   const canonicalUrl = mappedData.canonical_url || '';
+  const featuredImage = mappedData.featured_image || '';
   const ogImage = mappedData.og_image || '';
   const schemaType = mappedData.schema_type || (templateType === 'post' ? 'BlogPosting' : 'LegalService');
   const status = mappedData.status || 'draft';
@@ -1011,12 +1013,19 @@ export function buildNormalizedContent(
   const allHtml = [body, mappedData.why_body, mappedData.closing_body].filter(Boolean).join('\n');
   const allImages = extractImages(allHtml);
 
-  // Featured image candidates: og:image, hero_image, first image from lead content
+  // Featured image candidates: explicit featured image first, then hero image, og:image, then the first body image.
   const featuredImageCandidates: ImageCandidate[] = [];
-  if (ogImage) featuredImageCandidates.push({ src: ogImage, alt: heroImageAlt });
-  if (heroImage) featuredImageCandidates.push({ src: heroImage, alt: heroImageAlt });
+  const pushFeaturedCandidate = (candidate: ImageCandidate | null) => {
+    if (!candidate?.src) return;
+    if (featuredImageCandidates.some((existing) => existing.src === candidate.src)) return;
+    featuredImageCandidates.push(candidate);
+  };
+
+  pushFeaturedCandidate(featuredImage ? { src: featuredImage, alt: heroImageAlt } : null);
+  pushFeaturedCandidate(heroImage ? { src: heroImage, alt: heroImageAlt } : null);
+  pushFeaturedCandidate(ogImage ? { src: ogImage, alt: heroImageAlt } : null);
   const leadImg = extractFirstImage(leadHtml || body);
-  if (leadImg) featuredImageCandidates.push(leadImg);
+  pushFeaturedCandidate(leadImg);
 
   const leadText = stripTagsToText(leadHtml);
   const totalWordCount = sectionBlocks.reduce((sum, block) => sum + block.wordCount, 0) + countWords(leadText);
@@ -1051,6 +1060,7 @@ export function buildNormalizedContent(
     heroTagline,
     heroTaglineSource,
     heroDescription,
+    featuredImage,
     heroImage,
     heroImageAlt,
     excerpt: mappedExcerpt,

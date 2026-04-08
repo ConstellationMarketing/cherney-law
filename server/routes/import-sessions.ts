@@ -1,4 +1,4 @@
-import type { RequestHandler } from 'express'
+import type { Request, RequestHandler } from 'express'
 import { createClient } from '@supabase/supabase-js'
 
 function getServiceClient() {
@@ -12,6 +12,18 @@ function getSessionListLimit(value: unknown) {
   const parsed = Number(value)
   if (!Number.isFinite(parsed) || parsed <= 0) return 10
   return Math.min(Math.trunc(parsed), 25)
+}
+
+function getApproxPayloadBytes(req: Request) {
+  const headerValue = req.headers['content-length']
+  const parsedHeader = Number(Array.isArray(headerValue) ? headerValue[0] : headerValue)
+  if (Number.isFinite(parsedHeader) && parsedHeader > 0) return parsedHeader
+
+  try {
+    return Buffer.byteLength(JSON.stringify(req.body ?? {}), 'utf8')
+  } catch {
+    return 0
+  }
 }
 
 export const handleListImportSessions: RequestHandler = async (req, res) => {
@@ -75,6 +87,24 @@ export const handleSaveImportSession: RequestHandler = async (req, res) => {
       return
     }
 
+    const payloadBytes = getApproxPayloadBytes(req)
+    const sourceSnapshot = sessionData.source_snapshot_json
+    const transformedRecords = sessionData.transformed_records_json
+    const validationResult = sessionData.validation_result_json as { records?: unknown[] } | null | undefined
+
+    console.info('[import-sessions] save request', {
+      sessionId: sessionId ?? null,
+      payloadBytes,
+      includesSourceSnapshot: Array.isArray(sourceSnapshot),
+      sourceRowCount: Array.isArray(sourceSnapshot) ? sourceSnapshot.length : 0,
+      includesTransformedRecords: Array.isArray(transformedRecords),
+      transformedRecordCount: Array.isArray(transformedRecords) ? transformedRecords.length : 0,
+      includesValidationResult: Boolean(validationResult),
+      validationRecordCount: Array.isArray(validationResult?.records) ? validationResult.records.length : 0,
+      currentStep: typeof sessionData.current_step === 'string' ? sessionData.current_step : null,
+      templateType: typeof sessionData.template_type === 'string' ? sessionData.template_type : null,
+    })
+
     const supabase = getServiceClient()
 
     if (sessionId) {
@@ -110,6 +140,7 @@ export const handleSaveImportSession: RequestHandler = async (req, res) => {
 
     res.json({ id: data.id })
   } catch (err) {
+    console.error('[import-sessions] save failed', err)
     res.status(500).json({ error: err instanceof Error ? err.message : 'Internal server error' })
   }
 }

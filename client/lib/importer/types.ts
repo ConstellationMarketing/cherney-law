@@ -91,6 +91,8 @@ export interface TemplateField {
   aliases: string[];
   /** If true, this field is excluded from auto-mapping (user must map manually) */
   excludeFromAutoMap?: boolean;
+  /** If true, this field should not appear in the field-mapping UI */
+  excludeFromFieldMapping?: boolean;
   /** Default value if not mapped */
   defaultValue?: string;
   /** Select options if type is 'select' */

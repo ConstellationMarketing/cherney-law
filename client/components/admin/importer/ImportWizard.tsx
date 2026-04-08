@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { defaultImportPipelineContext, type WizardState } from '@site/lib/importer/recipeTypes';
 import type { WizardStep } from '@site/lib/importer/types';
 import { defaultFilterOptions } from '@site/lib/importer/types';
@@ -32,6 +32,8 @@ const STEPS: { key: WizardStep; label: string }[] = [
 ];
 
 const SAVE_DEBOUNCE_MS = 800;
+const AUTOSAVE_RETRY_MS = 15_000;
+const AUTOSAVE_LARGE_PAYLOAD_RETRY_MS = 60_000;
 
 const initialState: WizardState = {
   currentStep: 'template',
@@ -63,10 +65,22 @@ export default function ImportWizard() {
   const [isHydratingSession, setIsHydratingSession] = useState(true);
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
   const [sessionError, setSessionError] = useState<string | null>(null);
+  const [autosaveWarning, setAutosaveWarning] = useState<string | null>(null);
+  const [autosavePausedUntil, setAutosavePausedUntil] = useState<number | null>(null);
+  const [isAutosaving, setIsAutosaving] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const lastSavedSourceRecordsRef = useRef<WizardState['sourceRecords'] | null>(null);
+  const lastSavedTransformedRecordsRef = useRef<WizardState['transformedRecords'] | null>(null);
+  const lastSavedValidationResultRef = useRef<WizardState['validationResult'] | null>(null);
 
   const updateState = useCallback((updates: Partial<WizardState>) => {
     setState((prev) => ({ ...prev, ...updates }));
+  }, []);
+
+  const markHeavyStateSaved = useCallback((snapshot: WizardState) => {
+    lastSavedSourceRecordsRef.current = snapshot.sourceRecords;
+    lastSavedTransformedRecordsRef.current = snapshot.transformedRecords;
+    lastSavedValidationResultRef.current = snapshot.validationResult;
   }, []);
 
   useEffect(() => {
@@ -106,6 +120,9 @@ export default function ImportWizard() {
         }
 
         if (!cancelled) {
+          markHeavyStateSaved(restoredState);
+          setAutosaveWarning(null);
+          setAutosavePausedUntil(null);
           setState((prev) => ({
             ...restoredState,
             aiAvailable: prev.aiAvailable,
@@ -129,26 +146,77 @@ export default function ImportWizard() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [markHeavyStateSaved]);
+
+  useEffect(() => {
+    if (!autosavePausedUntil) return;
+
+    const retryDelay = autosavePausedUntil - Date.now();
+    if (retryDelay <= 0) {
+      setAutosavePausedUntil(null);
+      return;
+    }
+
+    const retryTimer = window.setTimeout(() => {
+      setAutosavePausedUntil(null);
+    }, retryDelay);
+
+    return () => {
+      window.clearTimeout(retryTimer);
+    };
+  }, [autosavePausedUntil]);
 
   useEffect(() => {
     if (isHydratingSession) return;
     if (!state.templateType || !state.sourceType) return;
+    if (autosavePausedUntil && autosavePausedUntil > Date.now()) return;
 
+    let cancelled = false;
     const timeoutId = window.setTimeout(async () => {
-      const sessionId = await saveSession(state);
-      if (sessionId && sessionId !== state.sessionId) {
-        setState((prev) => ({
-          ...prev,
-          sessionId,
-        }));
+      const includeSourceSnapshot = !state.sessionId || lastSavedSourceRecordsRef.current !== state.sourceRecords;
+      const includeTransformedRecords = !state.sessionId || lastSavedTransformedRecordsRef.current !== state.transformedRecords;
+      const includeValidationResult = !state.sessionId || lastSavedValidationResultRef.current !== state.validationResult;
+
+      setIsAutosaving(true);
+      const result = await saveSession(state, {
+        includeSourceSnapshot,
+        includeTransformedRecords,
+        includeValidationResult,
+      });
+
+      if (cancelled) return;
+
+      setIsAutosaving(false);
+
+      if (result.id) {
+        markHeavyStateSaved(state);
+        setAutosaveWarning(null);
+        setAutosavePausedUntil(null);
+
+        if (result.id !== state.sessionId) {
+          setState((prev) => ({
+            ...prev,
+            sessionId: result.id,
+          }));
+        }
+
+        return;
+      }
+
+      if (result.error) {
+        const retryDelay = result.payloadTooLarge
+          ? AUTOSAVE_LARGE_PAYLOAD_RETRY_MS
+          : AUTOSAVE_RETRY_MS;
+        setAutosaveWarning(result.error);
+        setAutosavePausedUntil(Date.now() + retryDelay);
       }
     }, SAVE_DEBOUNCE_MS);
 
     return () => {
+      cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [state, isHydratingSession]);
+  }, [autosavePausedUntil, isHydratingSession, markHeavyStateSaved, state]);
 
   const handleStartOver = useCallback(async () => {
     setIsResetting(true);
@@ -158,6 +226,12 @@ export default function ImportWizard() {
       if (state.sessionId) {
         await updateSessionStatus(state.sessionId, 'abandoned');
       }
+      lastSavedSourceRecordsRef.current = null;
+      lastSavedTransformedRecordsRef.current = null;
+      lastSavedValidationResultRef.current = null;
+      setAutosaveWarning(null);
+      setAutosavePausedUntil(null);
+      setIsAutosaving(false);
       setState(initialState);
       setSessionNotice(null);
     } catch (error) {
@@ -203,7 +277,11 @@ export default function ImportWizard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          {state.sessionId ? (
+          {autosaveWarning ? (
+            <p className="text-xs font-medium uppercase tracking-wide text-amber-600">Autosave paused</p>
+          ) : isAutosaving ? (
+            <p className="text-xs font-medium uppercase tracking-wide text-blue-600">Saving import session</p>
+          ) : state.sessionId ? (
             <p className="text-xs font-medium uppercase tracking-wide text-blue-600">Autosave enabled</p>
           ) : (
             <p className="text-xs font-medium uppercase tracking-wide text-gray-400">New import session</p>
@@ -229,6 +307,17 @@ export default function ImportWizard() {
           }`}
         >
           {sessionError || sessionNotice}
+        </div>
+      )}
+
+      {autosaveWarning && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <div>{autosaveWarning}</div>
+          {autosavePausedUntil && autosavePausedUntil > Date.now() && (
+            <div className="mt-1 text-xs text-amber-700">
+              Retry scheduled in {Math.max(1, Math.ceil((autosavePausedUntil - Date.now()) / 1000))}s.
+            </div>
+          )}
         </div>
       )}
 

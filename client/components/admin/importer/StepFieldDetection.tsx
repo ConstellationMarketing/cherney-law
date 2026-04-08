@@ -16,7 +16,8 @@ interface Props {
 export default function StepFieldDetection({ state, updateState, onNext, onBack }: Props) {
   const [mappings, setMappings] = useState<FieldMapping[]>(state.mappingConfig?.mappings ?? []);
 
-  const templateFields = getTemplateFields(state.templateType!);
+  const templateFields = getTemplateFields(state.templateType!).filter((field) => !field.excludeFromFieldMapping);
+  const allowedFieldKeys = useMemo(() => new Set(templateFields.map((field) => field.key)), [templateFields]);
 
   // --- Load preset state ---
   const [savedPresets, setSavedPresets] = useState<MappingPreset[]>([]);
@@ -61,9 +62,16 @@ export default function StepFieldDetection({ state, updateState, onNext, onBack 
     const preset = savedPresets.find((p) => p.id === selectedPresetId);
     if (!preset) return;
     setLoadingPreset(true);
-    const loadedMappings = preset.mapping_json.mappings ?? [];
+    const loadedMappings = (preset.mapping_json.mappings ?? []).filter((mapping) => allowedFieldKeys.has(mapping.targetField));
+    const sanitizedConfig = {
+      ...preset.mapping_json,
+      mappings: loadedMappings,
+      unmappedFields: templateFields
+        .map((field) => field.key)
+        .filter((fieldKey) => !loadedMappings.find((mapping) => mapping.targetField === fieldKey)),
+    };
     setMappings(loadedMappings);
-    updateState({ mappingConfig: preset.mapping_json });
+    updateState({ mappingConfig: sanitizedConfig });
     setLoadingPreset(false);
     setPresetBannerDismissed(true);
   };
@@ -95,13 +103,13 @@ export default function StepFieldDetection({ state, updateState, onNext, onBack 
 
   const buildConfig = () => ({
     templateType: state.templateType!,
-    mappings: mappings.filter((m) => m.targetField),
+    mappings: mappings.filter((m) => m.targetField && allowedFieldKeys.has(m.targetField)),
     unmappedColumns: state.sourceColumns
       .map((c) => c.name)
-      .filter((n) => !mappings.find((m) => m.sourceColumn === n && m.targetField)),
+      .filter((n) => !mappings.find((m) => m.sourceColumn === n && m.targetField && allowedFieldKeys.has(m.targetField))),
     unmappedFields: templateFields
       .map((f) => f.key)
-      .filter((k) => !mappings.find((m) => m.targetField === k)),
+      .filter((k) => !mappings.find((m) => m.targetField === k && allowedFieldKeys.has(m.targetField))),
   });
 
   const samplePreview = useMemo(() => {

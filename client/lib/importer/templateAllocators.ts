@@ -84,7 +84,7 @@ function allocateForBlogPost(
       : 'empty';
 
   // Featured image
-  const featuredImage = normalized.featuredImageCandidates[0]?.src || null;
+  const featuredImage = normalized.featuredImage || normalized.featuredImageCandidates[0]?.src || null;
   const categoryName = pickPrimaryCategoryValue(normalized.categoryName);
   const categorySlug = pickPrimaryCategoryValue(normalized.categorySlug);
   const publishedAt = normalized.publishedAt || null;
@@ -320,7 +320,7 @@ function allocateForAreaPage(
     canonical_url: normalized.canonicalUrl || null,
     og_title: seoTitle || null,
     og_description: normalized.metaDescription || null,
-    og_image: normalized.ogImage || null,
+    og_image: normalized.ogImage || normalized.featuredImage || null,
     noindex: false,
     schema_type: 'LegalService',
     schema_data: null,
@@ -379,7 +379,7 @@ function allocateForPracticePage(
       sectionLabel: '',
       tagline: normalized.heroTagline || pageTitle || '',
       description: normalized.heroDescription || '',
-      backgroundImage: normalized.heroImage || '',
+      backgroundImage: normalized.heroImage || normalized.featuredImage || '',
       backgroundImageAlt: pageTitle || '',
     },
     socialProof: {
@@ -407,7 +407,7 @@ function allocateForPracticePage(
     canonical_url: normalized.canonicalUrl || null,
     og_title: seoTitle || null,
     og_description: normalized.metaDescription || null,
-    og_image: normalized.ogImage || normalized.heroImage || null,
+    og_image: normalized.ogImage || normalized.featuredImage || normalized.heroImage || null,
     noindex: false,
     schema_type: normalized.schemaType || 'LegalService',
     schema_data: null,

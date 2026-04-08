@@ -35,6 +35,8 @@ export const practiceFields: TemplateField[] = [
     type: 'html',
     required: false,
     isContentField: true,
+    excludeFromAutoMap: true,
+    excludeFromFieldMapping: true,
     aliases: ['hero_description', 'hero_text', 'intro', 'introduction', 'excerpt', 'summary', 'description'],
   },
   {
@@ -120,6 +122,8 @@ export const practiceFields: TemplateField[] = [
     type: 'text',
     required: false,
     isContentField: false,
+    excludeFromAutoMap: true,
+    excludeFromFieldMapping: true,
     aliases: ['schema_type', 'structured_data_type'],
     defaultValue: 'LegalService',
   },

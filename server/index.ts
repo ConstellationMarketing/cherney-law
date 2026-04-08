@@ -29,6 +29,24 @@ import {
   handleUpdateImportSessionStatus,
 } from "./routes/import-sessions";
 
+const DEFAULT_BODY_LIMIT = '10mb';
+const IMPORTER_BODY_LIMIT = '150mb';
+const IMPORTER_ROUTE_PATTERNS = [
+  /^\/api\/import-sessions(?:\/[^/]+\/status)?$/,
+  /^\/api\/bulk-import(?:\/post-slugs)?$/,
+  /^\/api\/ai-split-area-batch$/,
+];
+
+function isImporterPayloadRoute(path: string) {
+  return IMPORTER_ROUTE_PATTERNS.some((pattern) => pattern.test(path));
+}
+
+function getContentLengthBytes(contentLength: string | string[] | undefined) {
+  const value = Array.isArray(contentLength) ? contentLength[0] : contentLength;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
 export function createServer() {
   const app = express();
 
@@ -60,8 +78,44 @@ export function createServer() {
     req.on('error', next);
   });
 
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+  const defaultJsonParser = express.json({ limit: DEFAULT_BODY_LIMIT });
+  const importerJsonParser = express.json({ limit: IMPORTER_BODY_LIMIT });
+  const defaultUrlencodedParser = express.urlencoded({ extended: true, limit: DEFAULT_BODY_LIMIT });
+  const importerUrlencodedParser = express.urlencoded({ extended: true, limit: IMPORTER_BODY_LIMIT });
+
+  app.use((req, res, next) => {
+    const parser = isImporterPayloadRoute(req.path) ? importerJsonParser : defaultJsonParser;
+    parser(req, res, next);
+  });
+
+  app.use((req, res, next) => {
+    const parser = isImporterPayloadRoute(req.path) ? importerUrlencodedParser : defaultUrlencodedParser;
+    parser(req, res, next);
+  });
+
+  app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const bodyParserError = err as { type?: string; message?: string } | undefined;
+    if (bodyParserError?.type !== 'entity.too.large') {
+      next(err);
+      return;
+    }
+
+    const routeLimit = isImporterPayloadRoute(req.path) ? IMPORTER_BODY_LIMIT : DEFAULT_BODY_LIMIT;
+    const payloadBytes = getContentLengthBytes(req.headers['content-length']);
+
+    console.warn('[api] request payload exceeded configured limit', {
+      path: req.path,
+      method: req.method,
+      routeLimit,
+      payloadBytes,
+    });
+
+    res.status(413).json({
+      error: isImporterPayloadRoute(req.path)
+        ? `Importer payload exceeded the ${routeLimit} request limit. The importer will keep working, but the autosave or import payload must be smaller.`
+        : `Request payload exceeded the ${routeLimit} request limit.`,
+    });
+  });
 
   // API routes
   app.get("/api/ping", (_req, res) => {
