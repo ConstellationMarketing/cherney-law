@@ -114,13 +114,13 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                           <DropdownMenuContent
                             align="start"
                             sideOffset={8}
-                            className="bg-law-dark border border-law-border z-50 p-0"
+                            className="bg-law-dark border border-law-border z-50"
                           >
-                            <div className="grid auto-cols-fr grid-flow-col gap-0">
+                            <div className="grid grid-flow-col auto-cols-max divide-x divide-law-border">
                               {childColumns.map((column, columnIndex) => (
                                 <div
                                   key={`${item.id || item.href || item.label}-column-${columnIndex}`}
-                                  className="min-w-[280px] py-1"
+                                  className="py-1"
                                 >
                                   {column.map((child) => (
                                     <DropdownMenuItem
