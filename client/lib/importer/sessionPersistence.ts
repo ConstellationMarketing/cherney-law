@@ -7,6 +7,7 @@ import {
 import type { WizardStep } from './types'
 
 const loggedSessionWarnings = new Set<string>()
+const MAX_AUTOSAVE_PAYLOAD_BYTES = 8 * 1024 * 1024
 
 class SessionRequestError extends Error {
   status?: number
@@ -41,6 +42,14 @@ function isPayloadTooLargeError(error: unknown) {
     (error instanceof SessionRequestError && error.status === 413)
     || (error instanceof Error && /request entity too large|payload exceeded/i.test(error.message))
   )
+}
+
+function estimatePayloadBytes(value: unknown) {
+  try {
+    return new TextEncoder().encode(JSON.stringify(value)).length
+  } catch {
+    return Number.POSITIVE_INFINITY
+  }
 }
 
 async function requestJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
@@ -121,13 +130,34 @@ export async function saveSession(
     sessionData.validation_result_json = state.validationResult
   }
 
+  const requestPayload: {
+    sessionId: string | null
+    sessionData: Partial<MigrationSession>
+  } = {
+    sessionId: state.sessionId,
+    sessionData,
+  }
+
+  let payloadBytes = estimatePayloadBytes(requestPayload)
+
+  if (payloadBytes > MAX_AUTOSAVE_PAYLOAD_BYTES && requestPayload.sessionData.validation_result_json) {
+    delete requestPayload.sessionData.validation_result_json
+    payloadBytes = estimatePayloadBytes(requestPayload)
+  }
+
+  if (payloadBytes > MAX_AUTOSAVE_PAYLOAD_BYTES && requestPayload.sessionData.transformed_records_json) {
+    delete requestPayload.sessionData.transformed_records_json
+    payloadBytes = estimatePayloadBytes(requestPayload)
+  }
+
+  if (payloadBytes > MAX_AUTOSAVE_PAYLOAD_BYTES && requestPayload.sessionData.source_snapshot_json) {
+    delete requestPayload.sessionData.source_snapshot_json
+  }
+
   try {
     const data = await requestJson<{ id: string }>('/api/import-sessions', {
       method: 'POST',
-      body: JSON.stringify({
-        sessionId: state.sessionId,
-        sessionData,
-      }),
+      body: JSON.stringify(requestPayload),
     })
 
     return {

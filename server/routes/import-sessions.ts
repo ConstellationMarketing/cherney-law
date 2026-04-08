@@ -14,6 +14,8 @@ function getSessionListLimit(value: unknown) {
   return Math.min(Math.trunc(parsed), 25)
 }
 
+const MAX_PERSISTED_SESSION_PAYLOAD_BYTES = 8 * 1024 * 1024
+
 function getApproxPayloadBytes(req: Request) {
   const headerValue = req.headers['content-length']
   const parsedHeader = Number(Array.isArray(headerValue) ? headerValue[0] : headerValue)
@@ -23,6 +25,42 @@ function getApproxPayloadBytes(req: Request) {
     return Buffer.byteLength(JSON.stringify(req.body ?? {}), 'utf8')
   } catch {
     return 0
+  }
+}
+
+function getSerializedBytes(value: unknown) {
+  try {
+    return Buffer.byteLength(JSON.stringify(value ?? {}), 'utf8')
+  } catch {
+    return Number.POSITIVE_INFINITY
+  }
+}
+
+function sanitizeSessionDataForPersistence(sessionData: Record<string, unknown>) {
+  const sanitized = { ...sessionData }
+  let trimmedHeavyFields = false
+  let serializedBytes = getSerializedBytes(sanitized)
+
+  if (serializedBytes > MAX_PERSISTED_SESSION_PAYLOAD_BYTES && sanitized.validation_result_json) {
+    delete sanitized.validation_result_json
+    trimmedHeavyFields = true
+    serializedBytes = getSerializedBytes(sanitized)
+  }
+
+  if (serializedBytes > MAX_PERSISTED_SESSION_PAYLOAD_BYTES && sanitized.transformed_records_json) {
+    delete sanitized.transformed_records_json
+    trimmedHeavyFields = true
+    serializedBytes = getSerializedBytes(sanitized)
+  }
+
+  if (serializedBytes > MAX_PERSISTED_SESSION_PAYLOAD_BYTES && sanitized.source_snapshot_json) {
+    delete sanitized.source_snapshot_json
+    trimmedHeavyFields = true
+  }
+
+  return {
+    sanitized,
+    trimmedHeavyFields,
   }
 }
 
@@ -88,9 +126,10 @@ export const handleSaveImportSession: RequestHandler = async (req, res) => {
     }
 
     const payloadBytes = getApproxPayloadBytes(req)
-    const sourceSnapshot = sessionData.source_snapshot_json
-    const transformedRecords = sessionData.transformed_records_json
-    const validationResult = sessionData.validation_result_json as { records?: unknown[] } | null | undefined
+    const { sanitized: sanitizedSessionData, trimmedHeavyFields } = sanitizeSessionDataForPersistence(sessionData)
+    const sourceSnapshot = sanitizedSessionData.source_snapshot_json
+    const transformedRecords = sanitizedSessionData.transformed_records_json
+    const validationResult = sanitizedSessionData.validation_result_json as { records?: unknown[] } | null | undefined
 
     console.info('[import-sessions] save request', {
       sessionId: sessionId ?? null,
@@ -102,7 +141,8 @@ export const handleSaveImportSession: RequestHandler = async (req, res) => {
       includesValidationResult: Boolean(validationResult),
       validationRecordCount: Array.isArray(validationResult?.records) ? validationResult.records.length : 0,
       currentStep: typeof sessionData.current_step === 'string' ? sessionData.current_step : null,
-      templateType: typeof sessionData.template_type === 'string' ? sessionData.template_type : null,
+      templateType: typeof sanitizedSessionData.template_type === 'string' ? sanitizedSessionData.template_type : null,
+      trimmedHeavyFields,
     })
 
     const supabase = getServiceClient()
@@ -111,7 +151,7 @@ export const handleSaveImportSession: RequestHandler = async (req, res) => {
       const { data, error } = await supabase
         .from('migration_sessions')
         .update({
-          ...sessionData,
+          ...sanitizedSessionData,
           updated_at: new Date().toISOString(),
         })
         .eq('id', sessionId)
@@ -129,7 +169,7 @@ export const handleSaveImportSession: RequestHandler = async (req, res) => {
 
     const { data, error } = await supabase
       .from('migration_sessions')
-      .insert(sessionData)
+      .insert(sanitizedSessionData)
       .select('id')
       .single()
 
