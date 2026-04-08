@@ -184,7 +184,7 @@ describe('Builder class preservation', () => {
 
 describe('Secondary content filtering', () => {
   it('removes sidebar widgets', () => {
-    const html = `<h2>Main Content</h2><p>Good content here with enough text to pass.</p><h2>Sidebar</h2><div class="widget sidebar"><ul><li>Link 1</li></ul></div>`;
+    const html = `<h2>Main Content</h2><p>Good content here with enough text to pass while also clearly representing a substantive editorial paragraph that should remain after secondary filtering runs.</p><h2>Sidebar</h2><div class="widget sidebar"><ul><li>Link 1</li></ul></div>`;
     const result = filterSecondaryContent(html, defaultFilterOptions);
 
     expect(result).toContain('Main Content');
@@ -204,7 +204,7 @@ describe('Secondary content filtering', () => {
 
 describe('Sub-section stripping', () => {
   it('strips h3-h6 secondary headings inside H2 blocks', () => {
-    const html = `<h2>Main Topic</h2><p>Content about the main topic.</p><h3>Recent Posts</h3><ul><li><a href="/post1">Post 1</a></li><li><a href="/post2">Post 2</a></li></ul><p>More real content.</p>`;
+    const html = `<h2>Main Topic</h2><p>Content about the main topic with enough detail to remain a meaningful editorial section after the secondary widget subsection is stripped away.</p><h3>Recent Posts</h3><ul><li><a href="/post1">Post 1</a></li><li><a href="/post2">Post 2</a></li></ul><p>More real content.</p>`;
     const result = filterSecondaryContent(html, defaultFilterOptions);
 
     expect(result).toContain('Main Topic');
@@ -357,6 +357,88 @@ describe('Area heading normalization', () => {
     expect(prepared.contentSections?.[0].headingTag).toBe('<h4>Case Strategy</h4>');
     expect(content.contentSections[0].body).toContain('<h4>Case Strategy</h4>');
     expect(content.contentSections[0].body).toContain('<p>Detailed defense content.</p>');
+  });
+});
+
+describe('Practice deterministic section parsing', () => {
+  it('merges pre-H2 intro into the first real practice section without creating a standalone intro section', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Truck Accidents',
+        slug: '/practice-areas/truck-accidents/',
+        body: '<p>Lead intro copy that should stay with the first section.</p><h2>Liability Issues</h2><p>First section body copy with enough detail to remain meaningful.</p><h2>Damages</h2><p>Second section body copy.</p>',
+      },
+    }, 'practice');
+
+    const content = (prepared.data as { content: { contentSections: Array<{ body: string }> } }).content;
+
+    expect(content.contentSections).toHaveLength(2);
+    expect(content.contentSections[0].body).toContain('<p>Lead intro copy that should stay with the first section.</p>');
+    expect(content.contentSections[0].body).toContain('<h2>Liability Issues</h2>');
+    expect(content.contentSections[0].body).toContain('First section body copy');
+    expect(content.contentSections[1].body).toContain('<h2>Damages</h2>');
+  });
+
+  it('extracts FAQ sections before practice section allocation', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Slip and Fall',
+        slug: '/practice-areas/slip-and-fall/',
+        body: '<h2>Overview</h2><p>Premises liability overview content.</p><h2>FAQ</h2><h3>What damages can I recover?</h3><p>Medical bills and lost wages may be available.</p><h3>How long do I have to sue?</h3><p>The filing deadline depends on the claim.</p>',
+      },
+    }, 'practice');
+
+    const content = (prepared.data as { content: { contentSections: Array<{ body: string }> } }).content;
+
+    expect(prepared.faqItems).toHaveLength(2);
+    expect(content.contentSections).toHaveLength(1);
+    expect(content.contentSections[0].body).toContain('<h2>Overview</h2>');
+    expect(content.contentSections[0].body).not.toContain('<h2>FAQ</h2>');
+    expect(content.contentSections[0].body).not.toContain('What damages can I recover?');
+  });
+
+  it('uses paragraph fallback chunks, preserves H4 headings, and extracts only the first image per practice section', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Wrongful Death',
+        slug: '/practice-areas/wrongful-death/',
+        body: '<h4>Case Strategy</h4><p>Our attorneys investigate liability, preserve evidence, and prepare a case strategy that explains what happened, who is responsible, and how the family can pursue financial recovery after a fatal accident.</p><img src="https://example.com/strategy.jpg" alt="Case strategy" /><p>We also coordinate experts, gather medical records, and document the full losses affecting surviving family members.</p><img src="https://example.com/secondary.jpg" alt="Secondary" /><h4>Damages Analysis</h4><p>Damages may include income loss, funeral expenses, companionship losses, and other measurable harm recognized by state law.</p><p>Each category is evaluated carefully so the claim reflects the real impact on the family.</p>',
+      },
+    }, 'practice');
+
+    const content = (prepared.data as { content: { contentSections: Array<{ body: string; image?: string }> } }).content;
+
+    expect(content.contentSections.length).toBeGreaterThanOrEqual(2);
+    expect(content.contentSections[0].body).toContain('<h4>Case Strategy</h4>');
+    expect(content.contentSections[0].body).not.toContain('<img');
+    expect(content.contentSections[0].image).toBe('https://example.com/strategy.jpg');
+    expect(content.contentSections[1].body).toContain('<h4>Damages Analysis</h4>');
+    expect(content.contentSections[1].body).not.toContain('<img');
+  });
+
+  it('removes recent-posts style sub-sections from practice body content', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Motorcycle Accidents',
+        slug: '/practice-areas/motorcycle-accidents/',
+        body: '<h2>What Causes Motorcycle Crashes</h2><p>Driver inattention, unsafe lane changes, and speeding are common causes of severe motorcycle wrecks.</p><h3>Recent Posts</h3><ul><li><a href="/blog/post-1/">Post 1</a></li><li><a href="/blog/post-2/">Post 2</a></li><li><a href="/blog/post-3/">Post 3</a></li></ul><p>Evidence from the scene can help establish fault.</p>',
+      },
+    }, 'practice');
+
+    const content = (prepared.data as { content: { contentSections: Array<{ body: string }> } }).content;
+
+    expect(content.contentSections[0].body).toContain('What Causes Motorcycle Crashes');
+    expect(content.contentSections[0].body).toContain('Evidence from the scene can help establish fault.');
+    expect(content.contentSections[0].body).not.toContain('Recent Posts');
+    expect(content.contentSections[0].body).not.toContain('/blog/post-1/');
   });
 });
 

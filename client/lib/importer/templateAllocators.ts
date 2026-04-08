@@ -331,14 +331,13 @@ function allocateForAreaPage(
 // ─── Practice Page Allocator ─────────────────────────────────────────────────
 
 /**
- * Practice Area pages: dynamic-length contentSections array with merge heuristics.
+ * Practice Area pages: use the normalized section order directly.
  *
- * Block merging rules (R4):
- * - Adjacent blocks both < 100 words → merge into one section
- * - Never merge blocks that both have images
- * - Never merge more than 3 blocks into one section
- * - Preserve heading from first block in merge group
- * - leadHtml prepended to first section body
+ * The parser is responsible for:
+ * - merging any pre-H2 intro into the first real section
+ * - removing FAQ blocks before allocation
+ * - extracting at most one image per section
+ * - preserving H2-defined section boundaries without heuristic merging
  */
 function allocateForPracticePage(
   normalized: NormalizedContent,
@@ -349,10 +348,6 @@ function allocateForPracticePage(
   const seoTitle = normalized.cleanedMetaTitle || pageTitle || '';
   const blocks = normalized.sectionBlocks;
 
-  // Merge short adjacent blocks
-  const mergedGroups = mergeShortBlocks(blocks);
-
-  // Build contentSections from merged groups
   let contentSections: {
     body: string;
     image: string;
@@ -361,32 +356,20 @@ function allocateForPracticePage(
     showCTAs: boolean;
   }[];
 
-  if (mergedGroups.length > 0) {
-    contentSections = mergedGroups.map((group, index) => {
-      let body = group.map((block) => renderSectionBlockHtml(block)).join('\n');
-
-      // Prepend lead content to first section
-      if (index === 0 && normalized.leadHtml) {
-        body = normalized.leadHtml + '\n' + body;
-      }
-
-      // Pick first image from the group
-      const img = group.flatMap((block) => block.images)[0];
+  if (blocks.length > 0) {
+    contentSections = blocks.map((block, index) => {
+      const img = block.images[0];
 
       return {
-        body,
+        body: renderSectionBlockHtml(block),
         image: img?.src || '',
         imageAlt: img?.alt || '',
         imagePosition: (index % 2 === 0 ? 'right' : 'left') as 'right' | 'left',
         showCTAs: true,
       };
     });
-  } else if (normalized.leadHtml || blocks.length === 0) {
-    // No blocks but has body content or lead
-    const body = normalized.leadHtml || '';
-    contentSections = body
-      ? [{ body, image: '', imageAlt: '', imagePosition: 'right' as const, showCTAs: true }]
-      : [];
+  } else if (normalized.leadHtml) {
+    contentSections = [{ body: normalized.leadHtml, image: '', imageAlt: '', imagePosition: 'right' as const, showCTAs: true }];
   } else {
     contentSections = [];
   }
@@ -430,45 +413,6 @@ function allocateForPracticePage(
     schema_data: null,
     status: normalized.status === 'published' ? 'published' : 'draft',
   };
-}
-
-// ─── Merge Heuristics (R4) ──────────────────────────────────────────────────
-
-/**
- * Merge adjacent short blocks into groups.
- * Rules:
- * - Adjacent blocks both < 100 words → merge
- * - Never merge blocks that both have images
- * - Never merge more than 3 blocks into one group
- * - Preserve heading from first block
- */
-function mergeShortBlocks(blocks: SectionBlock[]): SectionBlock[][] {
-  if (blocks.length === 0) return [];
-
-  const groups: SectionBlock[][] = [];
-  let currentGroup: SectionBlock[] = [blocks[0]];
-
-  for (let i = 1; i < blocks.length; i++) {
-    const prev = blocks[i - 1];
-    const curr = blocks[i];
-    const groupSize = currentGroup.length;
-
-    const canMerge =
-      groupSize < 3 &&
-      prev.wordCount < 100 &&
-      curr.wordCount < 100 &&
-      !(prev.images.length > 0 && curr.images.length > 0);
-
-    if (canMerge) {
-      currentGroup.push(curr);
-    } else {
-      groups.push(currentGroup);
-      currentGroup = [curr];
-    }
-  }
-
-  groups.push(currentGroup);
-  return groups;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

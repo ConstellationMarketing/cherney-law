@@ -119,7 +119,7 @@ export interface ContentStats {
 }
 
 export interface SegmentationDebug {
-  method: 'ai-split' | 'h2-split' | 'single-block';
+  method: 'ai-split' | 'h2-split' | 'paragraph-chunk' | 'single-block';
   h2Positions: number[];
   faqDetectionMethod: 'heading-match' | 'bold-qa' | 'dl-list' | 'none';
   preH2ContentLength: number;
@@ -456,6 +456,385 @@ function isFaqHeading(heading: string): boolean {
   return /\b(faq|frequently\s+asked|questions|q\s*&\s*a)\b/i.test(heading);
 }
 
+const PRACTICE_SECONDARY_HEADING_PATTERNS = [
+  /breadcrumbs?/i,
+  /recent\s+posts?/i,
+  /latest\s+posts?/i,
+  /related\s+posts?/i,
+  /popular\s+posts?/i,
+  /recent\s+comments?/i,
+  /share\s+this/i,
+  /follow\s+us/i,
+  /social\s+media/i,
+  /newsletter/i,
+  /subscribe/i,
+  /about\s+the\s+author/i,
+  /author\s+bio/i,
+  /leave\s+a\s+(comment|reply)/i,
+  /^comments?$/i,
+  /^tags?$/i,
+  /^categories$/i,
+  /^archives?$/i,
+  /related\s+articles?/i,
+  /you\s+may\s+also\s+like/i,
+  /more\s+from/i,
+  /pagination/i,
+];
+
+interface EditorialNode {
+  html: string;
+  text: string;
+  tagName: string;
+  wordCount: number;
+  image?: ImageCandidate;
+}
+
+interface PracticeSectionParseResult {
+  leadHtml: string;
+  preH2ContentLength: number;
+  sectionBlocks: SectionBlock[];
+  segmentationMethod: SegmentationDebug['method'];
+  h2Positions: number[];
+  faqItems: FaqItem[];
+  faqDetectionMethod: SegmentationDebug['faqDetectionMethod'];
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function pushStrayTextNode(nodes: EditorialNode[], htmlFragment: string): void {
+  const text = stripTagsToText(htmlFragment);
+  if (!text) return;
+
+  nodes.push({
+    html: `<p>${escapeHtml(text)}</p>`,
+    text,
+    tagName: 'p',
+    wordCount: countWords(text),
+  });
+}
+
+function isMeaningfulEditorialNode(node: EditorialNode): boolean {
+  if (node.tagName === 'img') {
+    return Boolean(node.image?.src);
+  }
+
+  if (!node.text) return false;
+
+  if (node.tagName === 'p') {
+    const linkCount = (node.html.match(/<a\b/gi) ?? []).length;
+    if (linkCount > 0) {
+      const linkText = stripTagsToText((node.html.match(/<a\b[^>]*>[\s\S]*?<\/a>/gi) ?? []).join(' '));
+      if (linkText === node.text && countWords(node.text) <= 6) {
+        return false;
+      }
+    }
+
+    return countWords(node.text) >= 2 || /[.!?:;]/.test(node.text);
+  }
+
+  if (node.tagName === 'ul' || node.tagName === 'ol') {
+    const itemCount = (node.html.match(/<li\b/gi) ?? []).length;
+    if (itemCount === 0 || countWords(node.text) < 3) return false;
+
+    const linkText = stripTagsToText((node.html.match(/<a\b[^>]*>[\s\S]*?<\/a>/gi) ?? []).join(' '));
+    if ((node.html.match(/<a\b/gi) ?? []).length >= 2 && linkText === node.text) {
+      return false;
+    }
+
+    return true;
+  }
+
+  if (node.tagName === 'table' || node.tagName === 'blockquote') {
+    return countWords(node.text) >= 3;
+  }
+
+  if (/^h[3-6]$/.test(node.tagName)) {
+    return true;
+  }
+
+  return countWords(node.text) >= 1;
+}
+
+function isPracticeSecondaryHeading(text: string): boolean {
+  return PRACTICE_SECONDARY_HEADING_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+function stripPracticeSecondarySubSections(html: string): string {
+  return html.replace(
+    /<h([3-6])[^>]*>([\s\S]*?)<\/h\1>\s*((?:(?:<ul\b[\s\S]*?<\/ul>|<ol\b[\s\S]*?<\/ol>|<div\b[\s\S]*?<\/div>|<section\b[\s\S]*?<\/section>|<article\b[\s\S]*?<\/article>|<p\b[^>]*>\s*(?:<a\b[^>]*>[\s\S]*?<\/a>\s*)+<\/p>)\s*)+)/gi,
+    (match, _level, heading) => {
+      const headingText = stripTagsToText(heading);
+      return isPracticeSecondaryHeading(headingText) ? '' : match;
+    }
+  );
+}
+
+function stripPracticeSecondaryContent(html: string): string {
+  if (!html?.trim()) return '';
+
+  let result = html
+    .replace(/<form[\s\S]*?<\/form>/gi, '')
+    .replace(/<button\b[^>]*>[\s\S]*?<\/button>/gi, '')
+    .replace(/<input\b[^>]*>/gi, '')
+    .replace(/<select\b[^>]*>[\s\S]*?<\/select>/gi, '')
+    .replace(/<textarea\b[^>]*>[\s\S]*?<\/textarea>/gi, '')
+    .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+    .replace(/<aside[\s\S]*?<\/aside>/gi, '')
+    .replace(/<footer[\s\S]*?<\/footer>/gi, '');
+
+  const { leadHtml, sections } = splitOnH2(result);
+  const keptParts: string[] = [];
+  const cleanedLead = stripPracticeSecondarySubSections(leadHtml).trim();
+  if (cleanedLead) keptParts.push(cleanedLead);
+
+  for (const section of sections) {
+    if (isPracticeSecondaryHeading(section.heading)) continue;
+
+    const cleanedBody = stripPracticeSecondarySubSections(section.bodyHtml).trim();
+    if (!cleanedBody) continue;
+
+    keptParts.push(`<h2>${escapeHtml(section.heading)}</h2>${cleanedBody}`);
+  }
+
+  return keptParts.join('').trim();
+}
+
+function extractEditorialNodes(html: string): EditorialNode[] {
+  if (!html?.trim()) return [];
+
+  const nodes: EditorialNode[] = [];
+  const editorialPattern = /<(p|ul|ol|table|blockquote|h[3-6])\b[^>]*>[\s\S]*?<\/\1>|<img\b[^>]*\/?>/gi;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = editorialPattern.exec(html)) !== null) {
+    pushStrayTextNode(nodes, html.substring(lastIndex, match.index));
+
+    const token = match[0];
+    if (/^<img\b/i.test(token)) {
+      const image = extractFirstImage(token);
+      if (image?.src) {
+        nodes.push({
+          html: token,
+          text: image.alt || '',
+          tagName: 'img',
+          wordCount: 0,
+          image,
+        });
+      }
+    } else {
+      const tagName = ((token.match(/^<([a-z0-9]+)/i) ?? [])[1] || '').toLowerCase();
+      const text = stripTagsToText(token);
+      const node: EditorialNode = {
+        html: token.trim(),
+        text,
+        tagName,
+        wordCount: countWords(text),
+      };
+
+      if (isMeaningfulEditorialNode(node)) {
+        nodes.push(node);
+      }
+    }
+
+    lastIndex = editorialPattern.lastIndex;
+  }
+
+  pushStrayTextNode(nodes, html.substring(lastIndex));
+
+  return nodes.filter(isMeaningfulEditorialNode);
+}
+
+function buildPracticeSectionBlockFromNodes(
+  nodes: EditorialNode[],
+  order: number,
+  heading?: string,
+  headingLevel?: SectionHeadingLevel
+): SectionBlock | null {
+  if (nodes.length === 0) return null;
+
+  const bodyParts: string[] = [];
+  let firstImage: ImageCandidate | null = null;
+
+  for (const node of nodes) {
+    if (node.tagName === 'img') {
+      if (!firstImage && node.image?.src) {
+        firstImage = node.image;
+      }
+      continue;
+    }
+
+    bodyParts.push(node.html);
+  }
+
+  const bodyHtml = bodyParts.join('').trim();
+  if (!bodyHtml) return null;
+
+  const block = buildSectionBlock(bodyHtml, order, undefined, heading, headingLevel);
+  block.images = firstImage ? [firstImage] : [];
+
+  return block.plainText ? block : null;
+}
+
+function findFallbackSplitIndex(nodes: EditorialNode[]): number {
+  if (nodes.length < 4) return 0;
+
+  const midpoint = Math.floor(nodes.length / 2);
+  for (let i = midpoint; i < nodes.length; i++) {
+    if (/^h[3-6]$/.test(nodes[i].tagName)) return i;
+  }
+  for (let i = midpoint - 1; i > 0; i--) {
+    if (/^h[3-6]$/.test(nodes[i].tagName)) return i;
+  }
+
+  return Math.ceil(nodes.length / 2);
+}
+
+function chunkPracticeNodes(nodes: EditorialNode[]): EditorialNode[][] {
+  if (nodes.length === 0) return [];
+
+  const groups: EditorialNode[][] = [];
+  let current: EditorialNode[] = [];
+  let currentWords = 0;
+  let currentContentNodes = 0;
+
+  const flush = () => {
+    if (current.length > 0) {
+      groups.push(current);
+      current = [];
+      currentWords = 0;
+      currentContentNodes = 0;
+    }
+  };
+
+  nodes.forEach((node, index) => {
+    const isHeading = /^h[3-6]$/.test(node.tagName);
+    if (current.length > 0 && isHeading && currentWords >= 40) {
+      flush();
+    }
+
+    current.push(node);
+    if (node.tagName !== 'img') {
+      currentWords += node.wordCount;
+      currentContentNodes += 1;
+    }
+
+    const nextNode = nodes[index + 1];
+    const nextIsHeading = nextNode ? /^h[3-6]$/.test(nextNode.tagName) : false;
+    if (currentWords >= 140 || (currentContentNodes >= 3 && nextIsHeading)) {
+      flush();
+    }
+  });
+
+  flush();
+
+  if (groups.length === 1) {
+    const splitIndex = findFallbackSplitIndex(nodes);
+    if (splitIndex > 0 && splitIndex < nodes.length) {
+      return [nodes.slice(0, splitIndex), nodes.slice(splitIndex)].filter((group) => group.length > 0);
+    }
+  }
+
+  return groups;
+}
+
+function stripFaqSectionFromHtml(html: string): { html: string; items: FaqItem[]; method: SegmentationDebug['faqDetectionMethod'] } {
+  if (!html?.trim()) {
+    return { html: '', items: [], method: 'none' };
+  }
+
+  const faqSectionPattern = /<h2[^>]*>([\s\S]*?)<\/h2>([\s\S]*?)(?=<h2[^>]*>|$)/gi;
+  let resultHtml = html;
+  let extractedItems: FaqItem[] = [];
+  let detectionMethod: SegmentationDebug['faqDetectionMethod'] = 'none';
+  let match: RegExpExecArray | null;
+
+  while ((match = faqSectionPattern.exec(html)) !== null) {
+    const heading = stripTagsToText(match[1]);
+    if (!isFaqHeading(heading)) continue;
+
+    const fullSectionHtml = match[0];
+    const faqResult = extractFaqFromHtml(fullSectionHtml);
+    if (faqResult.items.length > 0) {
+      extractedItems = faqResult.items;
+      detectionMethod = faqResult.method;
+      resultHtml = resultHtml.replace(fullSectionHtml, '');
+      break;
+    }
+  }
+
+  if (extractedItems.length === 0) {
+    const fallbackFaq = extractFaqFromHtml(html);
+    extractedItems = fallbackFaq.items;
+    detectionMethod = fallbackFaq.method;
+  }
+
+  return {
+    html: resultHtml.trim(),
+    items: extractedItems,
+    method: detectionMethod,
+  };
+}
+
+function buildPracticeSectionBlocks(body: string): PracticeSectionParseResult {
+  const filteredBody = stripPracticeSecondaryContent(body).trim();
+  const faqStripped = stripFaqSectionFromHtml(filteredBody || body);
+  const editorialHtml = faqStripped.html || filteredBody || body;
+  const { leadHtml: rawLeadHtml, sections, h2Positions } = splitOnH2(editorialHtml);
+  const preH2ContentLength = rawLeadHtml.length;
+
+  if (sections.length > 0) {
+    const sectionBlocks: SectionBlock[] = [];
+
+    sections.forEach((section, index) => {
+      const sectionHtml = index === 0
+        ? `${rawLeadHtml}${section.bodyHtml}`
+        : section.bodyHtml;
+      const block = buildPracticeSectionBlockFromNodes(
+        extractEditorialNodes(sectionHtml),
+        sectionBlocks.length,
+        section.heading,
+        2
+      );
+      if (block) {
+        sectionBlocks.push(block);
+      }
+    });
+
+    return {
+      leadHtml: '',
+      preH2ContentLength,
+      sectionBlocks,
+      segmentationMethod: 'h2-split',
+      h2Positions,
+      faqItems: faqStripped.items,
+      faqDetectionMethod: faqStripped.method,
+    };
+  }
+
+  const fallbackGroups = chunkPracticeNodes(extractEditorialNodes(editorialHtml));
+  const sectionBlocks = fallbackGroups
+    .map((group, index) => buildPracticeSectionBlockFromNodes(group, index))
+    .filter((block): block is SectionBlock => Boolean(block));
+
+  return {
+    leadHtml: '',
+    preH2ContentLength,
+    sectionBlocks,
+    segmentationMethod: sectionBlocks.length > 1 ? 'paragraph-chunk' : 'single-block',
+    h2Positions,
+    faqItems: faqStripped.items,
+    faqDetectionMethod: faqStripped.method,
+  };
+}
+
 // ─── Main Builder ────────────────────────────────────────────────────────────
 
 /**
@@ -542,6 +921,7 @@ export function buildNormalizedContent(
 
   let sectionBlocks: SectionBlock[] = [];
   let leadHtml = '';
+  let preH2ContentLength = 0;
   let segmentationMethod: SegmentationDebug['method'] = 'single-block';
   let h2Positions: number[] = [];
   let faqItems: FaqItem[] = [];
@@ -573,10 +953,20 @@ export function buildNormalizedContent(
         // ignore invalid FAQ JSON
       }
     }
+  } else if (templateType === 'practice') {
+    const practiceParseResult = buildPracticeSectionBlocks(body);
+    leadHtml = practiceParseResult.leadHtml;
+    preH2ContentLength = practiceParseResult.preH2ContentLength;
+    sectionBlocks = practiceParseResult.sectionBlocks;
+    segmentationMethod = practiceParseResult.segmentationMethod;
+    h2Positions = practiceParseResult.h2Positions;
+    faqItems = practiceParseResult.faqItems;
+    faqDetectionMethod = practiceParseResult.faqDetectionMethod;
   } else {
     // No AI split — split on H2 headings
     const { leadHtml: lead, sections, h2Positions: positions } = splitOnH2(body);
     leadHtml = lead;
+    preH2ContentLength = lead.length;
     h2Positions = positions;
 
     if (sections.length === 0) {
@@ -685,7 +1075,7 @@ export function buildNormalizedContent(
       method: segmentationMethod,
       h2Positions,
       faqDetectionMethod,
-      preH2ContentLength: leadHtml.length,
+      preH2ContentLength,
       totalInputLength: body.length,
       areaSplitSignals,
     },
