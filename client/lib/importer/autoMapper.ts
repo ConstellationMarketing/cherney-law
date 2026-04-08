@@ -38,6 +38,11 @@ const PREFERRED_SLUG_COLUMNS = [
   'url', 'slug', 'permalink', 'path', 'url_path', 'url_slug',
 ];
 
+const NON_TITLE_META_COLUMNS = new Set([
+  'metadata_og_type',
+  'og_type',
+]);
+
 /**
  * Auto-map source columns to template fields using fuzzy name matching.
  * Returns a MappingConfig with all mappings, unmapped columns, and unmapped fields.
@@ -64,6 +69,10 @@ export function autoMapFields(
     for (const field of fields) {
       if (usedFields.has(field.key)) continue;
       if (field.excludeFromAutoMap) continue;
+
+      if (templateType === 'practice' && field.key === 'meta_title' && NON_TITLE_META_COLUMNS.has(normalizedCol)) {
+        continue;
+      }
 
       const allNames = [field.key, ...field.aliases].map(normalize);
       if (allNames.includes(normalizedCol)) {
@@ -105,6 +114,8 @@ export function autoMapFields(
       // Guard: social/twitter columns (twitter:title, twitter:description, og:title, og:description)
       // should only land on meta_title / meta_description, never on the main title or body fields
       if ((isSocialMetaColumn || isOgPrefixed) && ['title', 'body', 'why_body', 'closing_body'].includes(field.key)) continue;
+
+      if (templateType === 'practice' && field.key === 'meta_title' && NON_TITLE_META_COLUMNS.has(colNorm)) continue;
 
       let score = fuzzyMatchScore(col.name, field, col);
 

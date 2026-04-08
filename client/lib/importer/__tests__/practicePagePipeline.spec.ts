@@ -1,4 +1,8 @@
 import { describe, it, expect } from 'vitest';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { MemoryRouter } from 'react-router-dom';
+import PracticeAreaDetailContentSection from '@site/components/practice-detail/PracticeAreaDetailContentSection';
 import { parseCsv } from '../csvParser';
 import { parseJson } from '../apiParser';
 import { cleanSourceRecords } from '../sourceCleaner';
@@ -50,6 +54,19 @@ describe('Auto-mapping', () => {
 
     expect(result.mappings.find((m) => m.sourceColumn === 'metadata.og:image')?.targetField).toBe('hero_image');
     expect(result.mappings.find((m) => m.sourceColumn === 'metadata.twitter:image')?.targetField).toBe('og_image');
+  });
+
+  it('maps practice meta title from real title metadata and leaves metadata.og:type unmapped', () => {
+    const columns = [
+      { name: 'metadata.og:type', sampleValues: ['article'], detectedType: 'text' as const },
+      { name: 'metadata.og:title', sampleValues: ['Truck Accident Lawyer'], detectedType: 'text' as const },
+    ];
+
+    const result = autoMapFields(columns, 'practice');
+
+    expect(result.mappings.find((m) => m.sourceColumn === 'metadata.og:title')?.targetField).toBe('meta_title');
+    expect(result.mappings.find((m) => m.sourceColumn === 'metadata.og:type')).toBeUndefined();
+    expect(result.unmappedColumns).toContain('metadata.og:type');
   });
 
   it('maps blog post column names correctly', () => {
@@ -413,6 +430,23 @@ describe('Practice deterministic section parsing', () => {
     expect(content.contentSections[0].body).not.toContain('What damages can I recover?');
   });
 
+  it('populates the practice hero h1 field from the resolved page title', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Catastrophic Injury',
+        slug: '/practice-areas/catastrophic-injury/',
+        body: '<p>Lead copy for the hero and page body.</p>',
+      },
+    }, 'practice');
+
+    const content = (prepared.data as { content: { hero: { sectionLabel: string; tagline: string } } }).content;
+
+    expect(content.hero.sectionLabel).toBe('Catastrophic Injury');
+    expect(content.hero.tagline).toBe('Catastrophic Injury');
+  });
+
   it('uses paragraph fallback chunks, preserves H4 headings, and extracts only the first image per practice section', () => {
     const prepared = prepareRecord({
       rowIndex: 0,
@@ -432,6 +466,26 @@ describe('Practice deterministic section parsing', () => {
     expect(content.contentSections[0].image).toBe('https://example.com/strategy.jpg');
     expect(content.contentSections[1].body).toContain('<h4>Damages Analysis</h4>');
     expect(content.contentSections[1].body).not.toContain('<img');
+  });
+
+  it('moves paragraph-wrapped inline images into the practice section image field', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Spinal Cord Injuries',
+        slug: '/practice-areas/spinal-cord-injuries/',
+        body: '<h2>Medical Treatment</h2><p><img src="https://example.com/treatment.jpg" alt="Treatment" /></p><p>Serious injuries often require surgery, rehabilitation, and long-term planning.</p>',
+      },
+    }, 'practice');
+
+    const content = (prepared.data as { content: { contentSections: Array<{ body: string; image?: string; imageAlt?: string }> } }).content;
+
+    expect(content.contentSections).toHaveLength(1);
+    expect(content.contentSections[0].image).toBe('https://example.com/treatment.jpg');
+    expect(content.contentSections[0].imageAlt).toBe('Treatment');
+    expect(content.contentSections[0].body).toContain('Serious injuries often require surgery');
+    expect(content.contentSections[0].body).not.toContain('<img');
   });
 
   it('removes recent-posts style sub-sections from practice body content', () => {
@@ -568,6 +622,54 @@ describe('Practice image allocation', () => {
     expect(data.content.hero.backgroundImage).toBe('https://example.com/hero.jpg');
     expect(data.og_image).toBe('https://example.com/og.jpg');
     expect(data.url_path).toBe('/car-accident/');
+  });
+});
+
+describe('Practice detail section layout', () => {
+  it('renders a full-width content section with centered CTAs when no image is present', () => {
+    const markup = renderToStaticMarkup(
+      createElement(
+        MemoryRouter,
+        null,
+        createElement(PracticeAreaDetailContentSection, {
+          section: {
+            body: '<p>Section body copy.</p>',
+            image: '',
+            imageAlt: '',
+            imagePosition: 'right',
+            showCTAs: true,
+          },
+          index: 0,
+        })
+      )
+    );
+
+    expect(markup).not.toContain('lg:w-[36%]');
+    expect(markup).toContain('justify-center');
+    expect(markup).toContain('max-w-[420px]');
+  });
+
+  it('renders CTAs beneath the image column when an image is present', () => {
+    const markup = renderToStaticMarkup(
+      createElement(
+        MemoryRouter,
+        null,
+        createElement(PracticeAreaDetailContentSection, {
+          section: {
+            body: '<p>Section body copy.</p>',
+            image: 'https://example.com/section.jpg',
+            imageAlt: 'Section image',
+            imagePosition: 'right',
+            showCTAs: true,
+          },
+          index: 0,
+        })
+      )
+    );
+
+    expect(markup).toContain('lg:w-[36%]');
+    expect(markup).toContain('https://example.com/section.jpg');
+    expect(markup).not.toContain('max-w-[420px]');
   });
 });
 

@@ -529,6 +529,10 @@ function isMeaningfulEditorialNode(node: EditorialNode): boolean {
   if (!node.text) return false;
 
   if (node.tagName === 'p') {
+    if (extractFirstImage(node.html)?.src) {
+      return true;
+    }
+
     const linkCount = (node.html.match(/<a\b/gi) ?? []).length;
     if (linkCount > 0) {
       const linkText = stripTagsToText((node.html.match(/<a\b[^>]*>[\s\S]*?<\/a>/gi) ?? []).join(' '));
@@ -653,6 +657,13 @@ function extractEditorialNodes(html: string): EditorialNode[] {
   return nodes.filter(isMeaningfulEditorialNode);
 }
 
+function stripImagesFromHtml(html: string): string {
+  return html
+    .replace(/<img\b[^>]*\/?>/gi, '')
+    .replace(/<(p|div|figure|section|article|span)[^>]*>\s*<\/\1>/gi, '')
+    .trim();
+}
+
 function buildPracticeSectionBlockFromNodes(
   nodes: EditorialNode[],
   order: number,
@@ -665,14 +676,21 @@ function buildPracticeSectionBlockFromNodes(
   let firstImage: ImageCandidate | null = null;
 
   for (const node of nodes) {
+    const extractedImage = node.image || extractFirstImage(node.html);
+    if (!firstImage && extractedImage?.src) {
+      firstImage = extractedImage;
+    }
+
     if (node.tagName === 'img') {
-      if (!firstImage && node.image?.src) {
-        firstImage = node.image;
-      }
       continue;
     }
 
-    bodyParts.push(node.html);
+    const bodyHtmlWithoutImages = stripImagesFromHtml(node.html);
+    if (!bodyHtmlWithoutImages || !stripTagsToText(bodyHtmlWithoutImages)) {
+      continue;
+    }
+
+    bodyParts.push(bodyHtmlWithoutImages);
   }
 
   const bodyHtml = bodyParts.join('').trim();
@@ -798,6 +816,7 @@ function buildPracticeSectionBlocks(body: string): PracticeSectionParseResult {
       const sectionHtml = index === 0
         ? `${rawLeadHtml}${section.bodyHtml}`
         : section.bodyHtml;
+      const sectionImage = extractFirstImage(sectionHtml);
       const block = buildPracticeSectionBlockFromNodes(
         extractEditorialNodes(sectionHtml),
         sectionBlocks.length,
@@ -805,6 +824,9 @@ function buildPracticeSectionBlocks(body: string): PracticeSectionParseResult {
         2
       );
       if (block) {
+        if (block.images.length === 0 && sectionImage?.src) {
+          block.images = [sectionImage];
+        }
         sectionBlocks.push(block);
       }
     });
@@ -822,7 +844,15 @@ function buildPracticeSectionBlocks(body: string): PracticeSectionParseResult {
 
   const fallbackGroups = chunkPracticeNodes(extractEditorialNodes(editorialHtml));
   const sectionBlocks = fallbackGroups
-    .map((group, index) => buildPracticeSectionBlockFromNodes(group, index))
+    .map((group, index) => {
+      const groupHtml = group.map((node) => node.html).join('');
+      const groupImage = extractFirstImage(groupHtml);
+      const block = buildPracticeSectionBlockFromNodes(group, index);
+      if (block && block.images.length === 0 && groupImage?.src) {
+        block.images = [groupImage];
+      }
+      return block;
+    })
     .filter((block): block is SectionBlock => Boolean(block));
 
   return {

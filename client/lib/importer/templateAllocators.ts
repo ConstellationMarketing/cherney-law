@@ -376,7 +376,7 @@ function allocateForPracticePage(
 
   const content = {
     hero: {
-      sectionLabel: '',
+      sectionLabel: pageTitle,
       tagline: normalized.heroTagline || pageTitle || '',
       description: normalized.heroDescription || '',
       backgroundImage: normalized.heroImage || normalized.featuredImage || '',

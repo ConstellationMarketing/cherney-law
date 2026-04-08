@@ -17,7 +17,30 @@ export default function PracticeAreaDetailContentSection({ section, index }: Pro
 
   const hasImage = !!section.image;
   const hasCTAs = section.showCTAs !== false;
-  const hasRightColumn = hasImage || hasCTAs;
+  const hasRightColumn = hasImage;
+
+  const ctaContent = hasCTAs ? (
+    <div className="space-y-4 w-full">
+      <a
+        href={`tel:${phoneNumber}`}
+        data-dni-phone="primary"
+        className="block"
+      >
+        <CallBox
+          icon={Phone}
+          title={phoneLabel}
+          subtitle={phoneDisplay}
+        />
+      </a>
+      <Link to="/contact/" className="block">
+        <CallBox
+          icon={Calendar}
+          title="Schedule Now"
+          subtitle="Free Consultation"
+        />
+      </Link>
+    </div>
+  ) : null;
 
   return (
     <div className={`${bgClass} py-[30px] md:py-[50px]`}>
@@ -33,43 +56,28 @@ export default function PracticeAreaDetailContentSection({ section, index }: Pro
             />
           </div>
 
-          {/* Image + CTA column — only render if there's content */}
+          {/* Image + CTA column */}
           {hasRightColumn && (
             <div className="lg:w-[36%] space-y-6">
-              {hasImage && (
-                <img
-                  src={section.image}
-                  alt={section.imageAlt || ""}
-                  className="w-full h-auto object-cover"
-                  loading="lazy"
-                />
-              )}
+              <img
+                src={section.image}
+                alt={section.imageAlt || ""}
+                className="w-full h-auto object-cover"
+                loading="lazy"
+              />
 
-              {hasCTAs && (
-                <div className="space-y-4">
-                  <a
-                    href={`tel:${phoneNumber}`}
-                    data-dni-phone="primary"
-                    className="block"
-                  >
-                    <CallBox
-                      icon={Phone}
-                      title={phoneLabel}
-                      subtitle={phoneDisplay}
-                    />
-                  </a>
-                  <Link to="/contact/" className="block">
-                    <CallBox
-                      icon={Calendar}
-                      title="Schedule Now"
-                      subtitle="Free Consultation"
-                    />
-                  </Link>
-                </div>
-              )}
+              {ctaContent}
             </div>
           )}
         </div>
+
+        {!hasImage && hasCTAs && (
+          <div className="mt-8 flex justify-center">
+            <div className="w-full max-w-[420px]">
+              {ctaContent}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
