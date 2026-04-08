@@ -431,6 +431,48 @@ describe('Practice deterministic section parsing', () => {
     expect(content.contentSections[0].body).not.toContain('What damages can I recover?');
   });
 
+  it('treats FAQs headings as dedicated FAQ sections without duplicating them in content blocks', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Chapter 13 Bankruptcy',
+        slug: '/practice-areas/chapter-13-bankruptcy/',
+        body: '<h2>Overview</h2><h3>Can creditors still call me?</h3><p>This question-style subheading belongs to the overview content and should stay in the editorial section instead of becoming a FAQ item.</p><h2>FAQs</h2><h3>How does Chapter 13 stop foreclosure?</h3><p>Filing can trigger the automatic stay and pause collection activity.</p><h3>What debts can be repaid?</h3><p>Mortgage arrears, car notes, and some tax debts may be handled through a plan.</p>',
+      },
+    }, 'practice');
+
+    const content = (prepared.data as { content: { contentSections: Array<{ body: string }> } }).content;
+
+    expect(prepared.faqItems).toHaveLength(2);
+    expect(prepared.faqItems?.[0].question).toBe('How does Chapter 13 stop foreclosure?');
+    expect(prepared.faqItems?.[1].question).toBe('What debts can be repaid?');
+    expect(content.contentSections).toHaveLength(1);
+    expect(content.contentSections[0].body).toContain('Can creditors still call me?');
+    expect(content.contentSections[0].body).not.toContain('<h2>FAQs</h2>');
+    expect(content.contentSections[0].body).not.toContain('How does Chapter 13 stop foreclosure?');
+  });
+
+  it('recognizes FAQ headings that include trailing topic text', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Vehicle Repossession',
+        slug: '/practice-areas/vehicle-repossession/',
+        body: '<h2>Overview</h2><p>Repossession overview content.</p><h2>Frequently Asked Questions: Vehicle Repossession in Georgia</h2><h3>Can a lender repossess my car without notice?</h3><p>Georgia law may allow repossession without advance notice in many cases.</p>',
+      },
+    }, 'practice');
+
+    const content = (prepared.data as { content: { contentSections: Array<{ body: string }> } }).content;
+
+    expect(prepared.faqItems).toHaveLength(1);
+    expect(prepared.faqItems?.[0].question).toBe('Can a lender repossess my car without notice?');
+    expect(content.contentSections).toHaveLength(1);
+    expect(content.contentSections[0].body).toContain('<h2>Overview</h2>');
+    expect(content.contentSections[0].body).not.toContain('Frequently Asked Questions: Vehicle Repossession in Georgia');
+  });
+
   it('populates the practice hero h1 field from the resolved page title', () => {
     const prepared = prepareRecord({
       rowIndex: 0,

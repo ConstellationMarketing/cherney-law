@@ -378,12 +378,9 @@ function splitOnH2(html: string): { leadHtml: string; sections: H2Split[]; h2Pos
 function extractFaqFromHtml(html: string): { items: FaqItem[]; method: SegmentationDebug['faqDetectionMethod'] } {
   if (!html?.trim()) return { items: [], method: 'none' };
 
-  // Pattern 1: H3/H4 headings as questions in an FAQ-headed section
-  const faqSectionMatch = html.match(
-    /<h2[^>]*>[^<]*\b(faq|frequently\s+asked|questions|q\s*&\s*a)\b[^<]*<\/h2>([\s\S]*?)(?=<h2|$)/i
-  );
-
-  const searchContent = faqSectionMatch ? faqSectionMatch[2] : html;
+  const { sections } = splitOnH2(html);
+  const explicitFaqSection = sections.find((section) => isFaqHeading(section.heading));
+  const searchContent = explicitFaqSection ? explicitFaqSection.bodyHtml : html;
   const items: FaqItem[] = [];
 
   // Pattern 1: H3/H4 headings as questions
@@ -418,7 +415,7 @@ function extractFaqFromHtml(html: string): { items: FaqItem[]; method: Segmentat
     }
   }
 
-  if (items.length > 0) return { items, method: faqSectionMatch ? 'heading-match' : 'heading-match' };
+  if (items.length > 0) return { items, method: 'heading-match' };
 
   // Pattern 2: Definition lists
   const dlPattern = /<dt[^>]*>([\s\S]*?)<\/dt>\s*<dd[^>]*>([\s\S]*?)<\/dd>/gi;
@@ -444,11 +441,13 @@ function extractFaqFromHtml(html: string): { items: FaqItem[]; method: Segmentat
   return { items: [], method: 'none' };
 }
 
+const FAQ_HEADING_PATTERN = /\b(faqs?|frequently\s+asked(?:\s+questions?)?|q\s*&\s*a|common\s+questions?)\b/i;
+
 /**
  * Check if a section heading indicates FAQ content.
  */
 function isFaqHeading(heading: string): boolean {
-  return /\b(faq|frequently\s+asked|questions|q\s*&\s*a)\b/i.test(heading);
+  return FAQ_HEADING_PATTERN.test(normalizeText(heading));
 }
 
 const PRACTICE_SECONDARY_HEADING_PATTERNS = [
@@ -767,12 +766,14 @@ function stripFaqSectionFromHtml(html: string): { html: string; items: FaqItem[]
   let resultHtml = html;
   let extractedItems: FaqItem[] = [];
   let detectionMethod: SegmentationDebug['faqDetectionMethod'] = 'none';
+  let foundExplicitFaqHeading = false;
   let match: RegExpExecArray | null;
 
   while ((match = faqSectionPattern.exec(html)) !== null) {
     const heading = stripTagsToText(match[1]);
     if (!isFaqHeading(heading)) continue;
 
+    foundExplicitFaqHeading = true;
     const fullSectionHtml = match[0];
     const faqResult = extractFaqFromHtml(fullSectionHtml);
     if (faqResult.items.length > 0) {
@@ -783,7 +784,7 @@ function stripFaqSectionFromHtml(html: string): { html: string; items: FaqItem[]
     }
   }
 
-  if (extractedItems.length === 0) {
+  if (extractedItems.length === 0 && !foundExplicitFaqHeading) {
     const fallbackFaq = extractFaqFromHtml(html);
     extractedItems = fallbackFaq.items;
     detectionMethod = fallbackFaq.method;
