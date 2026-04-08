@@ -40,7 +40,7 @@ function str(val: unknown): string {
 }
 
 export function normalizeHomePageContent(content: unknown): HomePageContent {
-  const c = ensureObject(content, {});
+  const c = ensureObject<Record<string, any>>(content, {});
 
   return {
     hero: ensureObject(c.hero, {
@@ -115,7 +115,7 @@ export function normalizeHomePageContent(content: unknown): HomePageContent {
 }
 
 export function normalizeAboutPageContent(content: unknown): AboutPageContent {
-  const c = ensureObject(content, {});
+  const c = ensureObject<Record<string, any>>(content, {});
 
   return {
     hero: ensureObject(c.hero, {
@@ -162,7 +162,7 @@ export function normalizeAboutPageContent(content: unknown): AboutPageContent {
 }
 
 export function normalizeContactPageContent(content: unknown): ContactPageContent {
-  const c = ensureObject(content, {});
+  const c = ensureObject<Record<string, any>>(content, {});
 
   return {
     hero: ensureObject(c.hero, {
@@ -197,7 +197,7 @@ export function normalizeContactPageContent(content: unknown): ContactPageConten
 }
 
 export function normalizePracticeAreasPageContent(content: unknown): PracticeAreasPageContent {
-  const c = ensureObject(content, {});
+  const c = ensureObject<Record<string, any>>(content, {});
 
   return {
     hero: ensureObject(c.hero, {
@@ -231,7 +231,7 @@ export function normalizePracticeAreasPageContent(content: unknown): PracticeAre
 }
 
 export function normalizeTestimonialsPageContent(content: unknown): TestimonialsPageContent {
-  const c = ensureObject(content, {});
+  const c = ensureObject<Record<string, any>>(content, {});
 
   return {
     hero: ensureObject(c.hero, {
@@ -252,13 +252,13 @@ export function normalizeTestimonialsPageContent(content: unknown): Testimonials
 }
 
 // Import type from client-specific types
-import type { CommonQuestionsPageContent } from '../../client/lib/cms/commonQuestionsPageTypes';
-import type { AreasWeServePageContent } from '../../client/lib/cms/areasWeServePageTypes';
-import type { AreaPageContent } from '../../client/lib/cms/areaPageTypes';
-import type { PracticeAreaDetailPageContent } from '../../client/lib/cms/practiceAreaDetailPageTypes';
+import type { CommonQuestionsPageContent } from '@site/lib/cms/commonQuestionsPageTypes';
+import type { AreasWeServePageContent } from '@site/lib/cms/areasWeServePageTypes';
+import type { AreaPageContent } from '@site/lib/cms/areaPageTypes';
+import type { PracticeAreaDetailPageContent } from '@site/lib/cms/practiceAreaDetailPageTypes';
 
 export function normalizeCommonQuestionsPageContent(content: unknown): CommonQuestionsPageContent {
-  const c = ensureObject(content, {});
+  const c = ensureObject<Record<string, any>>(content, {});
 
   return {
     hero: ensureObject(c.hero, {
@@ -286,7 +286,7 @@ export function normalizeCommonQuestionsPageContent(content: unknown): CommonQue
 }
 
 export function normalizeAreasWeServePageContent(content: unknown): AreasWeServePageContent {
-  const c = ensureObject(content, {});
+  const c = ensureObject<Record<string, any>>(content, {});
 
   return {
     hero: ensureObject(c.hero, {
@@ -328,7 +328,7 @@ function normalizeHeadingLevel(val: unknown): 1 | 2 | 3 | 4 {
 }
 
 export function normalizeAreaPageContent(content: unknown): AreaPageContent {
-  const c = ensureObject(content, {});
+  const c = ensureObject<Record<string, any>>(content, {});
 
   return {
     hero: ensureObject(c.hero, {
@@ -381,7 +381,7 @@ export function normalizeAreaPageContent(content: unknown): AreaPageContent {
 }
 
 export function normalizePracticeAreaDetailContent(content: unknown): PracticeAreaDetailPageContent {
-  const c = ensureObject(content, {});
+  const c = ensureObject<Record<string, any>>(content, {});
 
   return {
     hero: ensureObject(c.hero, {

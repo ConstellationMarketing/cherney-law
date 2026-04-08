@@ -4,7 +4,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Plus, Trash2 } from "lucide-react";
-import type { ContactPageContent } from "@/lib/pageContentTypes";
+import type {
+  ContactPageContent,
+  OfficeTab,
+  ProcessStepItem,
+} from "@site/lib/cms/contactPageTypes";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 
 interface Props {
@@ -57,17 +61,17 @@ export default function ContactPageFieldEditor({ content, onChange }: Props) {
     });
   const removeOffice = (i: number) =>
     onChange({ ...content, offices: content.offices.filter((_, idx) => idx !== i) });
-  const updateOffice = (i: number, k: string, v: string) => {
+  const updateOffice = (i: number, k: keyof OfficeTab, v: string) => {
     const offices = content.offices.map((o, idx) => (idx === i ? { ...o, [k]: v } : o));
     onChange({ ...content, offices });
   };
 
   // Process steps
   const addStep = () =>
-    set("process", { steps: [...content.process.steps, { stepNumber: "", title: "", description: "" }] });
+    set("process", { steps: [...content.process.steps, { number: "", title: "", description: "" }] });
   const removeStep = (i: number) =>
     set("process", { steps: content.process.steps.filter((_, idx) => idx !== i) });
-  const updateStep = (i: number, k: string, v: string) => {
+  const updateStep = (i: number, k: keyof ProcessStepItem, v: string) => {
     const steps = content.process.steps.map((s, idx) => (idx === i ? { ...s, [k]: v } : s));
     set("process", { steps });
   };
@@ -117,11 +121,11 @@ export default function ContactPageFieldEditor({ content, onChange }: Props) {
                 <Textarea value={(office as any).address || ""} onChange={e => updateOffice(i, "address", e.target.value)} rows={2} placeholder="123 Main St, Suite 100, City, State 12345" />
               </Field>
               <SectionGrid>
-                <Field label="Phone (tel: value)">
-                  <Input value={(office as any).phone || ""} onChange={e => updateOffice(i, "phone", e.target.value)} placeholder="770-485-4141" hint="Phone number for tel: links" />
+                <Field label="Phone (tel: value)" hint="Phone number for tel: links">
+                  <Input value={(office as any).phone || ""} onChange={e => updateOffice(i, "phone", e.target.value)} placeholder="770-485-4141" />
                 </Field>
-                <Field label="Phone Display (formatted for display)">
-                  <Input value={(office as any).phoneDisplay || ""} onChange={e => updateOffice(i, "phoneDisplay", e.target.value)} placeholder="(770) 485-4141" hint="Formatted phone shown to users" />
+                <Field label="Phone Display (formatted for display)" hint="Formatted phone shown to users">
+                  <Input value={(office as any).phoneDisplay || ""} onChange={e => updateOffice(i, "phoneDisplay", e.target.value)} placeholder="(770) 485-4141" />
                 </Field>
               </SectionGrid>
               <Field label="Google Maps Embed URL" hint="Paste the src URL from Google Maps embed code">
@@ -188,7 +192,7 @@ export default function ContactPageFieldEditor({ content, onChange }: Props) {
               <ArrayCard key={i} onRemove={() => removeStep(i)}>
                 <SectionGrid>
                   <Field label="Step Number / Label">
-                    <Input value={step.stepNumber} onChange={e => updateStep(i, "stepNumber", e.target.value)} placeholder="01" />
+                    <Input value={step.number} onChange={e => updateStep(i, "number", e.target.value)} placeholder="01" />
                   </Field>
                   <Field label="Title">
                     <Input value={step.title} onChange={e => updateStep(i, "title", e.target.value)} />

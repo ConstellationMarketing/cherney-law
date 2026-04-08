@@ -41,7 +41,7 @@ export default function PracticeAreas() {
   const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || '';
 
   // Centralized SEO resolution
-  const seo = resolveSeo(page, siteSettings, pathname, siteUrl);
+  const seo = resolveSeo(page, siteSettings.settings, pathname, siteUrl);
 
   // Map practice areas from CMS content with icon components
   const practiceAreas = content.grid.areas.map((area) => ({

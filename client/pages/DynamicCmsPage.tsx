@@ -185,7 +185,7 @@ export default function DynamicCmsPage() {
     return <NotFound />;
   }
 
-  const seo = resolveSeo(page, siteSettings, pathname, siteUrl);
+  const seo = resolveSeo(page, siteSettings.settings, pathname, siteUrl);
 
   // Determine if first block is a hero that needs transparent header overlap
   const firstBlock = Array.isArray(page.content) && page.content.length > 0

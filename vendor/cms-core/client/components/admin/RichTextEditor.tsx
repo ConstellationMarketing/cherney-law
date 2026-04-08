@@ -33,12 +33,14 @@ interface RichTextEditorProps {
   value: string;
   onChange: (html: string) => void;
   placeholder?: string;
+  minHeight?: string;
 }
 
 export default function RichTextEditor({
   value,
   onChange,
   placeholder = "Start typing...",
+  minHeight = "180px",
 }: RichTextEditorProps) {
   const [linkUrl, setLinkUrl] = useState("");
   const [showLinkInput, setShowLinkInput] = useState(false);
@@ -269,7 +271,7 @@ export default function RichTextEditor({
       )}
 
       {/* Editor */}
-      <EditorContent editor={editor} className="ProseMirror" />
+      <EditorContent editor={editor} className="ProseMirror" style={{ minHeight }} />
     </div>
   );
 }

@@ -136,14 +136,17 @@ function RenderBlock({
             showLoadMore={(block as any).showLoadMore}
           />
         );
-      default:
-        return <div className="p-4 bg-gray-100 rounded">Unknown block type: {block.type}</div>;
+      default: {
+        const unknownType = (block as { type?: string }).type ?? "unknown";
+        return <div className="p-4 bg-gray-100 rounded">Unknown block type: {unknownType}</div>;
+      }
     }
   } catch (error) {
+    const blockType = (block as { type?: string }).type ?? "unknown";
     console.error("RenderBlock error:", error, "Block:", block);
     return (
       <div className="p-4 bg-red-50 border border-red-200 rounded text-red-600">
-        Error rendering block: {block.type} - {String(error)}
+        Error rendering block: {blockType} - {String(error)}
       </div>
     );
   }

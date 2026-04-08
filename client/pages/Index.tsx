@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import Seo from "@site/components/Seo";
 import Layout from "@site/components/layout/Layout";
-import { Phone, User, Scale, Calendar, Briefcase, FileText } from "lucide-react";
+import { Phone, User, Scale, Calendar, Briefcase, FileText, type LucideIcon } from "lucide-react";
 import AboutSection from "@site/components/home/AboutSection";
 import FirmDescriptionSection from "@site/components/home/FirmDescriptionSection";
 import PracticeAreasSection from "@site/components/home/PracticeAreasSection";
@@ -23,14 +23,14 @@ export default function Index() {
   const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || '';
 
   // Centralized SEO resolution
-  const seo = resolveSeo(page, siteSettings, pathname, siteUrl);
+  const seo = resolveSeo(page, siteSettings.settings, pathname, siteUrl);
 
   const heroContent = content.hero;
   const featureBoxes = heroContent.featureBoxes;
   const heroButtons = heroContent.buttons;
 
   // Icon map for CMS-driven icons
-  const iconMap: Record<string, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
+  const iconMap: Record<string, LucideIcon> = {
     User,
     Phone,
     Scale,

@@ -25,7 +25,7 @@ const NotFound = () => {
     title: '404 - Page Not Found',
   };
 
-  const seo = resolveSeo(notFoundPage, siteSettings, pathname, siteUrl);
+  const seo = resolveSeo(notFoundPage, siteSettings.settings, pathname, siteUrl);
 
   useEffect(() => {
     console.error(

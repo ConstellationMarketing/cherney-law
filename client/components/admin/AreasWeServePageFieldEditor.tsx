@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Plus, Trash2 } from "lucide-react";
-import type { AreasWeServePageContent, LocationItem } from "@/lib/cms/areasWeServePageTypes";
+import type { AreasWeServePageContent, LocationItem } from "@site/lib/cms/areasWeServePageTypes";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import ImageUploader from "@/components/admin/ImageUploader";
 

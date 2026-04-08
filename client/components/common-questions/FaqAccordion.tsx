@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import type { FaqItem } from "@/lib/cms/commonQuestionsPageTypes";
+import type { FaqItem } from "@site/lib/cms/commonQuestionsPageTypes";
 
 interface FaqAccordionProps {
   items: FaqItem[];

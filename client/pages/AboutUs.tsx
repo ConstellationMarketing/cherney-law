@@ -22,7 +22,7 @@ export default function AboutUs() {
   const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || '';
 
   // Centralized SEO resolution
-  const seo = resolveSeo(page, siteSettings, pathname, siteUrl);
+  const seo = resolveSeo(page, siteSettings.settings, pathname, siteUrl);
 
   // Feature boxes and stats are managed on the homepage CMS only
   const featureBoxes = homeContent.hero.featureBoxes;

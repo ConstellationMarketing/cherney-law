@@ -38,6 +38,12 @@ export type ContentBlock =
   | {
       type: "practice-areas-grid";
       areas: { icon: string; title: string; description: string }[];
+    }
+  | {
+      type: "recent-posts";
+      heading?: string;
+      postsPerPage?: number;
+      showLoadMore?: boolean;
     };
 
 export type PageStatus = "draft" | "published";

@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Plus, Trash2 } from "lucide-react";
-import type { CommonQuestionsPageContent, FaqItem } from "@/lib/cms/commonQuestionsPageTypes";
+import type { CommonQuestionsPageContent, FaqItem } from "@site/lib/cms/commonQuestionsPageTypes";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import ImageUploader from "@/components/admin/ImageUploader";
 

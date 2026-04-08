@@ -262,3 +262,15 @@ export type PageContent =
   | ContactPageContent
   | PracticeAreasPageContent
   | TestimonialsPageContent;
+
+export type PageKey = string;
+
+export type PageKeyToContent = Record<string, PageContent>;
+
+export interface PageRow {
+  content: PageContent;
+  meta_title: string | null;
+  meta_description: string | null;
+  schema_type: string | null;
+  schema_data: Record<string, unknown> | null;
+}

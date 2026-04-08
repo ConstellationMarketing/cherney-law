@@ -16,7 +16,7 @@ export default function TestimonialsPage() {
   const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || '';
 
   // Centralized SEO resolution
-  const seo = resolveSeo(page, siteSettings, pathname, siteUrl);
+  const seo = resolveSeo(page, siteSettings.settings, pathname, siteUrl);
 
   return (
     <Layout>
