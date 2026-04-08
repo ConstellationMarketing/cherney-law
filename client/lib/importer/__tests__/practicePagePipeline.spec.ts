@@ -521,6 +521,49 @@ describe('Practice deterministic section parsing', () => {
     expect(content.contentSections[0].body).not.toContain('<img');
   });
 
+  it('extracts real lazy-loaded image urls for later practice sections', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Chapter 7 Bankruptcy',
+        slug: '/practice-areas/chapter-7-bankruptcy/',
+        body: '<h2>Overview</h2><p><img src="https://example.com/overview.jpg" alt="Overview" /></p><p>Overview copy that stays in the first section.</p><h2>Debt Relief Options</h2><p><img src="data:image/svg+xml,%3Csvg%20xmlns=\"http://www.w3.org/2000/svg\"%3E%3C/svg%3E" data-src="https://example.com/debt-relief.jpg" alt="Debt relief" /></p><p>Debt relief copy for the second section.</p><h2>Asset Protection</h2><p><img src="data:image/svg+xml,%3Csvg%20xmlns=\"http://www.w3.org/2000/svg\"%3E%3C/svg%3E" data-srcset="https://example.com/asset-protection.jpg 300w, https://example.com/asset-protection-large.jpg 1200w" alt="Asset protection" /></p><p>Asset protection copy for the third section.</p>',
+      },
+    }, 'practice');
+
+    const content = (prepared.data as { content: { contentSections: Array<{ body: string; image?: string; imageAlt?: string }> } }).content;
+
+    expect(content.contentSections).toHaveLength(3);
+    expect(content.contentSections[0].image).toBe('https://example.com/overview.jpg');
+    expect(content.contentSections[1].image).toBe('https://example.com/debt-relief.jpg');
+    expect(content.contentSections[1].imageAlt).toBe('Debt relief');
+    expect(content.contentSections[2].image).toBe('https://example.com/asset-protection.jpg');
+    expect(content.contentSections[2].imageAlt).toBe('Asset protection');
+    expect(content.contentSections[1].image).not.toContain('data:image');
+    expect(content.contentSections[2].image).not.toContain('data:image');
+  });
+
+  it('drops placeholder-only image tags instead of storing data urls in practice sections', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Debt Settlement',
+        slug: '/practice-areas/debt-settlement/',
+        body: '<h2>Negotiation Process</h2><p><img src="data:image/svg+xml,%3Csvg%20xmlns=\"http://www.w3.org/2000/svg\"%3E%3C/svg%3E" alt="Placeholder" /></p><p>Negotiation copy should remain without an imported section image.</p>',
+      },
+    }, 'practice');
+
+    const content = (prepared.data as { content: { contentSections: Array<{ body: string; image?: string; imageAlt?: string }> } }).content;
+
+    expect(content.contentSections).toHaveLength(1);
+    expect(content.contentSections[0].image).toBe('');
+    expect(content.contentSections[0].imageAlt).toBe('');
+    expect(content.contentSections[0].body).not.toContain('<img');
+    expect(content.contentSections[0].body).toContain('Negotiation copy should remain');
+  });
+
   it('removes recent-posts style sub-sections from practice body content', () => {
     const prepared = prepareRecord({
       rowIndex: 0,

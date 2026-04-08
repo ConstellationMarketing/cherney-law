@@ -18,6 +18,8 @@ import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
 import { extname } from "path";
+import { resolveImageTag } from "../../client/lib/importer/imageSources";
+import { normalizeThirdPartyImageDownloadUrl } from "./bulk-import-images";
 
 const DEFAULT_MODEL = "gpt-4o-mini";
 
@@ -309,18 +311,18 @@ function extractFaqItems(html: string): { question: string; answer: string }[] {
  * Extract first <img> from HTML, return its src + alt, and the html with that img removed.
  */
 function extractFirstImage(html: string): { src: string; alt: string; cleanedHtml: string } {
-  const imgRegex = /<img([^>]*)>/i;
+  const imgRegex = /<img\b[^>]*>/i;
   const match = html.match(imgRegex);
   if (!match) return { src: "", alt: "", cleanedHtml: html };
 
-  const attrs = match[1];
-  const srcMatch = attrs.match(/src=["']([^"']+)["']/i);
-  const altMatch = attrs.match(/alt=["']([^"']*)["']/i);
-  const src = srcMatch?.[1] ?? "";
-  const alt = altMatch?.[1] ?? "";
+  const image = resolveImageTag(match[0]);
   const cleanedHtml = html.replace(match[0], "").replace(/^\s*<p>\s*<\/p>/gm, "").trim();
 
-  return { src, alt, cleanedHtml };
+  return {
+    src: image?.src ?? "",
+    alt: image?.alt ?? "",
+    cleanedHtml,
+  };
 }
 
 // ─── Image rehosting ────────────────────────────────────────────────────────
@@ -343,7 +345,8 @@ async function rehostInlineImages(
     if (!originalSrc.startsWith("http")) continue;
 
     try {
-      const response = await fetch(originalSrc, {
+      const downloadUrl = normalizeThirdPartyImageDownloadUrl(originalSrc);
+      const response = await fetch(downloadUrl, {
         signal: AbortSignal.timeout(10_000),
         headers: { "User-Agent": "Mozilla/5.0 (compatible; BulkImporter/1.0)" },
       });
@@ -351,7 +354,7 @@ async function rehostInlineImages(
 
       const contentType = response.headers.get("content-type") ?? "image/jpeg";
       const mimeType = contentType.split(";")[0].trim();
-      const urlExt = extname(new URL(originalSrc).pathname).toLowerCase() || ".jpg";
+      const urlExt = extname(new URL(downloadUrl).pathname).toLowerCase() || ".jpg";
       const mimeExtMap: Record<string, string> = {
         "image/jpeg": ".jpg", "image/png": ".png", "image/gif": ".gif",
         "image/webp": ".webp", "image/svg+xml": ".svg", "image/avif": ".avif",

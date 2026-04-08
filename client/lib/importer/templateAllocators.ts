@@ -4,6 +4,7 @@
 import type { NormalizedContent, SectionBlock, ImageCandidate, SectionHeadingLevel } from './normalizedContent';
 import type { TemplateType } from './types';
 import { normalizeHtml } from './htmlNormalizer';
+import { extractImagesFromHtml as resolveImagesFromHtml } from './imageSources';
 import { defaultFilterOptions } from './types';
 
 // ─── Dispatch ────────────────────────────────────────────────────────────────
@@ -462,18 +463,7 @@ function collectImages(blocks: SectionBlock[]): ImageCandidate[] {
 }
 
 function extractImagesFromHtml(html: string): ImageCandidate[] {
-  const images: ImageCandidate[] = [];
-  const re = /<img[^>]*\ssrc=["']([^"']+)["'][^>]*/gi;
-  let match: RegExpExecArray | null;
-
-  while ((match = re.exec(html)) !== null) {
-    const src = match[1];
-    const altMatch = match[0].match(/alt=["']([^"']*?)["']/i);
-    const alt = altMatch?.[1] ?? '';
-    if (src) images.push({ src, alt });
-  }
-
-  return images;
+  return resolveImagesFromHtml(html);
 }
 
 function pickSectionHeading(blocks: SectionBlock[]): string {

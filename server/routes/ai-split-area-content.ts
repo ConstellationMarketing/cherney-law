@@ -1,7 +1,9 @@
 import { RequestHandler } from "express";
 import OpenAI from "openai";
 import { normalizeHtml } from "../../client/lib/importer/htmlNormalizer";
+import { resolveImageTag } from "../../client/lib/importer/imageSources";
 import { defaultFilterOptions } from "../../client/lib/importer/types";
+import { normalizeThirdPartyImageDownloadUrl } from "./bulk-import-images";
 
 const DEFAULT_MODEL = "gpt-4o-mini";
 
@@ -239,17 +241,11 @@ function buildDeterministicAreaSplit(
  * Returns the image src, alt text, and HTML with the image removed.
  */
 function extractFirstImage(html: string): { src: string; alt: string; cleanedHtml: string } {
-  const imgRegex = /<img([^>]*)>/i;
+  const imgRegex = /<img\b[^>]*>/i;
   const match = html.match(imgRegex);
   if (!match) return { src: '', alt: '', cleanedHtml: html };
 
-  const attrs = match[1];
-  // Prefer data-lazy-src over src (common in WordPress/Divi lazy-loaded images)
-  const src =
-    attrs.match(/data-lazy-src=["']([^"']+)["']/i)?.[1] ??
-    attrs.match(/src=["']([^"']+)["']/i)?.[1] ??
-    '';
-  const alt = attrs.match(/alt=["']([^"']*)["']/i)?.[1] ?? '';
+  const image = resolveImageTag(match[0]);
 
   // Remove the img tag and any resulting empty <p> wrappers
   const cleanedHtml = html
@@ -257,7 +253,11 @@ function extractFirstImage(html: string): { src: string; alt: string; cleanedHtm
     .replace(/^\s*<p>\s*<\/p>/gm, '')
     .trim();
 
-  return { src, alt, cleanedHtml };
+  return {
+    src: image?.src ?? '',
+    alt: image?.alt ?? '',
+    cleanedHtml,
+  };
 }
 
 /**

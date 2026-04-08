@@ -43,4 +43,24 @@ describe('rewritePracticeContentSectionImages', () => {
     expect(uploadImage).not.toHaveBeenCalled();
     expect(rewritten).toEqual(content);
   });
+
+  it('clears placeholder data urls instead of preserving them as section images', async () => {
+    const uploadImage = vi.fn(async (imageUrl: string) => imageUrl);
+    const content = {
+      contentSections: [
+        { body: '<p>Section one</p>', image: 'data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3C/svg%3E', imageAlt: 'Placeholder' },
+        { body: '<p>Section two</p>', image: 'https://images.example.com/two.jpg', imageAlt: 'Two' },
+      ],
+    };
+
+    const rewritten = await rewritePracticeContentSectionImages(content, uploadImage) as {
+      contentSections: Array<{ image: string; imageAlt: string }>;
+    };
+
+    expect(uploadImage).toHaveBeenCalledTimes(1);
+    expect(uploadImage).toHaveBeenCalledWith('https://images.example.com/two.jpg');
+    expect(rewritten.contentSections[0].image).toBe('');
+    expect(rewritten.contentSections[0].imageAlt).toBe('Placeholder');
+    expect(rewritten.contentSections[1].image).toBe('https://images.example.com/two.jpg');
+  });
 });

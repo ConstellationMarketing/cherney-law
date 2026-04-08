@@ -3,6 +3,10 @@
 // Built from mapped data, consumed by template-specific allocators.
 
 import type { TemplateType } from './types';
+import {
+  extractFirstImageFromHtml as resolveFirstImageFromHtml,
+  extractImagesFromHtml as resolveImagesFromHtml,
+} from './imageSources';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -302,22 +306,12 @@ function cleanMetadataTitle(rawTitle: string, canonicalUrl: string): string {
 
 /** Extract all images from an HTML string */
 function extractImages(html: string): ImageCandidate[] {
-  const images: ImageCandidate[] = [];
-  const re = /<img[^>]*\ssrc=["']([^"']+)["'][^>]*/gi;
-  let match;
-  while ((match = re.exec(html)) !== null) {
-    const src = match[1];
-    const altMatch = match[0].match(/alt=["']([^"']*?)["']/i);
-    const alt = altMatch?.[1] ?? '';
-    if (src) images.push({ src, alt });
-  }
-  return images;
+  return resolveImagesFromHtml(html);
 }
 
 /** Extract first image src + alt from HTML */
 function extractFirstImage(html: string): ImageCandidate | null {
-  const imgs = extractImages(html);
-  return imgs[0] ?? null;
+  return resolveFirstImageFromHtml(html);
 }
 
 /** Check if text looks like a question */

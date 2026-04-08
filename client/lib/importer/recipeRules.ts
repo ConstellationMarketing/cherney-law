@@ -3,6 +3,7 @@
 
 import type { RecipeRuleType } from './recipeTypes';
 import { normalizeUrlSlug } from './preparer';
+import { extractFirstImageFromHtml } from './imageSources';
 import { splitBodyOnH2 } from './splitBodyOnH2';
 
 /** Rule executor function */
@@ -191,8 +192,7 @@ function executeConcatFields(
 }
 
 function executeExtractFirstImage(value: string): string {
-  const match = value.match(/<img[^>]+src="([^"]+)"/i);
-  return match ? match[1] : '';
+  return extractFirstImageFromHtml(value)?.src ?? '';
 }
 
 function executeMetaFromContent(value: string, config: Record<string, unknown>): string {

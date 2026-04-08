@@ -2,6 +2,11 @@ import { RequestHandler } from "express";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
 import { extname } from "path";
+import {
+  isDiscardableImageUrl,
+  isExternalHttpImageUrl,
+} from "../../client/lib/importer/imageSources";
+import { normalizeThirdPartyImageDownloadUrl } from "./bulk-import-images";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ServiceClient = SupabaseClient<any, "public", any>;
@@ -20,8 +25,10 @@ function getServiceClient(): ServiceClient {
 async function uploadSingleImage(supabase: ServiceClient, imageUrl: string): Promise<string> {
   if (!imageUrl || !imageUrl.startsWith("http")) return imageUrl;
 
+  const downloadUrl = normalizeThirdPartyImageDownloadUrl(imageUrl);
+
   try {
-    const response = await fetch(imageUrl, {
+    const response = await fetch(downloadUrl, {
       signal: AbortSignal.timeout(15_000),
       headers: { "User-Agent": "Mozilla/5.0 (compatible; BulkImporter/1.0)" },
     });
@@ -30,7 +37,7 @@ async function uploadSingleImage(supabase: ServiceClient, imageUrl: string): Pro
 
     const contentType = response.headers.get("content-type") ?? "image/jpeg";
     const mimeType = contentType.split(";")[0].trim();
-    const urlExt = extname(new URL(imageUrl).pathname).toLowerCase() || ".jpg";
+    const urlExt = extname(new URL(downloadUrl).pathname).toLowerCase() || ".jpg";
     const mimeExtMap: Record<string, string> = {
       "image/jpeg": ".jpg",
       "image/png": ".png",
@@ -98,7 +105,7 @@ function normalizePublishedAt(value: unknown): string | null {
 function normalizeExternalImageUrl(value: unknown): string | null {
   const textValue = normalizeOptionalText(value);
   if (!textValue) return null;
-  return /^https?:\/\//i.test(textValue) ? textValue : null;
+  return isExternalHttpImageUrl(textValue) ? textValue.trim() : null;
 }
 
 export async function rewritePracticeContentSectionImages(
@@ -128,7 +135,11 @@ export async function rewritePracticeContentSectionImages(
 
     const originalUrl = normalizeExternalImageUrl(section.image);
     if (!originalUrl) {
-      rewrittenSections.push({ ...section });
+      rewrittenSections.push(
+        isDiscardableImageUrl(section.image)
+          ? { ...section, image: "" }
+          : { ...section }
+      );
       continue;
     }
 
