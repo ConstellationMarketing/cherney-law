@@ -3,6 +3,7 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
 import { extname } from "path";
 import {
+  extractFirstImageMatchFromHtml,
   isDiscardableImageUrl,
   isExternalHttpImageUrl,
 } from "../../client/lib/importer/imageSources";
@@ -108,6 +109,35 @@ function normalizeExternalImageUrl(value: unknown): string | null {
   return isExternalHttpImageUrl(textValue) ? textValue.trim() : null;
 }
 
+function stripInlineImagesFromHtml(html: string): string {
+  return html
+    .replace(/<img\b[^>]*\/?>/gi, "")
+    .replace(/<(p|div|figure|section|article|span)[^>]*>\s*<\/\1>/gi, "")
+    .trim();
+}
+
+function recoverSectionImageFromBody(section: Record<string, unknown>): {
+  imageUrl: string | null;
+  imageAlt: string;
+  body: string | null;
+} {
+  const body = normalizeOptionalText(section.body);
+  if (!body) {
+    return {
+      imageUrl: null,
+      imageAlt: normalizeOptionalText(section.imageAlt) ?? "",
+      body: body,
+    };
+  }
+
+  const firstInlineImage = extractFirstImageMatchFromHtml(body);
+  return {
+    imageUrl: normalizeExternalImageUrl(firstInlineImage?.src),
+    imageAlt: normalizeOptionalText(section.imageAlt) ?? firstInlineImage?.alt?.trim() ?? "",
+    body: stripInlineImagesFromHtml(body),
+  };
+}
+
 export async function rewritePracticeContentSectionImages(
   contentValue: unknown,
   uploadImage: (imageUrl: string) => Promise<string>
@@ -133,12 +163,21 @@ export async function rewritePracticeContentSectionImages(
       continue;
     }
 
-    const originalUrl = normalizeExternalImageUrl(section.image);
+    const recoveredFromBody = recoverSectionImageFromBody(section);
+    const existingExternalUrl = normalizeExternalImageUrl(section.image);
+    const imageAlt = recoveredFromBody.imageAlt;
+    const nextSection: Record<string, unknown> = {
+      ...section,
+      ...(recoveredFromBody.body !== null ? { body: recoveredFromBody.body } : {}),
+      ...(imageAlt || normalizeOptionalText(section.imageAlt) !== null ? { imageAlt } : {}),
+    };
+
+    const originalUrl = existingExternalUrl || recoveredFromBody.imageUrl;
     if (!originalUrl) {
       rewrittenSections.push(
         isDiscardableImageUrl(section.image)
-          ? { ...section, image: "" }
-          : { ...section }
+          ? { ...nextSection, image: "" }
+          : nextSection
       );
       continue;
     }
@@ -150,7 +189,7 @@ export async function rewritePracticeContentSectionImages(
     }
 
     rewrittenSections.push({
-      ...section,
+      ...nextSection,
       image: uploadedUrl || originalUrl,
     });
   }

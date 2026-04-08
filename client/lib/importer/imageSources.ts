@@ -3,6 +3,12 @@ export interface ResolvedHtmlImage {
   alt: string;
 }
 
+export interface ResolvedHtmlImageMatch extends ResolvedHtmlImage {
+  tag: string;
+  start: number;
+  end: number;
+}
+
 const IMG_TAG_PATTERN = /<img\b[^>]*>/gi;
 const IMG_ATTRIBUTE_PATTERN = /([^\s"'<>\/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/gi;
 const DATA_URL_PATTERN = /^data:/i;
@@ -53,6 +59,11 @@ export function resolveImageTag(imgTag: string): ResolvedHtmlImage | null {
   const src =
     normalizeImageUrlCandidate(attributes['data-lazy-src'])
     || normalizeImageUrlCandidate(attributes['data-src'])
+    || normalizeImageUrlCandidate(attributes['data-original'])
+    || normalizeImageUrlCandidate(attributes['data-orig-file'])
+    || normalizeImageUrlCandidate(attributes['data-large-file'])
+    || normalizeImageUrlCandidate(attributes['data-medium-file'])
+    || extractFirstUsableSrcsetUrl(attributes['data-lazy-srcset'])
     || extractFirstUsableSrcsetUrl(attributes['data-srcset'])
     || extractFirstUsableSrcsetUrl(attributes.srcset)
     || normalizeImageUrlCandidate(attributes.src);
@@ -65,25 +76,39 @@ export function resolveImageTag(imgTag: string): ResolvedHtmlImage | null {
   };
 }
 
-export function extractImagesFromHtml(html: string): ResolvedHtmlImage[] {
+export function extractImageMatchesFromHtml(html: string): ResolvedHtmlImageMatch[] {
   if (!html?.trim()) return [];
 
-  const images: ResolvedHtmlImage[] = [];
+  const images: ResolvedHtmlImageMatch[] = [];
   IMG_TAG_PATTERN.lastIndex = 0;
   let match: RegExpExecArray | null;
 
   while ((match = IMG_TAG_PATTERN.exec(html)) !== null) {
     const image = resolveImageTag(match[0]);
     if (image?.src) {
-      images.push(image);
+      images.push({
+        ...image,
+        tag: match[0],
+        start: match.index,
+        end: match.index + match[0].length,
+      });
     }
   }
 
   return images;
 }
 
+export function extractImagesFromHtml(html: string): ResolvedHtmlImage[] {
+  return extractImageMatchesFromHtml(html).map(({ src, alt }) => ({ src, alt }));
+}
+
 export function extractFirstImageFromHtml(html: string): ResolvedHtmlImage | null {
   const images = extractImagesFromHtml(html);
+  return images[0] ?? null;
+}
+
+export function extractFirstImageMatchFromHtml(html: string): ResolvedHtmlImageMatch | null {
+  const images = extractImageMatchesFromHtml(html);
   return images[0] ?? null;
 }
 

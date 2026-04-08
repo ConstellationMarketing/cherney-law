@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
-import type { PracticeAreasPageContent } from "../lib/cms/practiceAreasPageTypes";
-import { defaultPracticeAreasContent } from "../lib/cms/practiceAreasPageTypes";
+import {
+  defaultPracticeAreasContent,
+  normalizePracticeAreasPageContent,
+  type PracticeAreasPageContent,
+} from "../lib/cms/practiceAreasPageTypes";
 import type { PageSeoFields } from "../utils/resolveSeo";
 
 // Supabase configuration - use environment variables
@@ -69,10 +72,8 @@ export function usePracticeAreasContent(urlPath: string = '/practice-areas/'): U
         }
 
         const pageData = data[0];
-        const cmsContent = pageData.content as PracticeAreasPageContent;
-
-        // Merge CMS content with defaults (CMS content takes precedence)
-        const mergedContent = mergeWithDefaults(
+        const cmsContent = pageData.content as Partial<PracticeAreasPageContent>;
+        const mergedContent = normalizePracticeAreasPageContent(
           cmsContent,
           defaultPracticeAreasContent,
         );
@@ -121,34 +122,6 @@ export function usePracticeAreasContent(urlPath: string = '/practice-areas/'): U
   }, [urlPath]);
 
   return { content, page, isLoading, error };
-}
-
-// Deep merge CMS content with defaults
-function mergeWithDefaults(
-  cmsContent: Partial<PracticeAreasPageContent> | null | undefined,
-  defaults: PracticeAreasPageContent,
-): PracticeAreasPageContent {
-  if (!cmsContent) return defaults;
-
-  return {
-    hero: { ...defaults.hero, ...cmsContent.hero },
-    tabs: cmsContent.tabs?.length ? cmsContent.tabs : defaults.tabs,
-    grid: {
-      ...defaults.grid,
-      ...cmsContent.grid,
-      areas: cmsContent.grid?.areas?.length
-        ? cmsContent.grid.areas
-        : defaults.grid.areas,
-    },
-    cta: { ...defaults.cta, ...cmsContent.cta },
-    faq: {
-      ...defaults.faq,
-      ...cmsContent.faq,
-      items: cmsContent.faq?.items?.length
-        ? cmsContent.faq.items
-        : defaults.faq.items,
-    },
-  };
 }
 
 // Helper to clear cache (useful after admin edits)

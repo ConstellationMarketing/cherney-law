@@ -53,6 +53,91 @@ export interface PracticeAreasPageContent {
   faq: PracticeAreasFAQContent;
 }
 
+function normalizeString(value: unknown, fallback = ""): string {
+  return typeof value === "string" ? value : fallback;
+}
+
+function normalizeContentTab(tab: unknown): ContentTab | null {
+  if (!tab || typeof tab !== "object" || Array.isArray(tab)) return null;
+
+  const value = tab as Record<string, unknown>;
+  const title = normalizeString(value.title || value.tabLabel || value.heading).trim();
+  const content = normalizeString(value.content).trim();
+
+  if (!title && !content) return null;
+
+  return {
+    title,
+    content,
+  };
+}
+
+function normalizePracticeAreaGridItem(item: unknown): PracticeAreaGridItem | null {
+  if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+
+  const value = item as Record<string, unknown>;
+  const title = normalizeString(value.title).trim();
+  const description = normalizeString(value.description).trim();
+  const icon = normalizeString(value.icon).trim();
+  const image = normalizeString(value.image).trim();
+  const link = normalizeString(value.link || value.href).trim();
+
+  if (!title && !description && !icon && !image && !link) return null;
+
+  return {
+    title,
+    description,
+    icon,
+    image,
+    link,
+  };
+}
+
+export function normalizePracticeAreasPageContent(
+  content: Partial<PracticeAreasPageContent> | null | undefined,
+  defaults: PracticeAreasPageContent = defaultPracticeAreasContent,
+): PracticeAreasPageContent {
+  if (!content) return defaults;
+
+  const normalizedTabs = Array.isArray(content.tabs)
+    ? content.tabs.map(normalizeContentTab).filter((tab): tab is ContentTab => Boolean(tab))
+    : [];
+  const normalizedAreas = Array.isArray(content.grid?.areas)
+    ? content.grid.areas.map(normalizePracticeAreaGridItem).filter((item): item is PracticeAreaGridItem => Boolean(item))
+    : [];
+  const normalizedFaqItems = Array.isArray(content.faq?.items)
+    ? content.faq.items
+      .filter((item): item is FAQItem => Boolean(item && typeof item === "object" && !Array.isArray(item)))
+      .map((item) => ({
+        question: normalizeString(item.question).trim(),
+        answer: normalizeString(item.answer).trim(),
+      }))
+      .filter((item) => item.question || item.answer)
+    : [];
+
+  return {
+    hero: {
+      ...defaults.hero,
+      ...content.hero,
+    },
+    tabs: normalizedTabs.length > 0 ? normalizedTabs : defaults.tabs,
+    grid: {
+      ...defaults.grid,
+      ...content.grid,
+      areas: normalizedAreas.length > 0 ? normalizedAreas : defaults.grid.areas,
+    },
+    cta: {
+      ...defaults.cta,
+      ...content.cta,
+    },
+    faq: {
+      ...defaults.faq,
+      ...content.faq,
+      items: normalizedFaqItems.length > 0 ? normalizedFaqItems : defaults.faq.items,
+    },
+  };
+}
+
 // Default content - used as fallback when CMS content is not available
 export const defaultPracticeAreasContent: PracticeAreasPageContent = {
   hero: {

@@ -63,4 +63,28 @@ describe('rewritePracticeContentSectionImages', () => {
     expect(rewritten.contentSections[0].imageAlt).toBe('Placeholder');
     expect(rewritten.contentSections[1].image).toBe('https://images.example.com/two.jpg');
   });
+
+  it('recovers later section images from inline lazy-loaded html and removes inline img tags from the body', async () => {
+    const uploadImage = vi.fn(async (imageUrl: string) => `https://cdn.example.com/${encodeURIComponent(imageUrl)}`);
+    const content = {
+      contentSections: [
+        {
+          body: '<h2>Debt Relief</h2><p><img src="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3C/svg%3E" data-lazy-srcset="https://images.example.com/debt-relief-300x200.jpg.webp 300w, https://images.example.com/debt-relief.jpg.webp 1200w" alt="Debt relief" /></p><p>Debt relief copy.</p>',
+          image: '',
+          imageAlt: '',
+        },
+      ],
+    };
+
+    const rewritten = await rewritePracticeContentSectionImages(content, uploadImage) as {
+      contentSections: Array<{ body: string; image: string; imageAlt: string }>;
+    };
+
+    expect(uploadImage).toHaveBeenCalledTimes(1);
+    expect(uploadImage).toHaveBeenCalledWith('https://images.example.com/debt-relief-300x200.jpg.webp');
+    expect(rewritten.contentSections[0].image).toBe('https://cdn.example.com/https%3A%2F%2Fimages.example.com%2Fdebt-relief-300x200.jpg.webp');
+    expect(rewritten.contentSections[0].imageAlt).toBe('Debt relief');
+    expect(rewritten.contentSections[0].body).toContain('Debt relief copy.');
+    expect(rewritten.contentSections[0].body).not.toContain('<img');
+  });
 });
