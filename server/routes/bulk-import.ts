@@ -95,6 +95,61 @@ function normalizePublishedAt(value: unknown): string | null {
   return parsedDate.toISOString();
 }
 
+function normalizeExternalImageUrl(value: unknown): string | null {
+  const textValue = normalizeOptionalText(value);
+  if (!textValue) return null;
+  return /^https?:\/\//i.test(textValue) ? textValue : null;
+}
+
+export async function rewritePracticeContentSectionImages(
+  contentValue: unknown,
+  uploadImage: (imageUrl: string) => Promise<string>
+): Promise<unknown> {
+  if (!contentValue || typeof contentValue !== "object" || Array.isArray(contentValue)) {
+    return contentValue;
+  }
+
+  const content = contentValue as Record<string, unknown> & {
+    contentSections?: Array<Record<string, unknown>>;
+  };
+
+  if (!Array.isArray(content.contentSections) || content.contentSections.length === 0) {
+    return contentValue;
+  }
+
+  const uploadedUrlMap = new Map<string, string>();
+  const rewrittenSections: Array<Record<string, unknown>> = [];
+
+  for (const section of content.contentSections) {
+    if (!section || typeof section !== "object" || Array.isArray(section)) {
+      rewrittenSections.push(section);
+      continue;
+    }
+
+    const originalUrl = normalizeExternalImageUrl(section.image);
+    if (!originalUrl) {
+      rewrittenSections.push({ ...section });
+      continue;
+    }
+
+    let uploadedUrl = uploadedUrlMap.get(originalUrl);
+    if (!uploadedUrl) {
+      uploadedUrl = await uploadImage(originalUrl).catch(() => originalUrl);
+      uploadedUrlMap.set(originalUrl, uploadedUrl || originalUrl);
+    }
+
+    rewrittenSections.push({
+      ...section,
+      image: uploadedUrl || originalUrl,
+    });
+  }
+
+  return {
+    ...content,
+    contentSections: rewrittenSections,
+  };
+}
+
 function slugify(value: string): string {
   return value
     .toLowerCase()
@@ -476,6 +531,11 @@ async function importPracticePage(
   record: ImportRecord,
   mode: string
 ): Promise<ImportExecutionResult> {
+  const content = await rewritePracticeContentSectionImages(
+    record.data.content,
+    (imageUrl) => uploadSingleImage(supabase, imageUrl)
+  );
+
   // Upload og_image to media library
   let ogImage = (record.data.og_image as string) || null;
   if (ogImage) ogImage = await uploadSingleImage(supabase, ogImage).catch(() => ogImage);
@@ -484,7 +544,7 @@ async function importPracticePage(
     title: record.data.title as string,
     url_path: record.data.url_path as string,
     page_type: "practice_detail",
-    content: record.data.content,
+    content,
     meta_title: record.data.meta_title || null,
     meta_description: record.data.meta_description || null,
     canonical_url: record.data.canonical_url || null,

@@ -12,6 +12,7 @@ import { autoMapFields } from '../autoMapper';
 import { applyFieldMapping } from '../fieldMapping';
 import { prepareRecord, normalizeUrlSlug, resolveImportPath } from '../preparer';
 import { splitBodyOnH2 } from '../splitBodyOnH2';
+import { getSamplePreviewRecord } from '../transformer';
 import { validateRecord } from '../validator';
 import type { FilterOptions, SourceRecord } from '../types';
 
@@ -445,6 +446,38 @@ describe('Practice deterministic section parsing', () => {
 
     expect(content.hero.sectionLabel).toBe('Catastrophic Injury');
     expect(content.hero.tagline).toBe('Catastrophic Injury');
+  });
+
+  it('preserves the full practice meta title while keeping the page title cleaned', () => {
+    const sourceRecord = {
+      rowIndex: 0,
+      data: {
+        title: 'Brain Injury Lawyer | Cherney Law Firm',
+        meta_title: 'Brain Injury Lawyer | Cherney Law Firm',
+        slug: '/practice-areas/brain-injury/',
+        body: '<p>Body copy for the imported practice page.</p>',
+      },
+    };
+
+    const preview = getSamplePreviewRecord(
+      sourceRecord,
+      autoMapFields([
+        { name: 'title', sampleValues: ['Brain Injury Lawyer | Cherney Law Firm'], detectedType: 'text' as const },
+        { name: 'meta_title', sampleValues: ['Brain Injury Lawyer | Cherney Law Firm'], detectedType: 'text' as const },
+        { name: 'slug', sampleValues: ['/practice-areas/brain-injury/'], detectedType: 'url' as const },
+        { name: 'body', sampleValues: ['<p>Body copy for the imported practice page.</p>'], detectedType: 'html' as const },
+      ], 'practice'),
+      'practice',
+      defaultFilterOptions,
+    );
+
+    const allocatedData = preview.allocatedData as { title: string; meta_title: string; og_title: string };
+
+    expect(preview.chosenTitle).toBe('Brain Injury Lawyer');
+    expect(allocatedData.title).toBe('Brain Injury Lawyer');
+    expect(allocatedData.meta_title).toBe('Brain Injury Lawyer | Cherney Law Firm');
+    expect(allocatedData.og_title).toBe('Brain Injury Lawyer');
+    expect(preview.mappedData.meta_title).toBe('Brain Injury Lawyer | Cherney Law Firm');
   });
 
   it('uses paragraph fallback chunks, preserves H4 headings, and extracts only the first image per practice section', () => {

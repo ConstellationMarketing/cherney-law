@@ -346,6 +346,7 @@ function allocateForPracticePage(
 ): Record<string, unknown> {
   const pageTitle = normalized.chosenTitle || normalized.h1 || '';
   const seoTitle = normalized.cleanedMetaTitle || pageTitle || '';
+  const metaTitle = normalized.rawMetaTitle || normalized.metaTitle || pageTitle || '';
   const blocks = normalized.sectionBlocks;
 
   let contentSections: {
@@ -402,7 +403,7 @@ function allocateForPracticePage(
     url_path: resolvedPath || `/${slug}/`,
     page_type: 'practice_detail',
     content,
-    meta_title: seoTitle,
+    meta_title: metaTitle || null,
     meta_description: normalized.metaDescription || '',
     canonical_url: normalized.canonicalUrl || null,
     og_title: seoTitle || null,

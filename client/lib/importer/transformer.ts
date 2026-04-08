@@ -485,12 +485,16 @@ function buildPreviewMappedData(
   resolvedPath: string,
   templateType: TemplateType
 ): Record<string, string> {
+  const previewMetaTitle = templateType === 'practice'
+    ? normalizedContent.rawMetaTitle || normalizedContent.metaTitle
+    : normalizedContent.cleanedMetaTitle || normalizedContent.metaTitle;
+
   return {
     ...data,
     ...(normalizedContent.chosenTitle ? { title: normalizedContent.chosenTitle } : {}),
     ...(normalizedContent.heroTagline ? { hero_tagline: normalizedContent.heroTagline } : {}),
-    ...(normalizedContent.cleanedMetaTitle || normalizedContent.metaTitle
-      ? { meta_title: normalizedContent.cleanedMetaTitle || normalizedContent.metaTitle }
+    ...(previewMetaTitle
+      ? { meta_title: previewMetaTitle }
       : {}),
     ...((templateType === 'area' || templateType === 'practice') && resolvedPath
       ? { slug: resolvedPath }

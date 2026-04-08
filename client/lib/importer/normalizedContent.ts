@@ -911,7 +911,7 @@ export function buildNormalizedContent(
   }
 
   const h1 = chosenTitle;
-  const metaTitle = cleanedMetaTitle || chosenTitle;
+  const metaTitle = rawMetaTitle || chosenTitle;
   const metaDescription = mappedData.meta_description || '';
   const canonicalUrl = mappedData.canonical_url || '';
   const featuredImage = mappedData.featured_image || '';
