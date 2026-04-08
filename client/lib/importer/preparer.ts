@@ -119,9 +119,13 @@ export function resolveImportPath(
   const slug = normalizeUrlSlug(rawSlug, title, templateType);
 
   if (sourcePath) {
+    const normalizedPath = templateType === 'practice'
+      ? `/${slug.replace(/^\/+|\/+$/g, '')}/`
+      : sourcePath;
+
     return {
       slug,
-      path: normalizeTemplatePath(sourcePath, templateType),
+      path: normalizeTemplatePath(normalizedPath, templateType),
       usedSourcePath: true,
     };
   }
@@ -129,7 +133,7 @@ export function resolveImportPath(
   const fallbackPath = templateType === 'area'
     ? `/areas-we-serve/${slug}/`
     : templateType === 'practice'
-      ? `/practice-areas/${slug}/`
+      ? `/${slug.replace(/^\/+|\/+$/g, '')}/`
       : `/${slug.replace(/^\/+/, '')}`;
 
   return {

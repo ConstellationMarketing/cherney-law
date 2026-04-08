@@ -482,14 +482,14 @@ describe('URL slug normalization', () => {
     expect(slug).toBe('my-post/');
   });
 
-  it('preserves trailing slash in resolved practice paths', () => {
+  it('normalizes prefixed source practice paths to bare root slugs with a trailing slash', () => {
     const resolved = resolveImportPath('https://example.com/practice-areas/car-accident/', 'Car Accident', 'practice');
-    expect(resolved.path).toBe('/practice-areas/car-accident/');
+    expect(resolved.path).toBe('/car-accident/');
   });
 
-  it('adds trailing slash to generated practice paths', () => {
+  it('adds trailing slash to generated practice paths without a template prefix', () => {
     const resolved = resolveImportPath('car-accident', 'Car Accident', 'practice');
-    expect(resolved.path).toBe('/practice-areas/car-accident/');
+    expect(resolved.path).toBe('/car-accident/');
   });
 });
 
@@ -530,7 +530,7 @@ describe('Validation', () => {
       slug: 'test-page',
       data: {
         title: 'Test',
-        url_path: '/practice-areas/test-page',
+        url_path: '/test-page',
         meta_title: 'Test Page',
         meta_description: '',
         content: { contentSections: [{ body: '<p>Some content here for the page</p>' }] },
@@ -567,7 +567,7 @@ describe('Practice image allocation', () => {
 
     expect(data.content.hero.backgroundImage).toBe('https://example.com/hero.jpg');
     expect(data.og_image).toBe('https://example.com/og.jpg');
-    expect(data.url_path).toBe('/practice-areas/car-accident/');
+    expect(data.url_path).toBe('/car-accident/');
   });
 });
 
@@ -648,7 +648,7 @@ describe('Full pipeline integration', () => {
     const prepared = prepareRecord(mappedRecord, 'practice');
 
     // Slug should be normalized
-    expect(prepared.slug).toBe('/practice-areas/car-accident/');
+    expect(prepared.slug).toBe('/car-accident/');
 
     // Should have content sections
     expect(prepared.contentSections).toBeDefined();
@@ -657,7 +657,7 @@ describe('Full pipeline integration', () => {
     // CMS record should have proper structure
     const data = prepared.data as Record<string, unknown>;
     expect(data.title).toBe('Car Accident Lawyer');
-    expect(data.url_path).toBe('/practice-areas/car-accident/');
+    expect(data.url_path).toBe('/car-accident/');
     expect(data.page_type).toBe('practice_detail');
   });
 });
