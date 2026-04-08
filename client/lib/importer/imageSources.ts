@@ -10,6 +10,7 @@ export interface ResolvedHtmlImageMatch extends ResolvedHtmlImage {
 }
 
 const IMG_TAG_PATTERN = /<img\b[^>]*>/gi;
+const HTML_IMAGE_TOKEN_PATTERN = /<noscript\b[^>]*>[\s\S]*?<\/noscript>|<img\b[^>]*>/gi;
 const IMG_ATTRIBUTE_PATTERN = /([^\s"'<>\/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/gi;
 const DATA_URL_PATTERN = /^data:/i;
 const UNSAFE_URL_PATTERN = /^(?:javascript|vbscript):/i;
@@ -52,20 +53,17 @@ function extractFirstUsableSrcsetUrl(srcset: string | undefined): string {
   return '';
 }
 
-export function resolveImageTag(imgTag: string): ResolvedHtmlImage | null {
-  if (!/^<img\b/i.test(imgTag)) return null;
-
-  const attributes = parseImgAttributes(imgTag);
+function resolveImageAttributes(attributes: Record<string, string>): ResolvedHtmlImage | null {
   const src =
     normalizeImageUrlCandidate(attributes['data-lazy-src'])
     || normalizeImageUrlCandidate(attributes['data-src'])
+    || extractFirstUsableSrcsetUrl(attributes.srcset)
+    || extractFirstUsableSrcsetUrl(attributes['data-lazy-srcset'])
+    || extractFirstUsableSrcsetUrl(attributes['data-srcset'])
     || normalizeImageUrlCandidate(attributes['data-original'])
     || normalizeImageUrlCandidate(attributes['data-orig-file'])
     || normalizeImageUrlCandidate(attributes['data-large-file'])
     || normalizeImageUrlCandidate(attributes['data-medium-file'])
-    || extractFirstUsableSrcsetUrl(attributes['data-lazy-srcset'])
-    || extractFirstUsableSrcsetUrl(attributes['data-srcset'])
-    || extractFirstUsableSrcsetUrl(attributes.srcset)
     || normalizeImageUrlCandidate(attributes.src);
 
   if (!src) return null;
@@ -76,26 +74,57 @@ export function resolveImageTag(imgTag: string): ResolvedHtmlImage | null {
   };
 }
 
-export function extractImageMatchesFromHtml(html: string): ResolvedHtmlImageMatch[] {
+function extractNoscriptInnerHtml(noscriptTag: string): string {
+  const match = noscriptTag.match(/^<noscript\b[^>]*>([\s\S]*?)<\/noscript>$/i);
+  return match?.[1]?.trim() ?? '';
+}
+
+function extractImageMatchesFromHtmlInternal(html: string, includeNoscript: boolean): ResolvedHtmlImageMatch[] {
   if (!html?.trim()) return [];
 
   const images: ResolvedHtmlImageMatch[] = [];
-  IMG_TAG_PATTERN.lastIndex = 0;
-  let match: RegExpExecArray | null;
+  const tokenPattern = includeNoscript ? HTML_IMAGE_TOKEN_PATTERN : IMG_TAG_PATTERN;
+  tokenPattern.lastIndex = 0;
 
-  while ((match = IMG_TAG_PATTERN.exec(html)) !== null) {
-    const image = resolveImageTag(match[0]);
+  let match: RegExpExecArray | null;
+  while ((match = tokenPattern.exec(html)) !== null) {
+    const token = match[0];
+
+    if (/^<noscript\b/i.test(token)) {
+      const innerMatches = extractImageMatchesFromHtmlInternal(extractNoscriptInnerHtml(token), false);
+      images.push(
+        ...innerMatches.map(({ src, alt }) => ({
+          src,
+          alt,
+          tag: token,
+          start: match!.index,
+          end: match!.index + token.length,
+        }))
+      );
+      continue;
+    }
+
+    const image = resolveImageTag(token);
     if (image?.src) {
       images.push({
         ...image,
-        tag: match[0],
+        tag: token,
         start: match.index,
-        end: match.index + match[0].length,
+        end: match.index + token.length,
       });
     }
   }
 
   return images;
+}
+
+export function resolveImageTag(imgTag: string): ResolvedHtmlImage | null {
+  if (!/^<img\b/i.test(imgTag)) return null;
+  return resolveImageAttributes(parseImgAttributes(imgTag));
+}
+
+export function extractImageMatchesFromHtml(html: string): ResolvedHtmlImageMatch[] {
+  return extractImageMatchesFromHtmlInternal(html, true);
 }
 
 export function extractImagesFromHtml(html: string): ResolvedHtmlImage[] {

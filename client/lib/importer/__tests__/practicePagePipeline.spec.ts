@@ -606,6 +606,30 @@ describe('Practice deterministic section parsing', () => {
     expect(content.contentSections[0].body).toContain('Negotiation copy should remain');
   });
 
+  it('prefers data-lazy-src and noscript fallback images for later practice sections', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Wage Garnishment',
+        slug: '/practice-areas/wage-garnishment/',
+        body: '<h2>Stopping Garnishment</h2><p><img src="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3C/svg%3E" data-lazy-src="https://example.com/stopping-garnishment.jpg" alt="Stopping garnishment" /></p><p>Stopping garnishment copy.</p><h2>Employer Notice</h2><p><noscript><img src="https://example.com/employer-notice.jpg" alt="Employer notice" /></noscript></p><p>Employer notice copy.</p>',
+      },
+    }, 'practice');
+
+    const content = (prepared.data as { content: { contentSections: Array<{ body: string; image?: string; imageAlt?: string }> } }).content;
+
+    expect(content.contentSections).toHaveLength(2);
+    expect(content.contentSections[0].image).toBe('https://example.com/stopping-garnishment.jpg');
+    expect(content.contentSections[0].imageAlt).toBe('Stopping garnishment');
+    expect(content.contentSections[1].image).toBe('https://example.com/employer-notice.jpg');
+    expect(content.contentSections[1].imageAlt).toBe('Employer notice');
+    expect(content.contentSections[0].body).not.toContain('data:image');
+    expect(content.contentSections[1].body).not.toContain('<noscript');
+    expect(content.contentSections[1].body).not.toContain('<img');
+    expect(content.contentSections[1].body).toContain('Employer notice copy.');
+  });
+
   it('removes recent-posts style sub-sections from practice body content', () => {
     const prepared = prepareRecord({
       rowIndex: 0,

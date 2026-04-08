@@ -177,7 +177,7 @@ export function extractMainContent(html: string): string {
 
 /**
  * Strip the page shell: DOCTYPE, <html>, <head>, <body>, <script>, <style>,
- * <nav>, <footer>, <header>, <noscript> tags.
+ * <nav>, <footer>, and site-level <header> tags.
  */
 function stripPageShell(html: string): string {
   let result = html;
@@ -199,9 +199,6 @@ function stripPageShell(html: string): string {
 
   // Remove all <style>...</style> blocks
   result = result.replace(/<style[\s>][\s\S]*?<\/style>/gi, '');
-
-  // Remove <noscript>...</noscript>
-  result = result.replace(/<noscript[\s>][\s\S]*?<\/noscript>/gi, '');
 
   // Remove <nav>...</nav>
   result = removeTagWithContent(result, 'nav');

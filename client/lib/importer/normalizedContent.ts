@@ -608,7 +608,7 @@ function extractEditorialNodes(html: string): EditorialNode[] {
   if (!html?.trim()) return [];
 
   const nodes: EditorialNode[] = [];
-  const editorialPattern = /<(p|ul|ol|table|blockquote|h[3-6])\b[^>]*>[\s\S]*?<\/\1>|<img\b[^>]*\/?>/gi;
+  const editorialPattern = /<(p|ul|ol|table|blockquote|h[3-6]|noscript)\b[^>]*>[\s\S]*?<\/\1>|<img\b[^>]*\/?>/gi;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
@@ -616,7 +616,7 @@ function extractEditorialNodes(html: string): EditorialNode[] {
     pushStrayTextNode(nodes, html.substring(lastIndex, match.index));
 
     const token = match[0];
-    if (/^<img\b/i.test(token)) {
+    if (/^<(?:img|noscript)\b/i.test(token)) {
       const image = extractFirstImage(token);
       if (image?.src) {
         nodes.push({
@@ -652,6 +652,7 @@ function extractEditorialNodes(html: string): EditorialNode[] {
 
 function stripImagesFromHtml(html: string): string {
   return html
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, '')
     .replace(/<img\b[^>]*\/?>/gi, '')
     .replace(/<(p|div|figure|section|article|span)[^>]*>\s*<\/\1>/gi, '')
     .trim();

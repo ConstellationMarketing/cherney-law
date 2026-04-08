@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import { extname } from "path";
 import {
   extractFirstImageMatchFromHtml,
+  extractImagesFromHtml,
   isDiscardableImageUrl,
   isExternalHttpImageUrl,
 } from "../../client/lib/importer/imageSources";
@@ -111,6 +112,7 @@ function normalizeExternalImageUrl(value: unknown): string | null {
 
 function stripInlineImagesFromHtml(html: string): string {
   return html
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, "")
     .replace(/<img\b[^>]*\/?>/gi, "")
     .replace(/<(p|div|figure|section|article|span)[^>]*>\s*<\/\1>/gi, "")
     .trim();
@@ -278,13 +280,10 @@ function collectInlineImageUrls(html: string): string[] {
   if (!html?.trim()) return [];
 
   const imageUrls = new Set<string>();
-  const imgTagPattern = /<img\b[^>]*\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))[^>]*>/gi;
-  let match: RegExpExecArray | null;
 
-  while ((match = imgTagPattern.exec(html)) !== null) {
-    const src = (match[1] || match[2] || match[3] || "").trim();
-    if (src.startsWith("http://") || src.startsWith("https://")) {
-      imageUrls.add(src);
+  for (const image of extractImagesFromHtml(html)) {
+    if (isExternalHttpImageUrl(image.src)) {
+      imageUrls.add(image.src.trim());
     }
   }
 

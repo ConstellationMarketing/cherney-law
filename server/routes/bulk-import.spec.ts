@@ -87,4 +87,29 @@ describe('rewritePracticeContentSectionImages', () => {
     expect(rewritten.contentSections[0].body).toContain('Debt relief copy.');
     expect(rewritten.contentSections[0].body).not.toContain('<img');
   });
+
+  it('recovers noscript fallback images and removes leftover noscript markup from section bodies', async () => {
+    const uploadImage = vi.fn(async (imageUrl: string) => `https://cdn.example.com/${encodeURIComponent(imageUrl)}`);
+    const content = {
+      contentSections: [
+        {
+          body: '<h2>Employer Notice</h2><p><noscript><img src="https://images.example.com/employer-notice.jpg" alt="Employer notice" /></noscript></p><p>Employer notice copy.</p>',
+          image: '',
+          imageAlt: '',
+        },
+      ],
+    };
+
+    const rewritten = await rewritePracticeContentSectionImages(content, uploadImage) as {
+      contentSections: Array<{ body: string; image: string; imageAlt: string }>;
+    };
+
+    expect(uploadImage).toHaveBeenCalledTimes(1);
+    expect(uploadImage).toHaveBeenCalledWith('https://images.example.com/employer-notice.jpg');
+    expect(rewritten.contentSections[0].image).toBe('https://cdn.example.com/https%3A%2F%2Fimages.example.com%2Femployer-notice.jpg');
+    expect(rewritten.contentSections[0].imageAlt).toBe('Employer notice');
+    expect(rewritten.contentSections[0].body).toContain('Employer notice copy.');
+    expect(rewritten.contentSections[0].body).not.toContain('<noscript');
+    expect(rewritten.contentSections[0].body).not.toContain('<img');
+  });
 });
