@@ -19,6 +19,24 @@ interface BulkImportImagesBody {
   imageUrls: string[];
 }
 
+const WORDPRESS_RESIZED_IMAGE_MARKER_PATTERN = /-(300x200|300x196)(?=(?:\.[^/?#]+)+$)/;
+
+export function normalizeThirdPartyImageDownloadUrl(originalUrl: string): string {
+  try {
+    const url = new URL(originalUrl);
+    const normalizedPathname = url.pathname.replace(WORDPRESS_RESIZED_IMAGE_MARKER_PATTERN, "");
+
+    if (normalizedPathname === url.pathname) {
+      return originalUrl;
+    }
+
+    url.pathname = normalizedPathname;
+    return url.toString();
+  } catch {
+    return originalUrl;
+  }
+}
+
 /**
  * POST /api/bulk-import-images
  * Downloads external image URLs server-side (bypasses CORS), uploads them to
@@ -48,8 +66,10 @@ export const handleBulkImportImages: RequestHandler = async (req, res) => {
 
   for (const originalUrl of urls) {
     try {
+      const downloadUrl = normalizeThirdPartyImageDownloadUrl(originalUrl);
+
       // Fetch the image
-      const response = await fetch(originalUrl, {
+      const response = await fetch(downloadUrl, {
         signal: AbortSignal.timeout(15_000),
         headers: { "User-Agent": "Mozilla/5.0 (compatible; BulkImporter/1.0)" },
       });
@@ -65,7 +85,7 @@ export const handleBulkImportImages: RequestHandler = async (req, res) => {
       const mimeType = contentType.split(";")[0].trim();
 
       // Determine file extension from URL or content-type
-      const urlExt = extname(new URL(originalUrl).pathname).toLowerCase() || ".jpg";
+      const urlExt = extname(new URL(downloadUrl).pathname).toLowerCase() || ".jpg";
       const mimeExtMap: Record<string, string> = {
         "image/jpeg": ".jpg",
         "image/png": ".png",
