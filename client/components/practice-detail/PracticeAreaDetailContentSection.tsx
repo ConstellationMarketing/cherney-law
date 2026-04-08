@@ -9,6 +9,13 @@ interface Props {
   index: number;
 }
 
+function sanitizeSectionBody(html: string): string {
+  return html
+    .replace(/<img\b[^>]*\/?>/gi, "")
+    .replace(/<(p|div|figure|section|article|span)[^>]*>\s*<\/\1>/gi, "")
+    .trim();
+}
+
 export default function PracticeAreaDetailContentSection({ section, index }: Props) {
   const { phoneDisplay, phoneLabel, phoneNumber } = useGlobalPhone();
   const isEven = index % 2 === 0;
@@ -18,6 +25,7 @@ export default function PracticeAreaDetailContentSection({ section, index }: Pro
   const hasImage = !!section.image;
   const hasCTAs = section.showCTAs !== false;
   const hasRightColumn = hasImage;
+  const sanitizedBody = sanitizeSectionBody(section.body || "");
 
   const ctaContent = hasCTAs ? (
     <div className="space-y-4 w-full">
@@ -52,7 +60,7 @@ export default function PracticeAreaDetailContentSection({ section, index }: Pro
           <div className={hasRightColumn ? "flex-1 lg:w-[60%]" : "w-full"}>
             <div
               className="font-outfit text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] text-black prose prose-sm max-w-none [&_a]:text-law-accent [&_a]:underline [&_h2]:font-playfair [&_h2]:text-[28px] [&_h2]:md:text-[36px] [&_h2]:leading-tight [&_h2]:mb-4 [&_h3]:font-playfair [&_h3]:text-[22px] [&_h3]:md:text-[28px] [&_h3]:leading-tight [&_h3]:mb-3 [&_p]:mb-4 [&_ul]:mb-4 [&_ol]:mb-4"
-              dangerouslySetInnerHTML={{ __html: section.body }}
+              dangerouslySetInnerHTML={{ __html: sanitizedBody }}
             />
           </div>
 

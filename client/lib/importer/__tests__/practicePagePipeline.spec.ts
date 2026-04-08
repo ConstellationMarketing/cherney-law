@@ -704,6 +704,30 @@ describe('Practice detail section layout', () => {
     expect(markup).toContain('https://example.com/section.jpg');
     expect(markup).not.toContain('max-w-[420px]');
   });
+
+  it('strips inline images from practice section body HTML before rendering', () => {
+    const markup = renderToStaticMarkup(
+      createElement(
+        MemoryRouter,
+        null,
+        createElement(PracticeAreaDetailContentSection, {
+          section: {
+            body: '<h2>Heading</h2><p><img src="https://example.com/inline.jpg" alt="Inline" />Inline copy stays.</p>',
+            image: '',
+            imageAlt: '',
+            imagePosition: 'right',
+            showCTAs: true,
+          },
+          index: 0,
+        })
+      )
+    );
+
+    expect(markup).toContain('<h2>Heading</h2>');
+    expect(markup).toContain('Inline copy stays.');
+    expect(markup).not.toContain('https://example.com/inline.jpg');
+    expect(markup).not.toContain('<img');
+  });
 });
 
 describe('Full pipeline integration', () => {
