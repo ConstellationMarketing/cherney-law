@@ -99,7 +99,7 @@ describe("handleBulkImportImages", () => {
     };
     const res = createResponse();
 
-    await handleBulkImportImages(req as never, res as never);
+    await handleBulkImportImages(req as never, res as never, vi.fn());
 
     expect(mocks.fetchMock).toHaveBeenCalledWith(
       "https://images.example.com/photo.jpg",
@@ -125,7 +125,7 @@ describe("handleBulkImportImages", () => {
     };
     const res = createResponse();
 
-    await handleBulkImportImages(req as never, res as never);
+    await handleBulkImportImages(req as never, res as never, vi.fn());
 
     expect(mocks.fetchMock).toHaveBeenCalledWith(
       "https://images.example.com/photo.png.webp?ver=2",
@@ -143,7 +143,7 @@ describe("handleBulkImportImages", () => {
     };
     const res = createResponse();
 
-    await handleBulkImportImages(req as never, res as never);
+    await handleBulkImportImages(req as never, res as never, vi.fn());
 
     expect(mocks.fetchMock).toHaveBeenCalledWith(
       "https://images.example.com/photo-768x512.jpg",

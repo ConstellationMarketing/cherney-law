@@ -39,6 +39,17 @@ function normalizeInternalHref(href?: string, external?: boolean) {
   return `/${href}`;
 }
 
+function chunkMenuItems<T>(items: T[], chunkSize: number): T[][] {
+  if (chunkSize <= 0) return [items];
+
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += chunkSize) {
+    chunks.push(items.slice(index, index + chunkSize));
+  }
+
+  return chunks;
+}
+
 export default function Header({ transparentTopBar = false }: HeaderProps) {
   const { settings } = useSiteSettings();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -76,7 +87,12 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                   const navItemClass =
                     "font-outfit text-[20px] text-white py-[31px] whitespace-nowrap hover:opacity-80 transition-opacity duration-400 inline-flex items-center gap-1";
 
-                  return navItems.map((item) => (
+                  return navItems.map((item) => {
+                    const childColumns = item.children?.length
+                      ? chunkMenuItems(item.children, 10)
+                      : [];
+
+                    return (
                     <li
                       key={item.id || item.href}
                       className={item.children?.length ? "px-[11px] relative" : "px-[11px]"}
@@ -98,31 +114,40 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                           <DropdownMenuContent
                             align="start"
                             sideOffset={8}
-                            className="bg-law-dark border border-law-border z-50"
+                            className="bg-law-dark border border-law-border z-50 p-0"
                           >
-                            {item.children.map((child) => (
-                              <DropdownMenuItem
-                                key={child.id || child.href}
-                                asChild
-                              >
-                                <Link
-                                  to={normalizeInternalHref(child.href, child.external || child.openInNewTab)}
-                                  className="font-outfit text-[19px] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer px-4 py-3"
-                                  target={
-                                    child.external || child.openInNewTab
-                                      ? "_blank"
-                                      : undefined
-                                  }
-                                  rel={
-                                    child.external || child.openInNewTab
-                                      ? "noopener noreferrer"
-                                      : undefined
-                                  }
+                            <div className="grid auto-cols-fr grid-flow-col gap-0">
+                              {childColumns.map((column, columnIndex) => (
+                                <div
+                                  key={`${item.id || item.href || item.label}-column-${columnIndex}`}
+                                  className="min-w-[280px] py-1"
                                 >
-                                  {child.label}
-                                </Link>
-                              </DropdownMenuItem>
-                            ))}
+                                  {column.map((child) => (
+                                    <DropdownMenuItem
+                                      key={child.id || child.href}
+                                      asChild
+                                    >
+                                      <Link
+                                        to={normalizeInternalHref(child.href, child.external || child.openInNewTab)}
+                                        className="font-outfit text-[19px] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer px-4 py-3"
+                                        target={
+                                          child.external || child.openInNewTab
+                                            ? "_blank"
+                                            : undefined
+                                        }
+                                        rel={
+                                          child.external || child.openInNewTab
+                                            ? "noopener noreferrer"
+                                            : undefined
+                                        }
+                                      >
+                                        {child.label}
+                                      </Link>
+                                    </DropdownMenuItem>
+                                  ))}
+                                </div>
+                              ))}
+                            </div>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       ) : (
@@ -145,7 +170,8 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                         </Link>
                       )}
                     </li>
-                  ));
+                  );
+                  });
                 })()}
               </ul>
             </nav>
