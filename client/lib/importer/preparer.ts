@@ -97,7 +97,7 @@ function extractSourcePath(rawValue: string): string {
   return '';
 }
 
-function normalizeTemplatePath(path: string, templateType: TemplateType): string {
+function normalizeTemplatePath(path: string, _templateType: TemplateType): string {
   let normalizedPath = path.trim();
   if (!normalizedPath) return '';
 
@@ -106,10 +106,6 @@ function normalizeTemplatePath(path: string, templateType: TemplateType): string
     normalizedPath = `/${normalizedPath}`;
   }
   normalizedPath = normalizedPath.split('#')[0].split('?')[0].replace(/\/+/g, '/');
-
-  if (templateType === 'practice') {
-    return normalizedPath === '/' ? '/' : normalizedPath.replace(/\/+$/, '');
-  }
 
   return normalizedPath === '/' ? '/' : `${normalizedPath.replace(/\/+$/, '')}/`;
 }
@@ -133,7 +129,7 @@ export function resolveImportPath(
   const fallbackPath = templateType === 'area'
     ? `/areas-we-serve/${slug}/`
     : templateType === 'practice'
-      ? `/practice-areas/${slug}`
+      ? `/practice-areas/${slug}/`
       : `/${slug.replace(/^\/+/, '')}`;
 
   return {
@@ -191,7 +187,7 @@ export function normalizeUrlSlug(
     slug = slugify(title);
   }
 
-  // Ensure slug format: for posts add trailing slash; for practice/area no trailing slash
+  // Ensure slug format: posts keep a trailing slash, practice/area keep a bare segment
   if (templateType === 'post') {
     slug = slug.replace(/\/$/, '') + '/';
   } else {

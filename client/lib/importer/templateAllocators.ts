@@ -399,7 +399,7 @@ function allocateForPracticePage(
 
   return {
     title: pageTitle,
-    url_path: resolvedPath || `/practice-areas/${slug}`,
+    url_path: resolvedPath || `/practice-areas/${slug}/`,
     page_type: 'practice_detail',
     content,
     meta_title: seoTitle,

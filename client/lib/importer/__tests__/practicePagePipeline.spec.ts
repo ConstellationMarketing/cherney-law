@@ -6,7 +6,7 @@ import { extractMainContent, filterSecondaryContent } from '../contentFilter';
 import { normalizeHtml } from '../htmlNormalizer';
 import { autoMapFields } from '../autoMapper';
 import { applyFieldMapping } from '../fieldMapping';
-import { prepareRecord, normalizeUrlSlug } from '../preparer';
+import { prepareRecord, normalizeUrlSlug, resolveImportPath } from '../preparer';
 import { splitBodyOnH2 } from '../splitBodyOnH2';
 import { validateRecord } from '../validator';
 import type { FilterOptions, SourceRecord } from '../types';
@@ -38,6 +38,18 @@ describe('Auto-mapping', () => {
     expect(result.mappings.find((m) => m.sourceColumn === 'content')?.targetField).toBe('body');
     expect(result.mappings.find((m) => m.sourceColumn === 'permalink')?.targetField).toBe('slug');
     expect(result.mappings.find((m) => m.sourceColumn === 'seo_title')?.targetField).toBe('meta_title');
+  });
+
+  it('maps OG and Twitter metadata images to the intended practice fields', () => {
+    const columns = [
+      { name: 'metadata.og:image', sampleValues: ['https://example.com/hero.jpg'], detectedType: 'url' as const },
+      { name: 'metadata.twitter:image', sampleValues: ['https://example.com/og.jpg'], detectedType: 'url' as const },
+    ];
+
+    const result = autoMapFields(columns, 'practice');
+
+    expect(result.mappings.find((m) => m.sourceColumn === 'metadata.og:image')?.targetField).toBe('hero_image');
+    expect(result.mappings.find((m) => m.sourceColumn === 'metadata.twitter:image')?.targetField).toBe('og_image');
   });
 
   it('maps blog post column names correctly', () => {
@@ -469,6 +481,16 @@ describe('URL slug normalization', () => {
     const slug = normalizeUrlSlug('my-post', 'My Post', 'post');
     expect(slug).toBe('my-post/');
   });
+
+  it('preserves trailing slash in resolved practice paths', () => {
+    const resolved = resolveImportPath('https://example.com/practice-areas/car-accident/', 'Car Accident', 'practice');
+    expect(resolved.path).toBe('/practice-areas/car-accident/');
+  });
+
+  it('adds trailing slash to generated practice paths', () => {
+    const resolved = resolveImportPath('car-accident', 'Car Accident', 'practice');
+    expect(resolved.path).toBe('/practice-areas/car-accident/');
+  });
 });
 
 // ─── 14. Validation ─────────────────────────────────────────────────────────
@@ -522,6 +544,32 @@ describe('Validation', () => {
 });
 
 // ─── 15. Full pipeline integration ──────────────────────────────────────────
+
+describe('Practice image allocation', () => {
+  it('keeps hero background and OG image targets distinct in the prepared record', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Car Accident Lawyer',
+        slug: '/practice-areas/car-accident/',
+        body: '<p>Body content</p>',
+        hero_image: 'https://example.com/hero.jpg',
+        og_image: 'https://example.com/og.jpg',
+      },
+    }, 'practice');
+
+    const data = prepared.data as {
+      content: { hero: { backgroundImage: string } };
+      og_image: string;
+      url_path: string;
+    };
+
+    expect(data.content.hero.backgroundImage).toBe('https://example.com/hero.jpg');
+    expect(data.og_image).toBe('https://example.com/og.jpg');
+    expect(data.url_path).toBe('/practice-areas/car-accident/');
+  });
+});
 
 describe('Full pipeline integration', () => {
   it('transforms raw Divi HTML into a clean CMS record', () => {
@@ -609,7 +657,7 @@ describe('Full pipeline integration', () => {
     // CMS record should have proper structure
     const data = prepared.data as Record<string, unknown>;
     expect(data.title).toBe('Car Accident Lawyer');
-    expect(data.url_path).toBe('/practice-areas/car-accident');
+    expect(data.url_path).toBe('/practice-areas/car-accident/');
     expect(data.page_type).toBe('practice_detail');
   });
 });

@@ -45,7 +45,18 @@ export const practiceFields: TemplateField[] = [
     type: 'url',
     required: false,
     isContentField: false,
-    aliases: ['hero_image', 'featured_image', 'background_image', 'banner_image', 'header_image', 'image'],
+    aliases: [
+      'hero_image',
+      'featured_image',
+      'background_image',
+      'banner_image',
+      'header_image',
+      'image',
+      'metadata_og_image',
+      'metadata_og_image_secure_url',
+      'metadata_og_image_url',
+      'og_image_secure_url',
+    ],
   },
   {
     key: 'body',
@@ -99,11 +110,10 @@ export const practiceFields: TemplateField[] = [
       'social_image',
       'share_image',
       'twitter_image',
-      // API-sourced metadata field normalizations (dots/colons → underscores)
-      'og_image_secure_url',           // og:image:secure_url
-      'metadata_og_image',             // metadata.og:image
-      'metadata_og_image_secure_url',  // metadata.og:image:secure_url
-      'metadata_og_image_url',         // metadata.og:image:url
+      'metadata_twitter_image',
+      'metadata_twitter_image_secure_url',
+      'metadata_twitter_image_url',
+      'twitter_image_secure_url',
     ],
   },
   {
@@ -247,6 +257,11 @@ export const postFields: TemplateField[] = [
       'og_image',
       'social_image',
       'share_image',
+      'twitter_image',
+      'metadata_twitter_image',
+      'metadata_twitter_image_secure_url',
+      'metadata_twitter_image_url',
+      'twitter_image_secure_url',
       // API-sourced metadata field normalizations
       'og_image_secure_url',
       'metadata_og_image',
@@ -438,6 +453,10 @@ export const areaFields: TemplateField[] = [
       'social_image',
       'share_image',
       'twitter_image',
+      'metadata_twitter_image',
+      'metadata_twitter_image_secure_url',
+      'metadata_twitter_image_url',
+      'twitter_image_secure_url',
       'featured_image',
       'image',
       // API-sourced metadata field normalizations
