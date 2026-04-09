@@ -574,10 +574,10 @@ function stripPracticeSecondarySubSections(html: string): string {
   );
 }
 
-function stripPracticeSecondaryContent(html: string): string {
+function stripPracticeNonEditorialChrome(html: string): string {
   if (!html?.trim()) return '';
 
-  let result = html
+  return html
     .replace(/<form[\s\S]*?<\/form>/gi, '')
     .replace(/<button\b[^>]*>[\s\S]*?<\/button>/gi, '')
     .replace(/<input\b[^>]*>/gi, '')
@@ -586,6 +586,17 @@ function stripPracticeSecondaryContent(html: string): string {
     .replace(/<nav[\s\S]*?<\/nav>/gi, '')
     .replace(/<aside[\s\S]*?<\/aside>/gi, '')
     .replace(/<footer[\s\S]*?<\/footer>/gi, '');
+}
+
+function cleanPracticeSectionFragment(html: string): string {
+  if (!html?.trim()) return '';
+  return stripPracticeSecondarySubSections(stripPracticeNonEditorialChrome(html)).trim();
+}
+
+function stripPracticeSecondaryContent(html: string): string {
+  if (!html?.trim()) return '';
+
+  const result = stripPracticeNonEditorialChrome(html);
 
   const { leadHtml, sections } = splitOnH2(result);
   const keptParts: string[] = [];
@@ -799,28 +810,35 @@ function stripFaqSectionFromHtml(html: string): { html: string; items: FaqItem[]
 }
 
 function buildPracticeSectionBlocks(body: string): PracticeSectionParseResult {
-  const filteredBody = stripPracticeSecondaryContent(body).trim();
-  const faqStripped = stripFaqSectionFromHtml(filteredBody || body);
-  const editorialHtml = faqStripped.html || filteredBody || body;
-  const { leadHtml: rawLeadHtml, sections, h2Positions } = splitOnH2(editorialHtml);
+  const faqStripped = stripFaqSectionFromHtml(body);
+  const rawEditorialHtml = faqStripped.html || body;
+  const { leadHtml: rawLeadHtml, sections, h2Positions } = splitOnH2(rawEditorialHtml);
   const preH2ContentLength = rawLeadHtml.length;
 
   if (sections.length > 0) {
     const sectionBlocks: SectionBlock[] = [];
+    const cleanedLeadHtml = cleanPracticeSectionFragment(rawLeadHtml);
 
-    sections.forEach((section, index) => {
-      const sectionHtml = index === 0
-        ? `${rawLeadHtml}${section.bodyHtml}`
-        : section.bodyHtml;
-      const sectionImage = extractFirstImage(sectionHtml);
+    sections.forEach((section) => {
+      if (isPracticeSecondaryHeading(section.heading)) {
+        return;
+      }
+
+      const rawSectionHtml = `${sectionBlocks.length === 0 ? rawLeadHtml : ''}${section.bodyHtml}`;
+      const cleanedSectionHtml = `${sectionBlocks.length === 0 ? cleanedLeadHtml : ''}${cleanPracticeSectionFragment(section.bodyHtml)}`.trim();
+      if (!cleanedSectionHtml) {
+        return;
+      }
+
+      const sectionImage = extractFirstImage(rawSectionHtml);
       const block = buildPracticeSectionBlockFromNodes(
-        extractEditorialNodes(sectionHtml),
+        extractEditorialNodes(cleanedSectionHtml),
         sectionBlocks.length,
         section.heading,
         2
       );
       if (block) {
-        if (block.images.length === 0 && sectionImage?.src) {
+        if (sectionImage?.src) {
           block.images = [sectionImage];
         }
         sectionBlocks.push(block);
@@ -838,7 +856,8 @@ function buildPracticeSectionBlocks(body: string): PracticeSectionParseResult {
     };
   }
 
-  const fallbackGroups = chunkPracticeNodes(extractEditorialNodes(editorialHtml));
+  const fallbackEditorialHtml = stripPracticeSecondaryContent(rawEditorialHtml).trim() || rawEditorialHtml;
+  const fallbackGroups = chunkPracticeNodes(extractEditorialNodes(fallbackEditorialHtml));
   const sectionBlocks = fallbackGroups
     .map((group, index) => {
       const groupHtml = group.map((node) => node.html).join('');

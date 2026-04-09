@@ -630,6 +630,28 @@ describe('Practice deterministic section parsing', () => {
     expect(content.contentSections[1].body).toContain('Employer notice copy.');
   });
 
+  it('promotes the first kept section image from raw html even when an earlier h2 section is filtered out', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Debt Relief',
+        slug: '/practice-areas/debt-relief/',
+        body: '<p>Lead copy that should stay attached to the first kept editorial section.</p><h2>Recent Posts</h2><p><a href="/blog/post-1/">Post 1</a></p><p><a href="/blog/post-2/">Post 2</a></p><h2>Stopping Collections</h2><p><img src="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3C/svg%3E" data-lazy-src="https://example.com/stopping-collections.jpg" alt="Stopping collections" /></p><p>Stopping collections copy.</p>',
+      },
+    }, 'practice');
+
+    const content = (prepared.data as { content: { contentSections: Array<{ body: string; image?: string; imageAlt?: string }> } }).content;
+
+    expect(content.contentSections).toHaveLength(1);
+    expect(content.contentSections[0].image).toBe('https://example.com/stopping-collections.jpg');
+    expect(content.contentSections[0].imageAlt).toBe('Stopping collections');
+    expect(content.contentSections[0].body).toContain('Lead copy that should stay attached');
+    expect(content.contentSections[0].body).toContain('<h2>Stopping Collections</h2>');
+    expect(content.contentSections[0].body).not.toContain('Recent Posts');
+    expect(content.contentSections[0].body).not.toContain('<img');
+  });
+
   it('removes recent-posts style sub-sections from practice body content', () => {
     const prepared = prepareRecord({
       rowIndex: 0,
