@@ -151,6 +151,73 @@ function getPracticeSections(content: Record<string, unknown>): SectionPreview[]
   return sections;
 }
 
+function PracticePreviewDebugPanel({ records }: { records: TransformedRecord[] }) {
+  if (records.length === 0) return null;
+
+  return (
+    <details className="rounded-lg border border-amber-300 bg-amber-50 p-4">
+      <summary className="cursor-pointer text-sm font-semibold text-amber-900">
+        Temporary Practice Import Debug
+      </summary>
+      <p className="mt-2 text-xs text-amber-800">
+        This panel shows the exact client-side practice payload before import. Check each section&apos;s image,
+        imageAlt, and whether inline <code>&lt;img&gt;</code> or <code>&lt;noscript&gt;</code> still remain in the body.
+      </p>
+
+      <div className="mt-4 space-y-4">
+        {records.map((record) => {
+          const content = (record.preparedData.content as Record<string, unknown> | undefined) ?? {};
+          const hero = (content.hero as Record<string, unknown> | undefined) ?? {};
+          const faq = (content.faq as { items?: { question: string }[] } | undefined) ?? {};
+          const sections = ((content.contentSections as Record<string, unknown>[] | undefined) ?? []).map((section, index) => {
+            const body = String(section.body ?? '');
+            const title = getPracticeSectionDiagnostics([section])[0]?.title || `Section ${index + 1}`;
+            return {
+              index,
+              title,
+              image: String(section.image ?? ''),
+              imageAlt: String(section.imageAlt ?? ''),
+              hasImgInBody: /<img\b/i.test(body),
+              hasNoscriptInBody: /<noscript\b/i.test(body),
+              bodyPreview: truncate(stripTags(body), 180),
+            };
+          });
+
+          return (
+            <div key={record.rowIndex} className="rounded-lg border border-amber-200 bg-white p-3">
+              <div className="grid gap-2 md:grid-cols-2 text-xs text-gray-700">
+                <div>
+                  <p><span className="font-semibold">Row:</span> {record.rowIndex + 1}</p>
+                  <p><span className="font-semibold">Title:</span> {String(record.preparedData.title ?? record.normalizedContent?.chosenTitle ?? '—')}</p>
+                  <p><span className="font-semibold">Slug:</span> <span className="font-mono">{record.slug}</span></p>
+                </div>
+                <div>
+                  <p><span className="font-semibold">Hero sectionLabel:</span> {String(hero.sectionLabel ?? '—')}</p>
+                  <p><span className="font-semibold">Hero tagline:</span> {String(hero.tagline ?? '—')}</p>
+                  <p><span className="font-semibold">FAQ items:</span> {faq.items?.length ?? 0}</p>
+                </div>
+              </div>
+
+              <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                {sections.map((section) => (
+                  <div key={section.index} className="rounded border border-gray-200 bg-gray-50 p-2 text-xs text-gray-700">
+                    <p className="font-semibold text-gray-900">Section {section.index + 1}: {section.title}</p>
+                    <p><span className="font-medium">image:</span> {section.image || '—'}</p>
+                    <p><span className="font-medium">imageAlt:</span> {section.imageAlt || '—'}</p>
+                    <p><span className="font-medium">body has &lt;img&gt;:</span> {section.hasImgInBody ? 'yes' : 'no'}</p>
+                    <p><span className="font-medium">body has &lt;noscript&gt;:</span> {section.hasNoscriptInBody ? 'yes' : 'no'}</p>
+                    <p><span className="font-medium">body preview:</span> {section.bodyPreview || '—'}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </details>
+  );
+}
+
 function getMappedSourceColumn(state: WizardState, targetField: string): string {
   return state.mappingConfig?.mappings.find((mapping) => mapping.targetField === targetField)?.sourceColumn ?? '';
 }
@@ -393,6 +460,10 @@ export default function StepPreview({ state, updateState, onNext, onBack }: Prop
             </div>
           </div>
         </div>
+      )}
+
+      {state.templateType === 'practice' && importReady.length > 0 && (
+        <PracticePreviewDebugPanel records={importReady.slice(0, 3)} />
       )}
 
       {/* Content sample cards */}
