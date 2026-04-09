@@ -305,6 +305,38 @@ describe('FAQ extraction', () => {
     expect(prepared.faqItems![0].question).toContain('personal injury');
     expect(prepared.faqItems![1].question).toContain('file');
   });
+
+  it('does not create FAQ items from question-like practice content without an explicit FAQ heading', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Foreclosure Defense',
+        slug: '/practice-areas/foreclosure-defense/',
+        body: '<h2>Overview</h2><h3>Can the bank foreclose right away?</h3><p>This subheading belongs to the editorial content and should remain part of the section body.</p><p>Additional body copy continues the section without creating FAQs.</p>',
+      },
+    }, 'practice');
+
+    expect(prepared.faqItems).toEqual([]);
+    expect(prepared.contentSections).toHaveLength(1);
+    expect(prepared.contentSections?.[0].body).toContain('Can the bank foreclose right away?');
+  });
+
+  it('does not create FAQ items for non-practice content without an explicit FAQ heading', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Debt Relief Blog Post',
+        slug: '/blog/debt-relief-blog-post/',
+        body: '<h2>Understanding Relief Options</h2><h3>What happens after missed payments?</h3><p>This is normal article content and should stay in the body instead of becoming a FAQ item.</p>',
+      },
+    }, 'post');
+
+    expect(prepared.faqItems).toEqual([]);
+    expect(prepared.contentSections).toHaveLength(1);
+    expect(prepared.contentSections?.[0].body).toContain('What happens after missed payments?');
+  });
 });
 
 describe('Area heading normalization', () => {

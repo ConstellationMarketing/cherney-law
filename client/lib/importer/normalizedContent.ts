@@ -789,14 +789,12 @@ function stripFaqSectionFromHtml(html: string): { html: string; items: FaqItem[]
   let resultHtml = html;
   let extractedItems: FaqItem[] = [];
   let detectionMethod: SegmentationDebug['faqDetectionMethod'] = 'none';
-  let foundExplicitFaqHeading = false;
   let match: RegExpExecArray | null;
 
   while ((match = faqSectionPattern.exec(html)) !== null) {
     const heading = stripTagsToText(match[1]);
     if (!isFaqHeading(heading)) continue;
 
-    foundExplicitFaqHeading = true;
     const fullSectionHtml = match[0];
     const faqResult = extractFaqFromHtml(fullSectionHtml);
     if (faqResult.items.length > 0) {
@@ -805,12 +803,6 @@ function stripFaqSectionFromHtml(html: string): { html: string; items: FaqItem[]
       resultHtml = resultHtml.replace(fullSectionHtml, '');
       break;
     }
-  }
-
-  if (extractedItems.length === 0 && !foundExplicitFaqHeading) {
-    const fallbackFaq = extractFaqFromHtml(html);
-    extractedItems = fallbackFaq.items;
-    detectionMethod = fallbackFaq.method;
   }
 
   return {
@@ -890,14 +882,6 @@ function buildPracticeSectionBlocks(rawBodyHtml: string): PracticeSectionParseRe
         sectionBlocks.push(block);
       }
     });
-
-    if (faqItems.length === 0) {
-      const fallbackFaq = extractFaqFromHtml(sourceHtml);
-      if (fallbackFaq.items.length > 0) {
-        faqItems = fallbackFaq.items;
-        faqDetectionMethod = fallbackFaq.method;
-      }
-    }
 
     return {
       leadHtml: '',
@@ -1115,14 +1099,6 @@ export function buildNormalizedContent(
       }
     }
 
-    // If no FAQ found from heading-based sections, try extracting from full body
-    if (faqItems.length === 0 && body) {
-      const faqResult = extractFaqFromHtml(body);
-      if (faqResult.items.length > 0) {
-        faqItems = faqResult.items;
-        faqDetectionMethod = faqResult.method;
-      }
-    }
   }
 
   // Extract all images from all content
