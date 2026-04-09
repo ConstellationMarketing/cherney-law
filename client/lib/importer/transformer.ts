@@ -504,6 +504,28 @@ function buildPreviewMappedData(
   };
 }
 
+function buildPracticeSectionDiagnostics(contentSections: Record<string, unknown>[] = []) {
+  return contentSections.map((section, index) => {
+    const body = String(section.body ?? '');
+    const headingMatch = body.match(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/i);
+    const derivedTitle = String(section.heading ?? '')
+      || (headingMatch?.[1] ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+      || `Section ${index + 1}`;
+    const image = String(section.image ?? '');
+    const imageAlt = String(section.imageAlt ?? '');
+
+    return {
+      index,
+      title: derivedTitle,
+      image,
+      imageAlt,
+      hasImgInBody: /<img\b/i.test(body),
+      hasNoscriptInBody: /<noscript\b/i.test(body),
+      containsDataUriImage: image.startsWith('data:'),
+    };
+  });
+}
+
 export function getSamplePreviewRecord(
   sourceRecord: SourceRecord,
   mappingConfig: MappingConfig,
@@ -535,6 +557,24 @@ export function getSamplePreviewRecord(
   const slug = resolvedPath.slug;
   const allocatedData = allocateForTemplate(normalizedContent, templateType, slug, resolvedPath.path);
   const mappedData = buildPreviewMappedData(normalizedMappedData, normalizedContent, slug, resolvedPath.path, templateType);
+
+  if (templateType === 'practice') {
+    const content = (allocatedData.content as Record<string, unknown> | undefined) ?? {};
+    const contentSections = (content.contentSections as Record<string, unknown>[] | undefined) ?? [];
+
+    console.groupCollapsed('[practice-preview-diagnostic] transformer prepared payload');
+    console.log({
+      rowIndex: sourceRecord.rowIndex,
+      resolvedPath: resolvedPath.path,
+      chosenTitle: normalizedContent.chosenTitle,
+      hero: content.hero ?? null,
+      contentSections,
+      faq: content.faq ?? null,
+    });
+    console.log('[practice-preview-diagnostic] transformer section summary', buildPracticeSectionDiagnostics(contentSections));
+    console.groupEnd();
+  }
+
   const introBody = templateType === 'area'
     ? String(((allocatedData.content as Record<string, unknown> | undefined)?.introSection as Record<string, unknown> | undefined)?.body ?? '')
     : String(allocatedData.body ?? '');

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { WizardState } from '@site/lib/importer/recipeTypes';
 import type { TransformedRecord, TemplateType } from '@site/lib/importer/types';
 import ImportDebugPanel from './ImportDebugPanel';
@@ -19,6 +19,25 @@ function stripTags(html: string): string {
 function truncate(text: string, maxLen: number): string {
   if (text.length <= maxLen) return text;
   return text.substring(0, maxLen).trimEnd() + '…';
+}
+
+function getPracticeSectionDiagnostics(contentSections: Record<string, unknown>[] = []) {
+  return contentSections.map((section, index) => {
+    const body = String(section.body ?? '');
+    const headingMatch = body.match(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/i);
+    const derivedTitle = String(section.heading ?? '')
+      || (headingMatch?.[1] ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+      || `Section ${index + 1}`;
+
+    return {
+      index,
+      title: derivedTitle,
+      image: String(section.image ?? ''),
+      imageAlt: String(section.imageAlt ?? ''),
+      hasImgInBody: /<img\b/i.test(body),
+      hasNoscriptInBody: /<noscript\b/i.test(body),
+    };
+  });
 }
 
 // ─── Section type helpers ────────────────────────────────────────────────────
@@ -287,6 +306,27 @@ export default function StepPreview({ state, updateState, onNext, onBack }: Prop
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, Math.min(3, shuffled.length));
   }, [importReady]);
+
+  useEffect(() => {
+    if (state.templateType !== 'practice' || sampleRecords.length === 0) return;
+
+    console.groupCollapsed('[practice-preview-diagnostic] final preview payload');
+    sampleRecords.forEach((record) => {
+      const content = (record.preparedData.content as Record<string, unknown> | undefined) ?? {};
+      const contentSections = (content.contentSections as Record<string, unknown>[] | undefined) ?? [];
+
+      console.log({
+        rowIndex: record.rowIndex,
+        slug: record.slug,
+        title: String(record.preparedData.title ?? record.normalizedContent?.chosenTitle ?? ''),
+        hero: content.hero ?? null,
+        sectionCount: contentSections.length,
+        faq: content.faq ?? null,
+        sections: getPracticeSectionDiagnostics(contentSections),
+      });
+    });
+    console.groupEnd();
+  }, [sampleRecords, state.templateType]);
 
   function handleExclude(rowIndex: number) {
     const updated = state.transformedRecords.map((r) =>
