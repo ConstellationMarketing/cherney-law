@@ -168,7 +168,8 @@ function PracticePreviewDebugPanel({ records }: { records: TransformedRecord[] }
         {records.map((record) => {
           const content = (record.preparedData.content as Record<string, unknown> | undefined) ?? {};
           const hero = (content.hero as Record<string, unknown> | undefined) ?? {};
-          const faq = (content.faq as { items?: { question: string }[] } | undefined) ?? {};
+          const faq = (content.faq as { items?: { question: string; answer?: string }[] } | undefined) ?? {};
+          const faqItems = faq.items ?? [];
           const sections = ((content.contentSections as Record<string, unknown>[] | undefined) ?? []).map((section, index) => {
             const body = String(section.body ?? '');
             const title = getPracticeSectionDiagnostics([section])[0]?.title || `Section ${index + 1}`;
@@ -194,9 +195,24 @@ function PracticePreviewDebugPanel({ records }: { records: TransformedRecord[] }
                 <div>
                   <p><span className="font-semibold">Hero sectionLabel:</span> {String(hero.sectionLabel ?? '—')}</p>
                   <p><span className="font-semibold">Hero tagline:</span> {String(hero.tagline ?? '—')}</p>
-                  <p><span className="font-semibold">FAQ items:</span> {faq.items?.length ?? 0}</p>
+                  <p><span className="font-semibold">FAQ items:</span> {faqItems.length}</p>
+                  <p><span className="font-semibold">FAQ detection:</span> {record.normalizedContent?.segmentation?.faqDetectionMethod ?? 'none'}</p>
                 </div>
               </div>
+
+              {faqItems.length > 0 && (
+                <div className="mt-3 rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                  <p className="font-semibold">Extracted FAQ entries</p>
+                  <div className="mt-2 space-y-2">
+                    {faqItems.map((item, faqIndex) => (
+                      <div key={faqIndex} className="rounded border border-amber-200 bg-white p-2">
+                        <p><span className="font-medium">Q{faqIndex + 1}:</span> {item.question || '—'}</p>
+                        <p><span className="font-medium">Answer preview:</span> {truncate(stripTags(String(item.answer ?? '')), 180) || '—'}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                 {sections.map((section) => (
