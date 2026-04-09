@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -75,31 +74,10 @@ function ArrayCard({
   );
 }
 
-function getPracticeSectionDiagnostics(contentSections: PracticeAreaContentSectionItem[]) {
-  return contentSections.map((section, index) => ({
-    index,
-    image: section.image || "",
-    imageAlt: section.imageAlt || "",
-    hasImgInBody: /<img\b/i.test(section.body || ""),
-    hasNoscriptInBody: /<noscript\b/i.test(section.body || ""),
-  }));
-}
-
 export default function PracticeAreaDetailFieldEditor({
   content,
   onChange,
 }: Props) {
-  useEffect(() => {
-    console.groupCollapsed('[practice-preview-diagnostic] editor content sections');
-    console.log({
-      hero: content.hero,
-      sectionCount: content.contentSections.length,
-      faq: content.faq,
-      sections: getPracticeSectionDiagnostics(content.contentSections),
-    });
-    console.groupEnd();
-  }, [content.contentSections, content.faq, content.hero]);
-
   const update = (patch: Partial<PracticeAreaDetailPageContent>) => {
     onChange({ ...content, ...patch });
   };

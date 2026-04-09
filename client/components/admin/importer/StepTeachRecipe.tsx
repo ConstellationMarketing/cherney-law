@@ -18,25 +18,6 @@ function buildEditableCorrections(preview: SamplePreviewRecord | null): Record<s
   return preview ? { ...preview.mappedData } : {};
 }
 
-function getPracticeSectionDiagnostics(contentSections: Record<string, unknown>[] = []) {
-  return contentSections.map((section, index) => {
-    const body = String(section.body ?? '');
-    const headingMatch = body.match(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/i);
-    const derivedTitle = String(section.heading ?? '')
-      || (headingMatch?.[1] ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-      || `Section ${index + 1}`;
-
-    return {
-      index,
-      title: derivedTitle,
-      image: String(section.image ?? ''),
-      imageAlt: String(section.imageAlt ?? ''),
-      hasImgInBody: /<img\b/i.test(body),
-      hasNoscriptInBody: /<noscript\b/i.test(body),
-    };
-  });
-}
-
 export default function StepTeachRecipe({ state, updateState, onNext, onBack }: Props) {
   const templateFields = getTemplateFields(state.templateType!);
   const recipe = state.recipe ?? createDefaultRecipe(state.templateType!);
@@ -601,25 +582,6 @@ function AllocatedPreviewPanel({
 
   const strip = (html: string) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   const trunc = (text: string, max: number) => text.length > max ? text.substring(0, max).trimEnd() + '\u2026' : text;
-
-  useEffect(() => {
-    if (!open || !preview || templateType !== 'practice') return;
-
-    const content = (preview.allocatedData.content as Record<string, unknown> | undefined) ?? {};
-    const contentSections = (content.contentSections as Record<string, unknown>[] | undefined) ?? [];
-
-    console.groupCollapsed('[practice-preview-diagnostic] build recipe preview payload');
-    console.log({
-      rowIndex: preview.rowIndex,
-      resolvedPath: preview.resolvedPath,
-      chosenTitle: preview.chosenTitle,
-      hero: content.hero ?? null,
-      sectionCount: contentSections.length,
-      faq: content.faq ?? null,
-    });
-    console.log('[practice-preview-diagnostic] build recipe preview sections', getPracticeSectionDiagnostics(contentSections));
-    console.groupEnd();
-  }, [open, preview, templateType]);
 
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden">

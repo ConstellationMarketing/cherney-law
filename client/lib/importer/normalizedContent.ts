@@ -704,17 +704,6 @@ function buildPracticeSectionBlockFromNodes(
   const block = buildSectionBlock(bodyHtml, order, undefined, heading, headingLevel);
   block.images = firstImage ? [firstImage] : [];
 
-  console.log('[practice-preview-diagnostic] buildPracticeSectionBlockFromNodes', {
-    order,
-    heading: heading ?? '',
-    headingLevel: headingLevel ?? null,
-    nodeCount: nodes.length,
-    firstImage,
-    blockImages: block.images,
-    hasImgInBody: /<img\b/i.test(bodyHtml),
-    hasNoscriptInBody: /<noscript\b/i.test(bodyHtml),
-  });
-
   return block.plainText ? block : null;
 }
 
@@ -870,15 +859,6 @@ function buildPracticeSectionBlocks(rawBodyHtml: string): PracticeSectionParseRe
           block.images = [sectionImage];
         }
 
-        console.log('[practice-preview-diagnostic] buildPracticeSectionBlocks h2 section', {
-          order: sectionBlocks.length,
-          heading: section.heading,
-          extractedSectionImage: sectionImage,
-          blockImages: block.images,
-          rawSectionHasImg: /<img\b/i.test(rawSectionHtml),
-          rawSectionHasNoscript: /<noscript\b/i.test(rawSectionHtml),
-        });
-
         sectionBlocks.push(block);
       }
     });
@@ -910,15 +890,6 @@ function buildPracticeSectionBlocks(rawBodyHtml: string): PracticeSectionParseRe
       const block = buildPracticeSectionBlockFromNodes(extractEditorialNodes(cleanedGroupHtml), index);
       if (block && block.images.length === 0 && groupImage?.src) {
         block.images = [groupImage];
-      }
-      if (block) {
-        console.log('[practice-preview-diagnostic] buildPracticeSectionBlocks fallback group', {
-          order: index,
-          extractedGroupImage: groupImage,
-          blockImages: block.images,
-          rawGroupHasImg: /<img\b/i.test(rawGroupHtml),
-          rawGroupHasNoscript: /<noscript\b/i.test(rawGroupHtml),
-        });
       }
       return block;
     })

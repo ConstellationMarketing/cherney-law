@@ -558,23 +558,6 @@ export function getSamplePreviewRecord(
   const allocatedData = allocateForTemplate(normalizedContent, templateType, slug, resolvedPath.path);
   const mappedData = buildPreviewMappedData(normalizedMappedData, normalizedContent, slug, resolvedPath.path, templateType);
 
-  if (templateType === 'practice') {
-    const content = (allocatedData.content as Record<string, unknown> | undefined) ?? {};
-    const contentSections = (content.contentSections as Record<string, unknown>[] | undefined) ?? [];
-
-    console.groupCollapsed('[practice-preview-diagnostic] transformer prepared payload');
-    console.log({
-      rowIndex: sourceRecord.rowIndex,
-      resolvedPath: resolvedPath.path,
-      chosenTitle: normalizedContent.chosenTitle,
-      hero: content.hero ?? null,
-      contentSections,
-      faq: content.faq ?? null,
-    });
-    console.log('[practice-preview-diagnostic] transformer section summary', buildPracticeSectionDiagnostics(contentSections));
-    console.groupEnd();
-  }
-
   const introBody = templateType === 'area'
     ? String(((allocatedData.content as Record<string, unknown> | undefined)?.introSection as Record<string, unknown> | undefined)?.body ?? '')
     : String(allocatedData.body ?? '');

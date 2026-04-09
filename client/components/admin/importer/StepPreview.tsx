@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { WizardState } from '@site/lib/importer/recipeTypes';
 import type { TransformedRecord, TemplateType } from '@site/lib/importer/types';
 import ImportDebugPanel from './ImportDebugPanel';
@@ -19,25 +19,6 @@ function stripTags(html: string): string {
 function truncate(text: string, maxLen: number): string {
   if (text.length <= maxLen) return text;
   return text.substring(0, maxLen).trimEnd() + '…';
-}
-
-function getPracticeSectionDiagnostics(contentSections: Record<string, unknown>[] = []) {
-  return contentSections.map((section, index) => {
-    const body = String(section.body ?? '');
-    const headingMatch = body.match(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/i);
-    const derivedTitle = String(section.heading ?? '')
-      || (headingMatch?.[1] ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-      || `Section ${index + 1}`;
-
-    return {
-      index,
-      title: derivedTitle,
-      image: String(section.image ?? ''),
-      imageAlt: String(section.imageAlt ?? ''),
-      hasImgInBody: /<img\b/i.test(body),
-      hasNoscriptInBody: /<noscript\b/i.test(body),
-    };
-  });
 }
 
 // ─── Section type helpers ────────────────────────────────────────────────────
@@ -149,89 +130,6 @@ function getPracticeSections(content: Record<string, unknown>): SectionPreview[]
   });
 
   return sections;
-}
-
-function PracticePreviewDebugPanel({ records }: { records: TransformedRecord[] }) {
-  if (records.length === 0) return null;
-
-  return (
-    <details className="rounded-lg border border-amber-300 bg-amber-50 p-4">
-      <summary className="cursor-pointer text-sm font-semibold text-amber-900">
-        Temporary Practice Import Debug
-      </summary>
-      <p className="mt-2 text-xs text-amber-800">
-        This panel shows the exact client-side practice payload before import. Check each section&apos;s image,
-        imageAlt, and whether inline <code>&lt;img&gt;</code> or <code>&lt;noscript&gt;</code> still remain in the body.
-      </p>
-
-      <div className="mt-4 space-y-4">
-        {records.map((record) => {
-          const content = (record.preparedData.content as Record<string, unknown> | undefined) ?? {};
-          const hero = (content.hero as Record<string, unknown> | undefined) ?? {};
-          const faq = (content.faq as { items?: { question: string; answer?: string }[] } | undefined) ?? {};
-          const faqItems = faq.items ?? [];
-          const sections = ((content.contentSections as Record<string, unknown>[] | undefined) ?? []).map((section, index) => {
-            const body = String(section.body ?? '');
-            const title = getPracticeSectionDiagnostics([section])[0]?.title || `Section ${index + 1}`;
-            return {
-              index,
-              title,
-              image: String(section.image ?? ''),
-              imageAlt: String(section.imageAlt ?? ''),
-              hasImgInBody: /<img\b/i.test(body),
-              hasNoscriptInBody: /<noscript\b/i.test(body),
-              bodyPreview: truncate(stripTags(body), 180),
-            };
-          });
-
-          return (
-            <div key={record.rowIndex} className="rounded-lg border border-amber-200 bg-white p-3">
-              <div className="grid gap-2 md:grid-cols-2 text-xs text-gray-700">
-                <div>
-                  <p><span className="font-semibold">Row:</span> {record.rowIndex + 1}</p>
-                  <p><span className="font-semibold">Title:</span> {String(record.preparedData.title ?? record.normalizedContent?.chosenTitle ?? '—')}</p>
-                  <p><span className="font-semibold">Slug:</span> <span className="font-mono">{record.slug}</span></p>
-                </div>
-                <div>
-                  <p><span className="font-semibold">Hero sectionLabel:</span> {String(hero.sectionLabel ?? '—')}</p>
-                  <p><span className="font-semibold">Hero tagline:</span> {String(hero.tagline ?? '—')}</p>
-                  <p><span className="font-semibold">FAQ items:</span> {faqItems.length}</p>
-                  <p><span className="font-semibold">FAQ detection:</span> {record.normalizedContent?.segmentation?.faqDetectionMethod ?? 'none'}</p>
-                </div>
-              </div>
-
-              {faqItems.length > 0 && (
-                <div className="mt-3 rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                  <p className="font-semibold">Extracted FAQ entries</p>
-                  <div className="mt-2 space-y-2">
-                    {faqItems.map((item, faqIndex) => (
-                      <div key={faqIndex} className="rounded border border-amber-200 bg-white p-2">
-                        <p><span className="font-medium">Q{faqIndex + 1}:</span> {item.question || '—'}</p>
-                        <p><span className="font-medium">Answer preview:</span> {truncate(stripTags(String(item.answer ?? '')), 180) || '—'}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-                {sections.map((section) => (
-                  <div key={section.index} className="rounded border border-gray-200 bg-gray-50 p-2 text-xs text-gray-700">
-                    <p className="font-semibold text-gray-900">Section {section.index + 1}: {section.title}</p>
-                    <p><span className="font-medium">image:</span> {section.image || '—'}</p>
-                    <p><span className="font-medium">imageAlt:</span> {section.imageAlt || '—'}</p>
-                    <p><span className="font-medium">body has &lt;img&gt;:</span> {section.hasImgInBody ? 'yes' : 'no'}</p>
-                    <p><span className="font-medium">body has &lt;noscript&gt;:</span> {section.hasNoscriptInBody ? 'yes' : 'no'}</p>
-                    <p><span className="font-medium">body preview:</span> {section.bodyPreview || '—'}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </details>
-  );
 }
 
 function getMappedSourceColumn(state: WizardState, targetField: string): string {
@@ -390,27 +288,6 @@ export default function StepPreview({ state, updateState, onNext, onBack }: Prop
     return shuffled.slice(0, Math.min(3, shuffled.length));
   }, [importReady]);
 
-  useEffect(() => {
-    if (state.templateType !== 'practice' || sampleRecords.length === 0) return;
-
-    console.groupCollapsed('[practice-preview-diagnostic] final preview payload');
-    sampleRecords.forEach((record) => {
-      const content = (record.preparedData.content as Record<string, unknown> | undefined) ?? {};
-      const contentSections = (content.contentSections as Record<string, unknown>[] | undefined) ?? [];
-
-      console.log({
-        rowIndex: record.rowIndex,
-        slug: record.slug,
-        title: String(record.preparedData.title ?? record.normalizedContent?.chosenTitle ?? ''),
-        hero: content.hero ?? null,
-        sectionCount: contentSections.length,
-        faq: content.faq ?? null,
-        sections: getPracticeSectionDiagnostics(contentSections),
-      });
-    });
-    console.groupEnd();
-  }, [sampleRecords, state.templateType]);
-
   function handleExclude(rowIndex: number) {
     const updated = state.transformedRecords.map((r) =>
       r.rowIndex === rowIndex ? { ...r, status: 'skipped' as const } : r
@@ -476,10 +353,6 @@ export default function StepPreview({ state, updateState, onNext, onBack }: Prop
             </div>
           </div>
         </div>
-      )}
-
-      {state.templateType === 'practice' && importReady.length > 0 && (
-        <PracticePreviewDebugPanel records={importReady.slice(0, 3)} />
       )}
 
       {/* Content sample cards */}
