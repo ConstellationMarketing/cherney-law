@@ -702,6 +702,30 @@ describe('Practice deterministic section parsing', () => {
     expect(content.contentSections[0].body).not.toContain('Recent Posts');
     expect(content.contentSections[0].body).not.toContain('/blog/post-1/');
   });
+
+  it('alternates CTA visibility across imported practice content sections', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Debt Relief Options',
+        slug: '/practice-areas/debt-relief-options/',
+        body: '<h2>Section One</h2><p>First section copy.</p><h2>Section Two</h2><p>Second section copy.</p><h2>Section Three</h2><p>Third section copy.</p>',
+      },
+    }, 'practice');
+
+    const content = (prepared.data as {
+      content: { contentSections: Array<{ showCTAs: boolean; imagePosition: "left" | "right" }> };
+    }).content;
+
+    expect(content.contentSections).toHaveLength(3);
+    expect(content.contentSections[0].showCTAs).toBe(true);
+    expect(content.contentSections[1].showCTAs).toBe(false);
+    expect(content.contentSections[2].showCTAs).toBe(true);
+    expect(content.contentSections[0].imagePosition).toBe('right');
+    expect(content.contentSections[1].imagePosition).toBe('left');
+    expect(content.contentSections[2].imagePosition).toBe('right');
+  });
 });
 
 // ─── 13. URL slug normalization ─────────────────────────────────────────────

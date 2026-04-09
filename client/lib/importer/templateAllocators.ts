@@ -367,7 +367,7 @@ function allocateForPracticePage(
         image: img?.src || '',
         imageAlt: img?.alt || '',
         imagePosition: (index % 2 === 0 ? 'right' : 'left') as 'right' | 'left',
-        showCTAs: true,
+        showCTAs: index % 2 === 0,
       };
     });
   } else if (normalized.leadHtml) {
