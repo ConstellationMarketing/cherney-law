@@ -820,17 +820,42 @@ function stripFaqSectionFromHtml(html: string): { html: string; items: FaqItem[]
   };
 }
 
-function buildPracticeSectionBlocks(body: string): PracticeSectionParseResult {
-  const faqStripped = stripFaqSectionFromHtml(body);
-  const rawEditorialHtml = faqStripped.html || body;
-  const { leadHtml: rawLeadHtml, sections, h2Positions } = splitOnH2(rawEditorialHtml);
+function buildPracticeSectionBlocks(rawBodyHtml: string): PracticeSectionParseResult {
+  const sourceHtml = rawBodyHtml?.trim() ?? '';
+  if (!sourceHtml) {
+    return {
+      leadHtml: '',
+      preH2ContentLength: 0,
+      sectionBlocks: [],
+      segmentationMethod: 'single-block',
+      h2Positions: [],
+      faqItems: [],
+      faqDetectionMethod: 'none',
+    };
+  }
+
+  const { leadHtml: rawLeadHtml, sections, h2Positions } = splitOnH2(sourceHtml);
   const preH2ContentLength = rawLeadHtml.length;
 
   if (sections.length > 0) {
     const sectionBlocks: SectionBlock[] = [];
     const cleanedLeadHtml = cleanPracticeSectionFragment(rawLeadHtml);
+    let faqItems: FaqItem[] = [];
+    let faqDetectionMethod: SegmentationDebug['faqDetectionMethod'] = 'none';
 
     sections.forEach((section) => {
+      const fullSectionHtml = `<h2>${escapeHtml(section.heading)}</h2>${section.bodyHtml}`;
+      if (isFaqHeading(section.heading)) {
+        if (faqItems.length === 0) {
+          const faqResult = extractFaqFromHtml(fullSectionHtml);
+          if (faqResult.items.length > 0) {
+            faqItems = faqResult.items;
+            faqDetectionMethod = faqResult.method;
+          }
+        }
+        return;
+      }
+
       if (isPracticeSecondaryHeading(section.heading)) {
         return;
       }
@@ -866,24 +891,39 @@ function buildPracticeSectionBlocks(body: string): PracticeSectionParseResult {
       }
     });
 
+    if (faqItems.length === 0) {
+      const fallbackFaq = extractFaqFromHtml(sourceHtml);
+      if (fallbackFaq.items.length > 0) {
+        faqItems = fallbackFaq.items;
+        faqDetectionMethod = fallbackFaq.method;
+      }
+    }
+
     return {
       leadHtml: '',
       preH2ContentLength,
       sectionBlocks,
       segmentationMethod: 'h2-split',
       h2Positions,
-      faqItems: faqStripped.items,
-      faqDetectionMethod: faqStripped.method,
+      faqItems,
+      faqDetectionMethod,
     };
   }
 
-  const fallbackEditorialHtml = stripPracticeSecondaryContent(rawEditorialHtml).trim() || rawEditorialHtml;
+  const faqStripped = stripFaqSectionFromHtml(sourceHtml);
+  const rawEditorialHtml = faqStripped.html || sourceHtml;
+  const fallbackEditorialHtml = stripPracticeNonEditorialChrome(rawEditorialHtml).trim() || rawEditorialHtml;
   const fallbackGroups = chunkPracticeNodes(extractEditorialNodes(fallbackEditorialHtml));
   const sectionBlocks = fallbackGroups
     .map((group, index) => {
-      const groupHtml = group.map((node) => node.html).join('');
-      const groupImage = extractFirstImage(groupHtml);
-      const block = buildPracticeSectionBlockFromNodes(group, index);
+      const rawGroupHtml = group.map((node) => node.html).join('');
+      const cleanedGroupHtml = cleanPracticeSectionFragment(rawGroupHtml);
+      if (!cleanedGroupHtml) {
+        return null;
+      }
+
+      const groupImage = extractFirstImage(rawGroupHtml);
+      const block = buildPracticeSectionBlockFromNodes(extractEditorialNodes(cleanedGroupHtml), index);
       if (block && block.images.length === 0 && groupImage?.src) {
         block.images = [groupImage];
       }
@@ -892,8 +932,8 @@ function buildPracticeSectionBlocks(body: string): PracticeSectionParseResult {
           order: index,
           extractedGroupImage: groupImage,
           blockImages: block.images,
-          rawGroupHasImg: /<img\b/i.test(groupHtml),
-          rawGroupHasNoscript: /<noscript\b/i.test(groupHtml),
+          rawGroupHasImg: /<img\b/i.test(rawGroupHtml),
+          rawGroupHasNoscript: /<noscript\b/i.test(rawGroupHtml),
         });
       }
       return block;
@@ -925,6 +965,7 @@ export function buildNormalizedContent(
 ): NormalizedContent {
   const sourceUrl = mappedData.slug || '';
   const body = mappedData.body || '';
+  const rawBodyHtml = mappedData.__body_raw_html || body;
   const rawMetaTitle = mappedData.meta_title || mappedData.title || '';
   const extractedH1 = extractPrimaryHeading(body);
   const earlyPreservedH1 = normalizeText(mappedData.__body_early_preserved_h1 || '');
@@ -1031,7 +1072,7 @@ export function buildNormalizedContent(
       }
     }
   } else if (templateType === 'practice') {
-    const practiceParseResult = buildPracticeSectionBlocks(body);
+    const practiceParseResult = buildPracticeSectionBlocks(rawBodyHtml || body);
     leadHtml = practiceParseResult.leadHtml;
     preH2ContentLength = practiceParseResult.preH2ContentLength;
     sectionBlocks = practiceParseResult.sectionBlocks;

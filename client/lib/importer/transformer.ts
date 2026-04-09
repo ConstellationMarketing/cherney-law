@@ -635,6 +635,7 @@ function normalizeContentFields(
       result[key] = value;
     } else if (contentFieldKeys.includes(key) && value) {
       if (key === 'body') {
+        result.__body_raw_html = value;
         const normalized = normalizeHtmlWithMetadata(value, filterOptions);
         result[key] = normalized.html;
         result.__body_early_preserved_heading = normalized.earlyPreservedHeading;
