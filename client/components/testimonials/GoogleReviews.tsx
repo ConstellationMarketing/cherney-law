@@ -68,9 +68,13 @@ function getErrorMessage(data: ReviewsData): string {
   }
 }
 
+const INITIAL_VISIBLE_REVIEWS = 6;
+const REVIEWS_LOAD_STEP = 6;
+
 export default function GoogleReviews({ content }: GoogleReviewsProps) {
   const [reviewsData, setReviewsData] = useState<ReviewsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [visibleReviewsCount, setVisibleReviewsCount] = useState(INITIAL_VISIBLE_REVIEWS);
 
   // Construct Google reviews URL
   const googleReviewsUrl = `https://www.google.com/search?q=Cherney+Law+Firm%2C+LLC&oq=cherney+law+firm#lrd=${content.placeId},1,,,,`;
@@ -96,6 +100,15 @@ export default function GoogleReviews({ content }: GoogleReviewsProps) {
 
     fetchReviews();
   }, []);
+
+  useEffect(() => {
+    setVisibleReviewsCount(INITIAL_VISIBLE_REVIEWS);
+  }, [reviewsData?.reviews.length]);
+
+  const displayedReviews = reviewsData?.reviews.slice(0, visibleReviewsCount) ?? [];
+  const canShowMoreReviews = Boolean(
+    reviewsData && reviewsData.reviews.length > visibleReviewsCount,
+  );
 
   return (
     <div className="bg-white py-[40px] md:py-[60px]">
@@ -178,8 +191,9 @@ export default function GoogleReviews({ content }: GoogleReviewsProps) {
               </a>
             </div>
           ) : reviewsData && reviewsData.reviews.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[25px] mb-[40px]">
-              {reviewsData.reviews.map((review, index) => (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[25px] mb-[30px]">
+                {displayedReviews.map((review, index) => (
                 <div
                   key={index}
                   className="bg-white border-2 border-black p-[25px] hover:shadow-lg transition-shadow duration-300"
@@ -217,8 +231,21 @@ export default function GoogleReviews({ content }: GoogleReviewsProps) {
                     </p>
                   )}
                 </div>
-              ))}
-            </div>
+                ))}
+              </div>
+
+              {canShowMoreReviews && (
+                <div className="text-center mb-[40px]">
+                  <button
+                    type="button"
+                    onClick={() => setVisibleReviewsCount((count) => count + REVIEWS_LOAD_STEP)}
+                    className="inline-flex items-center gap-2 bg-black px-[25px] py-[12px] font-outfit text-[15px] font-semibold text-white hover:bg-law-accent hover:text-black transition-all duration-300 border-2 border-black"
+                  >
+                    See More Reviews
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="bg-gray-50 border-2 border-gray-200 p-[40px] text-center mb-[30px]">
               <p className="font-outfit text-[16px] text-gray-600 mb-[20px]">
