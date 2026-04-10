@@ -63,6 +63,145 @@ const COLUMN_SIZE_PATTERNS = [
   /\bcol-\w+-(\d+)\b/,
 ];
 
+const STRONG_CONTENT_AREA_PATTERNS = [
+  /<article\b[^>]*itemprop="articleBody"[^>]*>/gi,
+  /<article\b[^>]*class="[^"]*(?:entry-content|post-content|article-content|post-body|article-body|entry-body|content-body|single-content|single-post-content|article__content|post__content)[^"]*"[^>]*>/gi,
+  /<(div|section|main)\b[^>]*class="[^"]*(?:et_pb_post_content|entry-content|post-content|article-content|post-body|article-body|entry-body|content-body|single-content|single-post-content|article__content|post__content)[^"]*"[^>]*>/gi,
+  /<(article|div|section|main)\b[^>]*itemprop="articleBody"[^>]*>/gi,
+  /<article\b[^>]*>/gi,
+];
+
+const BROAD_CONTENT_AREA_PATTERNS = [
+  /<[^>]+role="main"[^>]*>/gi,
+  /<(main|div|section)\b[^>]*id="(?:main-content|main|content|primary|primary-content)"[^>]*>/gi,
+];
+
+const EMBEDDED_CHROME_CONTAINER_PATTERNS = [
+  /<(div|section|aside|header)\b[^>]*(?:class|id)="[^"]*(?:site-header|main-header|page-header|header-top|header-bar|top-bar|masthead|navigation|main-navigation|nav-menu|menu-main|sidebar|widget|recent-posts?|latest-posts?|related-posts?|site-footer|footer-widgets?)[^"]*"[^>]*>/gi,
+  /<(ul|ol|div|section)\b[^>]*(?:class|id)="[^"]*(?:menu|navigation|breadcrumbs?)[^"]*"[^>]*>/gi,
+];
+
+const CHROME_TEXT_PATTERNS = [
+  /recent\s+posts?/i,
+  /latest\s+posts?/i,
+  /related\s+posts?/i,
+  /categories/i,
+  /archives?/i,
+  /main\s+navigation/i,
+  /skip\s+to\s+content/i,
+];
+
+function stripTagsToText(html: string): string {
+  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function countWords(text: string): number {
+  return text ? text.split(/\s+/).filter(Boolean).length : 0;
+}
+
+function collectScopedCandidateMatches(html: string, patterns: RegExp[]): { tagName: string; opener: string; inner: string }[] {
+  const matches: { tagName: string; opener: string; inner: string }[] = [];
+
+  for (const pattern of patterns) {
+    pattern.lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = pattern.exec(html)) !== null) {
+      if (match.index === undefined) continue;
+      const opener = match[0];
+      const tagName = (opener.match(/^<(\w+)/i) ?? [])[1]?.toLowerCase() || 'div';
+      const inner = extractInnerContent(html, match.index, tagName);
+      if (inner.trim()) {
+        matches.push({ tagName, opener, inner });
+      }
+    }
+  }
+
+  return matches;
+}
+
+function scoreContentAreaCandidate(inner: string, opener: string, priorityBoost: number): number {
+  const text = stripTagsToText(inner);
+  const wordCount = countWords(text);
+  if (wordCount < 25) return -1;
+
+  const headingCount = (inner.match(/<h[2-4]\b/gi) || []).length;
+  const paragraphCount = (inner.match(/<p\b/gi) || []).length;
+  const imageCount = (inner.match(/<(?:img|noscript)\b/gi) || []).length;
+  const shellTagCount = (inner.match(/<(?:nav|header|aside|footer)\b/gi) || []).length;
+  const chromeTextPenalty = CHROME_TEXT_PATTERNS.reduce(
+    (total, pattern) => total + (pattern.test(text) ? 1 : 0),
+    0
+  );
+
+  let score = priorityBoost;
+  score += Math.min(wordCount, 1200);
+  score += headingCount * 30;
+  score += paragraphCount * 18;
+  score += imageCount * 12;
+
+  if (/^<article\b/i.test(opener)) score += 240;
+  if (/(?:entry-content|post-content|article-content|post-body|article-body|entry-body|content-body|single-content|single-post-content|article__content|post__content|et_pb_post_content)/i.test(opener)) {
+    score += 320;
+  }
+
+  score -= shellTagCount * 450;
+  score -= chromeTextPenalty * 140;
+
+  return score;
+}
+
+function narrowBroadContentArea(html: string): string {
+  const strongMatches = collectScopedCandidateMatches(html, STRONG_CONTENT_AREA_PATTERNS)
+    .map((candidate) => ({
+      candidate,
+      score: scoreContentAreaCandidate(candidate.inner, candidate.opener, 10_000),
+    }))
+    .filter((entry) => entry.score >= 0)
+    .sort((a, b) => b.score - a.score);
+
+  if (strongMatches[0]) {
+    return strongMatches[0].candidate.inner;
+  }
+
+  const narrowedColumn = extractMainColumn(html);
+  if (narrowedColumn !== html && countWords(stripTagsToText(narrowedColumn)) >= 25) {
+    return narrowedColumn;
+  }
+
+  return html;
+}
+
+function removeMatchedContainers(html: string, pattern: RegExp): string {
+  let result = html;
+  pattern.lastIndex = 0;
+
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(result)) !== null) {
+    if (match.index === undefined) continue;
+    const tagName = (match[0].match(/^<(\w+)/i) ?? [])[1]?.toLowerCase();
+    if (!tagName) continue;
+
+    const closeEnd = findMatchingClose(result, match.index, tagName);
+    if (closeEnd <= match.index) continue;
+
+    result = result.slice(0, match.index) + result.slice(closeEnd);
+    pattern.lastIndex = match.index;
+  }
+
+  return result;
+}
+
+function stripEmbeddedPageShell(html: string): string {
+  let result = html;
+
+  for (const pattern of EMBEDDED_CHROME_CONTAINER_PATTERNS) {
+    result = removeMatchedContainers(result, pattern);
+  }
+
+  return result;
+}
+
 // ─── 5a: Extract Main Content ────────────────────────────────────────────────
 
 /**
@@ -87,57 +226,25 @@ function extractInnerContent(html: string, tagStart: number, tagName: string): s
  * Returns the inner HTML of the content area, or the original html if not found.
  */
 function extractContentArea(html: string): string {
-  // Priority 1: Divi Theme Builder post content module.
-  // This is the module that injects page-builder content into the page body.
-  const diviPostContent = html.match(/<div[^>]*class="[^"]*et_pb_post_content[^"]*"[^>]*>/i);
-  if (diviPostContent && diviPostContent.index !== undefined) {
-    const inner = extractInnerContent(html, diviPostContent.index, 'div');
-    if (inner.trim().length > 100) return inner;
-  }
+  const candidates = [
+    ...collectScopedCandidateMatches(html, STRONG_CONTENT_AREA_PATTERNS).map((candidate) => ({
+      inner: candidate.inner,
+      opener: candidate.opener,
+      score: scoreContentAreaCandidate(candidate.inner, candidate.opener, 20_000),
+    })),
+    ...collectScopedCandidateMatches(html, BROAD_CONTENT_AREA_PATTERNS).map((candidate) => {
+      const narrowedInner = narrowBroadContentArea(candidate.inner);
+      return {
+        inner: narrowedInner,
+        opener: candidate.opener,
+        score: scoreContentAreaCandidate(narrowedInner, candidate.opener, 10_000),
+      };
+    }),
+  ]
+    .filter((candidate) => candidate.score >= 0)
+    .sort((a, b) => b.score - a.score);
 
-  // Priority 2: Divi inner post layout wrapper (older Divi structures)
-  const diviPostLayout = html.match(/<div[^>]*class="[^"]*et-l--post[^"]*"[^>]*>/i);
-  if (diviPostLayout && diviPostLayout.index !== undefined) {
-    const inner = extractInnerContent(html, diviPostLayout.index, 'div');
-    if (inner.trim().length > 100) return inner;
-  }
-
-  // Priority 3: WordPress standard content wrappers
-  const wpContent = html.match(
-    /<(div|article|section)[^>]*class="[^"]*(?:entry-content|post-content|article-content)[^"]*"[^>]*>/i
-  );
-  if (wpContent && wpContent.index !== undefined) {
-    const tag = (wpContent[0].match(/^<(\w+)/) ?? [])[1] ?? 'div';
-    const inner = extractInnerContent(html, wpContent.index, tag);
-    if (inner.trim().length > 100) return inner;
-  }
-
-  // Priority 4: itemprop="articleBody"
-  const articleBody = html.match(/<[^>]+itemprop="articleBody"[^>]*>/i);
-  if (articleBody && articleBody.index !== undefined) {
-    const tag = (articleBody[0].match(/^<(\w+)/) ?? [])[1] ?? 'div';
-    const inner = extractInnerContent(html, articleBody.index, tag);
-    if (inner.trim().length > 100) return inner;
-  }
-
-  // Priority 5: role="main"
-  const roleMain = html.match(/<[^>]+role="main"[^>]*>/i);
-  if (roleMain && roleMain.index !== undefined) {
-    const tag = (roleMain[0].match(/^<(\w+)/) ?? [])[1] ?? 'div';
-    const inner = extractInnerContent(html, roleMain.index, tag);
-    if (inner.trim().length > 100) return inner;
-  }
-
-  // Priority 6: id="main-content" / id="content" / id="main"
-  const idContent = html.match(/<(div|main|section)[^>]*id="(?:main-content|content|main)"[^>]*>/i);
-  if (idContent && idContent.index !== undefined) {
-    const tag = (idContent[0].match(/^<(\w+)/) ?? [])[1] ?? 'div';
-    const inner = extractInnerContent(html, idContent.index, tag);
-    if (inner.trim().length > 100) return inner;
-  }
-
-  // No content area found — return original html for fallback column detection
-  return html;
+  return candidates[0]?.inner || html;
 }
 
 /**
@@ -149,7 +256,7 @@ function extractContentArea(html: string): string {
  * CRITICAL: Builder CSS classes are used HERE for identification,
  * then stripped AFTER unwrapping.
  */
-export function extractMainContent(html: string): string {
+export function extractScopedMainContent(html: string): string {
   let result = html;
 
   // Step 1: Strip page shell (DOCTYPE, html, head, body, script, style, nav, footer, header)
@@ -164,6 +271,15 @@ export function extractMainContent(html: string): string {
     // Step 2b: Fall back to column detection with full-width skipping fix (Layer 2)
     result = extractMainColumn(result);
   }
+
+  // Step 2c: Remove any embedded page-shell containers that survived broader wrappers.
+  result = stripEmbeddedPageShell(result);
+
+  return result;
+}
+
+export function extractMainContent(html: string): string {
+  let result = extractScopedMainContent(html);
 
   // Step 3: Unwrap layout containers (builder divs, generic wrappers)
   result = unwrapLayoutContainers(result);

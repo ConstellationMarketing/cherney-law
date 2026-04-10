@@ -170,6 +170,29 @@ describe('Content extraction', () => {
     // After unwrapping + attribute stripping, no builder classes should remain
     expect(result).not.toContain('et_pb_');
   });
+
+  it('prefers true article containers inside broad wrappers and excludes shell chrome', () => {
+    const html = `
+      <main id="content">
+        <div class="site-header"><img src="https://example.com/logo.svg" alt="Site logo" /></div>
+        <div class="content-wrapper">
+          <article class="post-content">
+            <h1>Debt Relief Solutions</h1>
+            <p>This is the real article body with enough content to qualify as the main editorial stream for the importer.</p>
+          </article>
+        </div>
+        <aside class="widget recent-posts"><h2>Recent Posts</h2><ul><li><a href="/post-1">Post 1</a></li></ul></aside>
+      </main>
+    `;
+
+    const result = extractMainContent(html);
+
+    expect(result).toContain('Debt Relief Solutions');
+    expect(result).toContain('real article body');
+    expect(result).not.toContain('logo.svg');
+    expect(result).not.toContain('Recent Posts');
+    expect(result).not.toContain('<aside');
+  });
 });
 
 // ─── 5. Bare div handling ───────────────────────────────────────────────────
@@ -725,6 +748,57 @@ describe('Practice deterministic section parsing', () => {
     expect(content.contentSections[0].imagePosition).toBe('right');
     expect(content.contentSections[1].imagePosition).toBe('left');
     expect(content.contentSections[2].imagePosition).toBe('right');
+  });
+
+  it('keeps practice section building scoped to article content instead of header or sidebar fragments', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Debt Relief Lawyer | Cherney Law Firm',
+        slug: '/practice-areas/debt-relief-lawyer/',
+        body: `
+          <main role="main">
+            <div class="site-header">
+              <a href="/"><img src="https://example.com/logo.svg" alt="Cherney Law Firm" /></a>
+              <p><a href="tel:4045550000">404-555-0000</a></p>
+            </div>
+            <div class="page-shell">
+              <article class="entry-content">
+                <h1>Debt Relief Lawyer</h1>
+                <p>Intro copy that should stay with the first real article section.</p>
+                <h2>Understanding Debt Relief</h2>
+                <p><img src="https://example.com/article-first.jpg" alt="Article first" /></p>
+                <p>Understanding debt relief starts with reviewing the debts, the timeline, and the practical options available to the client.</p>
+                <h2>Available Options</h2>
+                <p><img src="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3C/svg%3E" data-lazy-src="https://example.com/article-second.jpg" alt="Article second" /></p>
+                <p>Available options may include negotiation, restructuring, and bankruptcy strategies depending on the facts.</p>
+              </article>
+              <aside class="widget recent-posts">
+                <h2>Recent Posts</h2>
+                <ul><li><a href="/blog/post-1/">Post 1</a></li></ul>
+              </aside>
+            </div>
+          </main>
+        `,
+      },
+    }, 'practice');
+
+    const content = (prepared.data as {
+      content: { contentSections: Array<{ body: string; image: string; imageAlt: string }> };
+    }).content;
+
+    expect(content.contentSections).toHaveLength(2);
+    expect(content.contentSections[0].image).toBe('https://example.com/article-first.jpg');
+    expect(content.contentSections[0].imageAlt).toBe('Article first');
+    expect(content.contentSections[1].image).toBe('https://example.com/article-second.jpg');
+    expect(content.contentSections[1].imageAlt).toBe('Article second');
+    expect(content.contentSections[0].body).toContain('Intro copy that should stay with the first real article section.');
+    expect(content.contentSections[0].body).not.toContain('logo.svg');
+    expect(content.contentSections[0].body).not.toContain('404-555-0000');
+    expect(content.contentSections[0].body).not.toContain('<h1>');
+    expect(content.contentSections[0].body).not.toContain('Recent Posts');
+    expect(content.contentSections[1].body).not.toContain('<img');
   });
 });
 

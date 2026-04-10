@@ -3,6 +3,7 @@
 // Built from mapped data, consumed by template-specific allocators.
 
 import type { TemplateType } from './types';
+import { extractScopedMainContent } from './contentFilter';
 import {
   extractFirstImageFromHtml as resolveFirstImageFromHtml,
   extractImagesFromHtml as resolveImagesFromHtml,
@@ -312,6 +313,42 @@ function extractImages(html: string): ImageCandidate[] {
 /** Extract first image src + alt from HTML */
 function extractFirstImage(html: string): ImageCandidate | null {
   return resolveFirstImageFromHtml(html);
+}
+
+function shouldLogPracticeDiagnostics(): boolean {
+  return typeof window !== 'undefined';
+}
+
+function collectDiagnosticImageUrls(html: string): string[] {
+  const urls: string[] = [];
+  const imageTokens = html.match(/<noscript\b[^>]*>[\s\S]*?<\/noscript>|<img\b[^>]*\/?>/gi) || [];
+
+  for (const token of imageTokens) {
+    const image = extractFirstImage(token);
+    if (image?.src && !urls.includes(image.src)) {
+      urls.push(image.src);
+    }
+    if (urls.length >= 5) break;
+  }
+
+  return urls;
+}
+
+function logPracticeScopeDiagnostic(sourceHtml: string): void {
+  if (!shouldLogPracticeDiagnostics()) return;
+
+  const headings = Array.from(sourceHtml.matchAll(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi))
+    .map((match) => stripTagsToText(match[1]))
+    .filter(Boolean)
+    .slice(0, 5);
+
+  console.info('[practice-scope-diagnostic]', {
+    htmlPreview: sourceHtml.slice(0, 1000),
+    firstHeadings: headings,
+    firstImages: collectDiagnosticImageUrls(sourceHtml),
+    containsHeaderLikeContent: /<(?:header|nav|aside|footer)\b/i.test(sourceHtml)
+      || /(recent\s+posts?|main\s+navigation|site\s+logo|tel:)/i.test(sourceHtml),
+  });
 }
 
 /** Check if text looks like a question */
@@ -704,6 +741,15 @@ function buildPracticeSectionBlockFromNodes(
   const block = buildSectionBlock(bodyHtml, order, undefined, heading, headingLevel);
   block.images = firstImage ? [firstImage] : [];
 
+  if (shouldLogPracticeDiagnostics()) {
+    console.info('[practice-section-build]', {
+      order,
+      heading: heading || '',
+      nodeImages: nodes.map((node) => node.image?.src || extractFirstImage(node.html)?.src || '').filter(Boolean),
+      blockImages: block.images.map((image) => image.src),
+    });
+  }
+
   return block.plainText ? block : null;
 }
 
@@ -814,6 +860,8 @@ function buildPracticeSectionBlocks(rawBodyHtml: string): PracticeSectionParseRe
       faqDetectionMethod: 'none',
     };
   }
+
+  logPracticeScopeDiagnostic(sourceHtml);
 
   const { leadHtml: rawLeadHtml, sections, h2Positions } = splitOnH2(sourceHtml);
   const preH2ContentLength = rawLeadHtml.length;
@@ -1027,7 +1075,8 @@ export function buildNormalizedContent(
       }
     }
   } else if (templateType === 'practice') {
-    const practiceParseResult = buildPracticeSectionBlocks(rawBodyHtml || body);
+    const scopedPracticeHtml = extractScopedMainContent(rawBodyHtml || body);
+    const practiceParseResult = buildPracticeSectionBlocks(scopedPracticeHtml || rawBodyHtml || body);
     leadHtml = practiceParseResult.leadHtml;
     preH2ContentLength = practiceParseResult.preH2ContentLength;
     sectionBlocks = practiceParseResult.sectionBlocks;
