@@ -353,6 +353,7 @@ interface ImportExecutionResult {
 }
 
 const EMPTY_JOB_ID = "00000000-0000-0000-0000-000000000000";
+const PAGES_URL_PATH_KEY_CONSTRAINT = "pages_url_path_key";
 
 function estimatePayloadBytes(value: unknown): number {
   try {
@@ -374,6 +375,59 @@ function chunkValues<T>(values: T[], size: number): T[][] {
     chunks.push(values.slice(index, index + size));
   }
   return chunks;
+}
+
+function isUrlPathConflictError(errorMessage: string): boolean {
+  return errorMessage.includes(PAGES_URL_PATH_KEY_CONSTRAINT);
+}
+
+async function findExistingPageByUrlPath(supabase: ServiceClient, urlPath: string) {
+  const { data, error } = await supabase
+    .from("pages")
+    .select("id")
+    .eq("url_path", urlPath)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Existing page lookup failed: ${error.message}`);
+  }
+
+  return data;
+}
+
+export async function insertPageWithUrlPathReconciliation(
+  supabase: ServiceClient,
+  pageData: Record<string, unknown>
+): Promise<ImportExecutionResult> {
+  const { data, error } = await supabase
+    .from("pages")
+    .insert(pageData)
+    .select("id")
+    .single();
+
+  if (!error) {
+    return { entityId: data.id, action: "created" };
+  }
+
+  if (!isUrlPathConflictError(error.message)) {
+    throw new Error(`Insert failed: ${error.message}`);
+  }
+
+  const existing = await findExistingPageByUrlPath(supabase, String(pageData.url_path ?? ""));
+  if (!existing) {
+    throw new Error(`Insert failed: ${error.message}`);
+  }
+
+  const { error: updateError } = await supabase
+    .from("pages")
+    .update(pageData)
+    .eq("id", existing.id);
+
+  if (updateError) {
+    throw new Error(`Update failed after duplicate url_path reconciliation: ${updateError.message}`);
+  }
+
+  return { entityId: existing.id, action: "updated" };
 }
 
 function collectDuplicateRecordSlugs(records: ImportRecord[]): Set<string> {
@@ -605,12 +659,7 @@ async function importPracticePage(
   };
 
   if (mode === "update" || mode === "upsert") {
-    // Try to find existing page by url_path
-    const { data: existing } = await supabase
-      .from("pages")
-      .select("id")
-      .eq("url_path", pageData.url_path)
-      .single();
+    const existing = await findExistingPageByUrlPath(supabase, pageData.url_path);
 
     if (existing) {
       const { error } = await supabase
@@ -626,14 +675,7 @@ async function importPracticePage(
     }
   }
 
-  const { data, error } = await supabase
-    .from("pages")
-    .insert(pageData)
-    .select("id")
-    .single();
-
-  if (error) throw new Error(`Insert failed: ${error.message}`);
-  return { entityId: data.id, action: "created" };
+  return insertPageWithUrlPathReconciliation(supabase, pageData);
 }
 
 async function importAreaPage(
@@ -661,11 +703,7 @@ async function importAreaPage(
   };
 
   if (mode === "update" || mode === "upsert") {
-    const { data: existing } = await supabase
-      .from("pages")
-      .select("id")
-      .eq("url_path", pageData.url_path)
-      .single();
+    const existing = await findExistingPageByUrlPath(supabase, pageData.url_path);
 
     if (existing) {
       const { error } = await supabase
@@ -681,14 +719,7 @@ async function importAreaPage(
     }
   }
 
-  const { data, error } = await supabase
-    .from("pages")
-    .insert(pageData)
-    .select("id")
-    .single();
-
-  if (error) throw new Error(`Insert failed: ${error.message}`);
-  return { entityId: data.id, action: "created" };
+  return insertPageWithUrlPathReconciliation(supabase, pageData);
 }
 
 async function importPost(

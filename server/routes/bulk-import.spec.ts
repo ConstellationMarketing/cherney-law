@@ -1,5 +1,81 @@
 import { describe, expect, it, vi } from 'vitest';
-import { rewritePracticeContentSectionImages } from './bulk-import';
+import { insertPageWithUrlPathReconciliation, rewritePracticeContentSectionImages } from './bulk-import';
+
+describe('insertPageWithUrlPathReconciliation', () => {
+  it('treats duplicate url_path inserts as successful updates when the page already exists', async () => {
+    const pageData = {
+      title: 'Chapter 13 Bankruptcy Lawyer Sandy Springs',
+      url_path: '/chapter-13-bankruptcy-lawyer-sandy-springs/',
+      page_type: 'practice_detail',
+      content: { hero: { title: 'Chapter 13' } },
+    };
+
+    const insertSingle = vi.fn().mockResolvedValue({
+      data: null,
+      error: {
+        message: 'duplicate key value violates unique constraint "pages_url_path_key"',
+      },
+    });
+    const insertSelect = vi.fn(() => ({ single: insertSingle }));
+    const insert = vi.fn(() => ({ select: insertSelect }));
+
+    const lookupMaybeSingle = vi.fn().mockResolvedValue({
+      data: { id: 'existing-page-id' },
+      error: null,
+    });
+    const lookupEq = vi.fn(() => ({ maybeSingle: lookupMaybeSingle }));
+    const lookupSelect = vi.fn(() => ({ eq: lookupEq }));
+
+    const updateEq = vi.fn().mockResolvedValue({ error: null });
+    const update = vi.fn(() => ({ eq: updateEq }));
+
+    const from = vi
+      .fn()
+      .mockReturnValueOnce({ insert })
+      .mockReturnValueOnce({ select: lookupSelect })
+      .mockReturnValueOnce({ update });
+
+    const supabase = { from };
+
+    await expect(insertPageWithUrlPathReconciliation(supabase as never, pageData)).resolves.toEqual({
+      entityId: 'existing-page-id',
+      action: 'updated',
+    });
+
+    expect(from).toHaveBeenNthCalledWith(1, 'pages');
+    expect(from).toHaveBeenNthCalledWith(2, 'pages');
+    expect(from).toHaveBeenNthCalledWith(3, 'pages');
+    expect(insert).toHaveBeenCalledWith(pageData);
+    expect(lookupEq).toHaveBeenCalledWith('url_path', pageData.url_path);
+    expect(update).toHaveBeenCalledWith(pageData);
+    expect(updateEq).toHaveBeenCalledWith('id', 'existing-page-id');
+  });
+
+  it('preserves real insert failures when the error is not a url_path duplicate', async () => {
+    const pageData = {
+      title: 'Test Page',
+      url_path: '/test-page/',
+    };
+
+    const insertSingle = vi.fn().mockResolvedValue({
+      data: null,
+      error: {
+        message: 'permission denied for table pages',
+      },
+    });
+    const insertSelect = vi.fn(() => ({ single: insertSingle }));
+    const insert = vi.fn(() => ({ select: insertSelect }));
+    const from = vi.fn().mockReturnValue({ insert });
+
+    const supabase = { from };
+
+    await expect(insertPageWithUrlPathReconciliation(supabase as never, pageData)).rejects.toThrow(
+      'Insert failed: permission denied for table pages'
+    );
+
+    expect(from).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe('rewritePracticeContentSectionImages', () => {
   it('rewrites every practice section image and reuses uploads for duplicate source URLs', async () => {
