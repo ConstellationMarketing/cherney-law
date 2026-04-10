@@ -10,14 +10,6 @@ import { HelmetProvider } from "react-helmet-async";
 import { SiteSettingsProvider } from "./contexts/SiteSettingsContext";
 import WcDniManager from "./components/WcDniManager";
 import GlobalScripts from "./components/GlobalScripts";
-import Index from "./pages/Index";
-import Homepage2 from "./pages/Homepage2";
-import AboutUs from "./pages/AboutUs";
-import PracticeAreas from "./pages/PracticeAreas";
-import ContactPage from "./pages/ContactPage";
-import TestimonialsPage from "./pages/TestimonialsPage";
-import CommonQuestionsPage from "./pages/CommonQuestionsPage";
-import AreasWeServePage from "./pages/AreasWeServePage";
 import DynamicCmsPage from "./pages/DynamicCmsPage";
 import AdminRoutes from "./pages/AdminRoutes";
 import ScrollToTop from "./components/ScrollToTop";
@@ -105,17 +97,8 @@ function AppShell() {
       {!isAdminRoute && <WcDniManager />}
       <ScrollToTop />
       <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/about/" element={<AboutUs />} />
-        <Route path="/practice-areas/" element={<PracticeAreas />} />
-        <Route path="/contact/" element={<ContactPage />} />
-        <Route path="/testimonials/" element={<TestimonialsPage />} />
-        <Route path="/common-questions/" element={<CommonQuestionsPage />} />
-        <Route path="/areas-we-serve/" element={<AreasWeServePage />} />
-        <Route path="/homepage-2/" element={<Homepage2 />} />
-        {/* Blog posts now served at root level via DynamicCmsPage catch-all */}
         <Route path="/admin/*" element={<AdminRoutes />} />
-        {/* Dynamic CMS pages — catches any URL not matched above */}
+        {/* All public routes resolve from CMS slugs (including /) */}
         <Route path="*" element={<DynamicCmsPage />} />
       </Routes>
     </>

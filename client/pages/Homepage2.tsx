@@ -26,6 +26,14 @@ export default function Homepage2() {
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
   const siteSettings = useSiteSettings();
   const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || "";
+  const aboutNavItem = siteSettings.settings.navigationItems.find(
+    (item) => item.label?.trim().toLowerCase() === "about us" && item.href,
+  );
+  const aboutFallbackHref = aboutNavItem?.href?.startsWith("/")
+    ? aboutNavItem.href
+    : aboutNavItem?.href
+      ? `/${aboutNavItem.href}`
+      : "/";
 
   // Centralized SEO resolution
   const seo = resolveSeo(page, siteSettings.settings, pathname, siteUrl);
@@ -128,7 +136,7 @@ export default function Homepage2() {
                   return (
                     <Link
                       key={i}
-                      to={btn.href || "/about/"}
+                      to={btn.href || aboutFallbackHref}
                       className="w-full sm:w-1/2"
                     >
                       <div className="bg-law-accent p-[8px] h-full cursor-pointer transition-all duration-300 hover:bg-law-accent-dark group">
@@ -153,7 +161,7 @@ export default function Homepage2() {
                   );
                 })
               ) : (
-                <Link to="/about/" className="w-full sm:w-1/2">
+                <Link to={aboutFallbackHref} className="w-full sm:w-1/2">
                   <div className="bg-law-accent p-[8px] h-full group hover:bg-law-accent-dark transition-colors duration-300">
                     <div className="flex items-start gap-4">
                       <div className="bg-white p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
