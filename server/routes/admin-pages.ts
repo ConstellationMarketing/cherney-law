@@ -59,6 +59,74 @@ export const handleDeleteAdminPage: RequestHandler = async (req, res) => {
 };
 
 /**
+ * POST /api/admin/pages/:id/duplicate
+ * Duplicates a page as draft with empty URL path.
+ */
+export const handleDuplicateAdminPage: RequestHandler = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      res.status(400).json({ error: "Missing page id" });
+      return;
+    }
+
+    const supabase = getServiceClient();
+    const { data: sourcePage, error: sourceError } = await supabase
+      .from("pages")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (sourceError) {
+      res.status(404).json({ error: sourceError.message || "Page not found" });
+      return;
+    }
+
+    if (!sourcePage) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
+
+    const duplicateTitle = sourcePage.title.endsWith(" (Copy)")
+      ? sourcePage.title
+      : `${sourcePage.title} (Copy)`;
+
+    const duplicatePayload = {
+      title: duplicateTitle,
+      url_path: "",
+      page_type: sourcePage.page_type,
+      content: sourcePage.content,
+      meta_title: sourcePage.meta_title,
+      meta_description: sourcePage.meta_description,
+      canonical_url: sourcePage.canonical_url,
+      og_title: sourcePage.og_title,
+      og_description: sourcePage.og_description,
+      og_image: sourcePage.og_image,
+      noindex: sourcePage.noindex,
+      schema_type: sourcePage.schema_type,
+      schema_data: sourcePage.schema_data,
+      status: "draft",
+      published_at: null,
+    };
+
+    const { data, error } = await supabase
+      .from("pages")
+      .insert(duplicatePayload)
+      .select()
+      .single();
+
+    if (error) {
+      res.status(500).json({ error: error.message });
+      return;
+    }
+
+    res.status(201).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : "Internal server error" });
+  }
+};
+
+/**
  * PATCH /api/admin/pages/:id
  * Updates a page (status, noindex, etc.) using the service-role key.
  */

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { Page } from '@/lib/database.types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Search, Edit, Trash2, ExternalLink, Loader2, Square, CheckSquare, MinusSquare } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Copy, ExternalLink, Loader2, Square, CheckSquare, MinusSquare } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import BulkActionBar, { BulkAction } from '../../components/admin/BulkActionBar';
 import {
@@ -38,8 +38,10 @@ export default function AdminPages() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const navigate = useNavigate();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -77,6 +79,26 @@ export default function AdminPages() {
     } finally {
       setDeleteId(null);
       setDeleting(false);
+    }
+  };
+
+  const handleDuplicate = async (id: string) => {
+    setDuplicatingId(id);
+
+    try {
+      const res = await fetch(`/api/admin/pages/${id}/duplicate`, { method: 'POST' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+
+      const duplicatedPage = await res.json();
+      navigate(`/admin/pages/${duplicatedPage.id}`);
+    } catch (err) {
+      console.error('Error duplicating page:', err);
+      alert(`Failed to duplicate page: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setDuplicatingId(null);
     }
   };
 
@@ -299,6 +321,18 @@ export default function AdminPages() {
                           <Edit className="h-4 w-4" />
                         </Button>
                       </Link>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDuplicate(page.id)}
+                        disabled={duplicatingId === page.id}
+                      >
+                        {duplicatingId === page.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"

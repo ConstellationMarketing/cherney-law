@@ -18,6 +18,7 @@ import {
 import {
   handleGetAdminPages,
   handleDeleteAdminPage,
+  handleDuplicateAdminPage,
   handlePatchAdminPage,
   handleBulkPatchAdminPages,
   handleBulkDeleteAdminPages,
@@ -142,6 +143,7 @@ export function createServer() {
   app.post("/api/admin/pages/bulk-delete", handleBulkDeleteAdminPages);
   app.patch("/api/admin/pages/bulk", handleBulkPatchAdminPages);
   app.delete("/api/admin/pages/:id", handleDeleteAdminPage);
+  app.post("/api/admin/pages/:id/duplicate", handleDuplicateAdminPage);
   app.patch("/api/admin/pages/:id", handlePatchAdminPage);
 
   // AI assist routes for bulk importer
