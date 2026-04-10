@@ -96,7 +96,7 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                       ? chunkMenuItems(item.children, 10)
                       : [];
 
-                    const childItemClass = "font-outfit font-normal text-[17px] leading-[1.25] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer px-4 py-3";
+                    const childItemClass = "font-outfit font-normal text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer px-4 py-3";
 
                     const renderDropdownItem = (child: NavigationItem) => {
                       const childKey = `${item.id || item.href || item.label}-${child.id || child.href || child.label}`;
