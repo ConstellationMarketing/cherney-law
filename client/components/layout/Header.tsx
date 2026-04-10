@@ -7,6 +7,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -15,7 +18,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { useSiteSettings } from "@site/contexts/SiteSettingsContext";
+import { useSiteSettings, type NavigationItem } from "@site/contexts/SiteSettingsContext";
 
 interface HeaderProps {
   /** When true, the green top bar is made transparent so an underlying
@@ -92,6 +95,61 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                       ? chunkMenuItems(item.children, 10)
                       : [];
 
+                    const renderDropdownItem = (child: NavigationItem) => {
+                      if (child.children && child.children.length > 0) {
+                        return (
+                          <DropdownMenuSub key={child.id || child.href || child.label}>
+                            <DropdownMenuSubTrigger className="font-outfit text-[19px] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer px-4 py-3 rounded-none">
+                              {child.label}
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent className="bg-law-dark border border-law-border z-50 p-1">
+                              {child.children.map((grandchild) => (
+                                <DropdownMenuItem key={grandchild.id || grandchild.href || grandchild.label} asChild>
+                                  <Link
+                                    to={normalizeInternalHref(grandchild.href, grandchild.external || grandchild.openInNewTab)}
+                                    className="font-outfit text-[18px] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer px-4 py-3"
+                                    target={
+                                      grandchild.external || grandchild.openInNewTab
+                                        ? "_blank"
+                                        : undefined
+                                    }
+                                    rel={
+                                      grandchild.external || grandchild.openInNewTab
+                                        ? "noopener noreferrer"
+                                        : undefined
+                                    }
+                                  >
+                                    {grandchild.label}
+                                  </Link>
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuSubContent>
+                          </DropdownMenuSub>
+                        );
+                      }
+
+                      return (
+                        <DropdownMenuItem key={child.id || child.href || child.label} asChild>
+                          <Link
+                            to={normalizeInternalHref(child.href, child.external || child.openInNewTab)}
+                            className="font-outfit text-[19px] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer px-4 py-3"
+                            target={
+                              child.external || child.openInNewTab
+                                ? "_blank"
+                                : undefined
+                            }
+                            rel={
+                              child.external || child.openInNewTab
+                                ? "noopener noreferrer"
+                                : undefined
+                            }
+                          >
+                            {child.label}
+                          </Link>
+                        </DropdownMenuItem>
+                      );
+                    };
+
                     return (
                     <li
                       key={item.id || item.href}
@@ -122,29 +180,7 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                                   key={`${item.id || item.href || item.label}-column-${columnIndex}`}
                                   className="py-1"
                                 >
-                                  {column.map((child) => (
-                                    <DropdownMenuItem
-                                      key={child.id || child.href}
-                                      asChild
-                                    >
-                                      <Link
-                                        to={normalizeInternalHref(child.href, child.external || child.openInNewTab)}
-                                        className="font-outfit text-[19px] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer px-4 py-3"
-                                        target={
-                                          child.external || child.openInNewTab
-                                            ? "_blank"
-                                            : undefined
-                                        }
-                                        rel={
-                                          child.external || child.openInNewTab
-                                            ? "noopener noreferrer"
-                                            : undefined
-                                        }
-                                      >
-                                        {child.label}
-                                      </Link>
-                                    </DropdownMenuItem>
-                                  ))}
+                                  {column.map((child) => renderDropdownItem(child))}
                                 </div>
                               ))}
                             </div>
@@ -236,25 +272,81 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                             )}
                           </AccordionTrigger>
                           <AccordionContent className="pl-8 space-y-1">
-                            {item.children.map((child) => (
-                              <Link
-                                key={child.id || child.href}
-                                to={normalizeInternalHref(child.href, child.external || child.openInNewTab)}
-                                className="block font-outfit text-[18px] text-gray-300 py-2 hover:text-law-accent transition-colors"
-                                target={
-                                  child.external || child.openInNewTab
-                                    ? "_blank"
-                                    : undefined
-                                }
-                                rel={
-                                  child.external || child.openInNewTab
-                                    ? "noopener noreferrer"
-                                    : undefined
-                                }
-                              >
-                                {child.label}
-                              </Link>
-                            ))}
+                            {item.children.map((child) =>
+                              child.children && child.children.length > 0 ? (
+                                <Accordion
+                                  key={child.id || child.href || child.label}
+                                  type="single"
+                                  collapsible
+                                  className="border-b border-black/10"
+                                >
+                                  <AccordionItem value={`${item.id || item.label}-${child.id || child.label}`}>
+                                    <AccordionTrigger className="font-outfit text-[18px] text-gray-300 py-2 hover:no-underline hover:text-law-accent">
+                                      {child.href ? (
+                                        <Link
+                                          to={normalizeInternalHref(child.href, child.external || child.openInNewTab)}
+                                          className="flex-1 text-left"
+                                          onClick={(e) => e.stopPropagation()}
+                                          target={
+                                            child.external || child.openInNewTab
+                                              ? "_blank"
+                                              : undefined
+                                          }
+                                          rel={
+                                            child.external || child.openInNewTab
+                                              ? "noopener noreferrer"
+                                              : undefined
+                                          }
+                                        >
+                                          {child.label}
+                                        </Link>
+                                      ) : (
+                                        <span className="flex-1 text-left">{child.label}</span>
+                                      )}
+                                    </AccordionTrigger>
+                                    <AccordionContent className="pl-5 space-y-1">
+                                      {child.children.map((grandchild) => (
+                                        <Link
+                                          key={grandchild.id || grandchild.href || grandchild.label}
+                                          to={normalizeInternalHref(grandchild.href, grandchild.external || grandchild.openInNewTab)}
+                                          className="block font-outfit text-[17px] text-gray-400 py-2 hover:text-law-accent transition-colors"
+                                          target={
+                                            grandchild.external || grandchild.openInNewTab
+                                              ? "_blank"
+                                              : undefined
+                                          }
+                                          rel={
+                                            grandchild.external || grandchild.openInNewTab
+                                              ? "noopener noreferrer"
+                                              : undefined
+                                          }
+                                        >
+                                          {grandchild.label}
+                                        </Link>
+                                      ))}
+                                    </AccordionContent>
+                                  </AccordionItem>
+                                </Accordion>
+                              ) : (
+                                <Link
+                                  key={child.id || child.href || child.label}
+                                  to={normalizeInternalHref(child.href, child.external || child.openInNewTab)}
+                                  className="block font-outfit text-[18px] text-gray-300 py-2 hover:text-law-accent transition-colors"
+                                  target={
+                                    child.external || child.openInNewTab
+                                      ? "_blank"
+                                      : undefined
+                                  }
+                                  rel={
+                                    child.external || child.openInNewTab
+                                      ? "noopener noreferrer"
+                                      : undefined
+                                  }
+                                >
+                                  {child.label}
+                                </Link>
+                              )
+                            )}
                           </AccordionContent>
                         </AccordionItem>
                       </Accordion>

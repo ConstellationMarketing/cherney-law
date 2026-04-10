@@ -167,7 +167,7 @@ function generateNavId(label: string, href: string | undefined, index: number): 
 }
 
 // Validate and normalize a nav item
-function normalizeNavItem(item: any, index: number, isChild = false): NavItem | null {
+function normalizeNavItem(item: any, index: number): NavItem | null {
   if (typeof item !== 'object' || item === null || typeof item.label !== 'string') {
     return null;
   }
@@ -181,10 +181,9 @@ function normalizeNavItem(item: any, index: number, isChild = false): NavItem | 
     openInNewTab: typeof item.openInNewTab === 'boolean' ? item.openInNewTab : undefined,
   };
 
-  // Only process children for top-level items (enforce max depth 2)
-  if (!isChild && Array.isArray(item.children) && item.children.length > 0) {
+  if (Array.isArray(item.children) && item.children.length > 0) {
     const validChildren = item.children
-      .map((child: any, childIndex: number) => normalizeNavItem(child, childIndex, true))
+      .map((child: any, childIndex: number) => normalizeNavItem(child, childIndex))
       .filter(Boolean) as NavItem[];
 
     if (validChildren.length > 0) {
@@ -201,7 +200,7 @@ export function rowToSiteSettings(row: SiteSettingsRow): SiteSettings {
   let navigationItems: NavItem[] = [];
   if (Array.isArray(row.navigation_items)) {
     navigationItems = row.navigation_items
-      .map((item, index) => normalizeNavItem(item, index, false))
+      .map((item, index) => normalizeNavItem(item, index))
       .filter(Boolean) as NavItem[];
   }
 

@@ -138,58 +138,110 @@ export default function AdminSiteSettings() {
     });
   };
 
-  const updateNavItem = (parentIndex: number, childIndex: number | undefined, updates: Partial<NavItem>) => {
+  const updateNavItem = (
+    parentIndex: number,
+    childIndex: number | undefined,
+    grandchildIndex: number | undefined,
+    updates: Partial<NavItem>
+  ) => {
     const items = [...settings.navigationItems];
 
-    if (childIndex !== undefined) {
-      // Update child item
+    if (childIndex !== undefined && grandchildIndex !== undefined) {
       const parent = items[parentIndex];
-      if (parent.children) {
-        const children = [...parent.children];
-        children[childIndex] = { ...children[childIndex], ...updates };
-        items[parentIndex] = { ...parent, children };
-      }
-    } else {
-      // Update parent item
-      items[parentIndex] = { ...items[parentIndex], ...updates };
+      const child = parent.children?.[childIndex];
+      if (!child?.children) return;
+
+      const grandchildren = [...child.children];
+      grandchildren[grandchildIndex] = { ...grandchildren[grandchildIndex], ...updates };
+
+      const children = [...(parent.children || [])];
+      children[childIndex] = { ...child, children: grandchildren };
+      items[parentIndex] = { ...parent, children };
+      updateSettings({ navigationItems: items });
+      return;
     }
 
+    if (childIndex !== undefined) {
+      const parent = items[parentIndex];
+      if (!parent.children) return;
+
+      const children = [...parent.children];
+      children[childIndex] = { ...children[childIndex], ...updates };
+      items[parentIndex] = { ...parent, children };
+      updateSettings({ navigationItems: items });
+      return;
+    }
+
+    items[parentIndex] = { ...items[parentIndex], ...updates };
     updateSettings({ navigationItems: items });
   };
 
-  const removeNavItem = (parentIndex: number, childIndex: number | undefined) => {
+  const removeNavItem = (
+    parentIndex: number,
+    childIndex: number | undefined,
+    grandchildIndex: number | undefined
+  ) => {
     const items = [...settings.navigationItems];
 
-    if (childIndex !== undefined) {
-      // Remove child item
+    if (childIndex !== undefined && grandchildIndex !== undefined) {
       const parent = items[parentIndex];
-      if (parent.children) {
-        const children = parent.children.filter((_, i) => i !== childIndex);
-        // If no children left, remove children property
-        items[parentIndex] = {
-          ...parent,
-          children: children.length > 0 ? children : undefined
-        };
-      }
-    } else {
-      // Remove parent item
-      return updateSettings({
-        navigationItems: items.filter((_, i) => i !== parentIndex)
-      });
+      const child = parent.children?.[childIndex];
+      if (!child?.children) return;
+
+      const grandchildren = child.children.filter((_, index) => index !== grandchildIndex);
+      const children = [...(parent.children || [])];
+      children[childIndex] = {
+        ...child,
+        children: grandchildren.length > 0 ? grandchildren : undefined,
+      };
+      items[parentIndex] = { ...parent, children };
+      updateSettings({ navigationItems: items });
+      return;
     }
 
-    updateSettings({ navigationItems: items });
+    if (childIndex !== undefined) {
+      const parent = items[parentIndex];
+      if (!parent.children) return;
+
+      const children = parent.children.filter((_, index) => index !== childIndex);
+      items[parentIndex] = {
+        ...parent,
+        children: children.length > 0 ? children : undefined,
+      };
+      updateSettings({ navigationItems: items });
+      return;
+    }
+
+    updateSettings({
+      navigationItems: items.filter((_, index) => index !== parentIndex),
+    });
   };
 
-  const addChildNavItem = (parentIndex: number) => {
+  const addChildNavItem = (parentIndex: number, childIndex?: number) => {
     const items = [...settings.navigationItems];
-    const parent = items[parentIndex];
     const newChild: NavItem = {
       id: generateNavId(),
       label: "",
       href: "/",
     };
 
+    if (childIndex !== undefined) {
+      const parent = items[parentIndex];
+      const child = parent.children?.[childIndex];
+      if (!child) return;
+
+      const children = [...(parent.children || [])];
+      children[childIndex] = {
+        ...child,
+        children: [...(child.children || []), newChild],
+      };
+
+      items[parentIndex] = { ...parent, children };
+      updateSettings({ navigationItems: items });
+      return;
+    }
+
+    const parent = items[parentIndex];
     items[parentIndex] = {
       ...parent,
       children: [...(parent.children || []), newChild],
@@ -505,7 +557,7 @@ export default function AdminSiteSettings() {
             <CardHeader>
               <CardTitle>Navigation Menu</CardTitle>
               <CardDescription>
-                Links displayed in the header navigation bar. Support for dropdown menus (max 2 levels).
+                Links displayed in the header navigation bar. Support for dropdown menus (max 3 levels).
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -539,14 +591,14 @@ export default function AdminSiteSettings() {
                         <Input
                           value={item.label}
                           onChange={(e) =>
-                            updateNavItem(parentIndex, undefined, { label: e.target.value })
+                            updateNavItem(parentIndex, undefined, undefined, { label: e.target.value })
                           }
                           placeholder="Label"
                         />
                         <Input
                           value={item.href || ""}
                           onChange={(e) =>
-                            updateNavItem(parentIndex, undefined, {
+                            updateNavItem(parentIndex, undefined, undefined, {
                               href: e.target.value || undefined
                             })
                           }
@@ -558,7 +610,7 @@ export default function AdminSiteSettings() {
                           <Switch
                             checked={item.openInNewTab || item.external || false}
                             onCheckedChange={(checked) =>
-                              updateNavItem(parentIndex, undefined, {
+                              updateNavItem(parentIndex, undefined, undefined, {
                                 openInNewTab: checked,
                                 external: checked
                               })
@@ -580,7 +632,7 @@ export default function AdminSiteSettings() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => removeNavItem(parentIndex, undefined)}
+                      onClick={() => removeNavItem(parentIndex, undefined, undefined)}
                       className="text-red-500 hover:text-red-700 hover:bg-red-50 mt-2"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -591,40 +643,89 @@ export default function AdminSiteSettings() {
                   {item.children && item.children.length > 0 && (
                     <div className="ml-12 space-y-2 border-l-2 border-gray-300 pl-4">
                       {item.children.map((child, childIndex) => (
-                        <div
-                          key={child.id || childIndex}
-                          className="flex items-center gap-3 p-2 bg-white border border-gray-200 rounded"
-                        >
-                          <div className="flex-1 grid grid-cols-2 gap-2">
-                            <Input
-                              value={child.label}
-                              onChange={(e) =>
-                                updateNavItem(parentIndex, childIndex, {
-                                  label: e.target.value
-                                })
-                              }
-                              placeholder="Child label"
-                              className="text-sm"
-                            />
-                            <Input
-                              value={child.href || ""}
-                              onChange={(e) =>
-                                updateNavItem(parentIndex, childIndex, {
-                                  href: e.target.value || undefined
-                                })
-                              }
-                              placeholder="/page-url"
-                              className="text-sm"
-                            />
+                        <div key={child.id || childIndex} className="space-y-2">
+                          <div className="flex items-center gap-3 p-2 bg-white border border-gray-200 rounded">
+                            <div className="flex-1 grid grid-cols-2 gap-2">
+                              <Input
+                                value={child.label}
+                                onChange={(e) =>
+                                  updateNavItem(parentIndex, childIndex, undefined, {
+                                    label: e.target.value
+                                  })
+                                }
+                                placeholder="Child label"
+                                className="text-sm"
+                              />
+                              <Input
+                                value={child.href || ""}
+                                onChange={(e) =>
+                                  updateNavItem(parentIndex, childIndex, undefined, {
+                                    href: e.target.value || undefined
+                                  })
+                                }
+                                placeholder="/page-url"
+                                className="text-sm"
+                              />
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => addChildNavItem(parentIndex, childIndex)}
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              Add Child Item
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeNavItem(parentIndex, childIndex, undefined)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeNavItem(parentIndex, childIndex)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+
+                          {child.children && child.children.length > 0 && (
+                            <div className="ml-8 space-y-2 border-l border-gray-300 pl-3">
+                              {child.children.map((grandchild, grandchildIndex) => (
+                                <div
+                                  key={grandchild.id || grandchildIndex}
+                                  className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded"
+                                >
+                                  <div className="flex-1 grid grid-cols-2 gap-2">
+                                    <Input
+                                      value={grandchild.label}
+                                      onChange={(e) =>
+                                        updateNavItem(parentIndex, childIndex, grandchildIndex, {
+                                          label: e.target.value
+                                        })
+                                      }
+                                      placeholder="Grandchild label"
+                                      className="text-sm"
+                                    />
+                                    <Input
+                                      value={grandchild.href || ""}
+                                      onChange={(e) =>
+                                        updateNavItem(parentIndex, childIndex, grandchildIndex, {
+                                          href: e.target.value || undefined
+                                        })
+                                      }
+                                      placeholder="/page-url"
+                                      className="text-sm"
+                                    />
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeNavItem(parentIndex, childIndex, grandchildIndex)}
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

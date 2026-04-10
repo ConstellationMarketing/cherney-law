@@ -7,6 +7,16 @@ import {
 } from "react";
 
 // Site Settings types (matching submodule)
+export interface NavigationItem {
+  id?: string;
+  label: string;
+  href?: string;
+  order?: number;
+  external?: boolean;
+  openInNewTab?: boolean;
+  children?: NavigationItem[];
+}
+
 export interface SiteSettings {
   siteName: string;
   logoUrl: string;
@@ -17,21 +27,7 @@ export interface SiteSettings {
   applyPhoneGlobally: boolean;
   headerCtaText: string;
   headerCtaUrl: string;
-  navigationItems: {
-    id?: string;
-    label: string;
-    href?: string;
-    order?: number;
-    external?: boolean;
-    openInNewTab?: boolean;
-    children?: {
-      id?: string;
-      label: string;
-      href?: string;
-      external?: boolean;
-      openInNewTab?: boolean;
-    }[];
-  }[];
+  navigationItems: NavigationItem[];
   footerAboutLinks: { label: string; href?: string }[];
   footerPracticeLinks: { label: string; href?: string }[];
   addressLine1: string;
