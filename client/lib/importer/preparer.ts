@@ -97,6 +97,24 @@ function extractSourcePath(rawValue: string): string {
   return '';
 }
 
+function normalizePathSlug(path: string): string {
+  let normalizedPath = path.trim();
+  if (!normalizedPath) return '';
+
+  normalizedPath = normalizedPath.split('#')[0].split('?')[0].replace(/\/+/g, '/');
+  const hasLeadingSlash = normalizedPath.startsWith('/');
+  const normalizedSegments = normalizedPath
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => slugify(segment))
+    .filter(Boolean);
+
+  if (!normalizedSegments.length) return '';
+
+  const joinedPath = normalizedSegments.join('/');
+  return hasLeadingSlash ? `/${joinedPath}` : joinedPath;
+}
+
 function normalizeTemplatePath(path: string, _templateType: TemplateType): string {
   let normalizedPath = path.trim();
   if (!normalizedPath) return '';
@@ -119,13 +137,9 @@ export function resolveImportPath(
   const slug = normalizeUrlSlug(rawSlug, title, templateType);
 
   if (sourcePath) {
-    const normalizedPath = templateType === 'practice'
-      ? `/${slug.replace(/^\/+|\/+$/g, '')}/`
-      : sourcePath;
-
     return {
       slug,
-      path: normalizeTemplatePath(normalizedPath, templateType),
+      path: normalizeTemplatePath(sourcePath, templateType),
       usedSourcePath: true,
     };
   }
@@ -167,23 +181,18 @@ export function normalizeUrlSlug(
       // Not a valid URL, continue
     }
 
-    // 2. Extract slug after /practice-areas/ or /areas-we-serve/ if present
-    const practiceMatch = slug.match(/\/practice-areas\/([^/]+)/);
-    const areaMatch = slug.match(/\/areas-we-serve\/([^/]+)/);
-    if (practiceMatch) {
-      slug = practiceMatch[1];
-    } else if (areaMatch) {
-      slug = areaMatch[1];
-    } else {
-      // 3. Take last segment from multi-segment paths
-      const segments = slug.split('/').filter(Boolean);
-      if (segments.length > 0) {
-        slug = segments[segments.length - 1];
+    const sourcePath = extractSourcePath(slug);
+    if (sourcePath) {
+      const normalizedPathSlug = normalizePathSlug(sourcePath);
+      if (templateType === 'post') {
+        const segments = normalizedPathSlug.split('/').filter(Boolean);
+        slug = segments[segments.length - 1] ?? '';
+      } else {
+        slug = normalizedPathSlug;
       }
+    } else {
+      slug = slugify(slug);
     }
-
-    // Clean up the slug
-    slug = slugify(slug);
   }
 
   // 4. Fall back to slugify(title)
@@ -191,7 +200,7 @@ export function normalizeUrlSlug(
     slug = slugify(title);
   }
 
-  // Ensure slug format: posts keep a trailing slash, practice/area keep a bare segment
+  // Ensure slug format: posts keep a trailing slash, practice/area preserve the normalized pathname without a trailing slash
   if (templateType === 'post') {
     slug = slug.replace(/\/$/, '') + '/';
   } else {

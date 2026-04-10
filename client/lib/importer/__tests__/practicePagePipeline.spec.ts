@@ -840,14 +840,14 @@ describe('Practice deterministic section parsing', () => {
 // ─── 13. URL slug normalization ─────────────────────────────────────────────
 
 describe('URL slug normalization', () => {
-  it('extracts slug from full URL', () => {
+  it('preserves the full pathname when normalizing a full practice URL', () => {
     const slug = normalizeUrlSlug('https://example.com/practice-areas/car-accident/', 'Car Accident', 'practice');
-    expect(slug).toBe('car-accident');
+    expect(slug).toBe('/practice-areas/car-accident');
   });
 
-  it('extracts slug from multi-segment path', () => {
+  it('preserves multi-segment practice paths instead of collapsing to the last segment', () => {
     const slug = normalizeUrlSlug('/services/legal/personal-injury/', 'Personal Injury', 'practice');
-    expect(slug).toBe('personal-injury');
+    expect(slug).toBe('/services/legal/personal-injury');
   });
 
   it('handles bare slug', () => {
@@ -865,9 +865,25 @@ describe('URL slug normalization', () => {
     expect(slug).toBe('my-post/');
   });
 
-  it('normalizes prefixed source practice paths to bare root slugs with a trailing slash', () => {
+  it('preserves the full source pathname when resolving practice import paths', () => {
     const resolved = resolveImportPath('https://example.com/practice-areas/car-accident/', 'Car Accident', 'practice');
-    expect(resolved.path).toBe('/car-accident/');
+    expect(resolved.path).toBe('/practice-areas/car-accident/');
+  });
+
+  it('preserves nested areas-we-serve practice paths after removing only the domain', () => {
+    const slug = normalizeUrlSlug(
+      'https://cherneylaw.com/areas-we-serve/atlanta/chapter-7-bankruptcy-atlanta/',
+      'Chapter 7 Bankruptcy Atlanta',
+      'practice'
+    );
+    const resolved = resolveImportPath(
+      'https://cherneylaw.com/areas-we-serve/atlanta/chapter-7-bankruptcy-atlanta/',
+      'Chapter 7 Bankruptcy Atlanta',
+      'practice'
+    );
+
+    expect(slug).toBe('/areas-we-serve/atlanta/chapter-7-bankruptcy-atlanta');
+    expect(resolved.path).toBe('/areas-we-serve/atlanta/chapter-7-bankruptcy-atlanta/');
   });
 
   it('adds trailing slash to generated practice paths without a template prefix', () => {
@@ -950,7 +966,7 @@ describe('Practice image allocation', () => {
 
     expect(data.content.hero.backgroundImage).toBe('https://example.com/hero.jpg');
     expect(data.og_image).toBe('https://example.com/og.jpg');
-    expect(data.url_path).toBe('/car-accident/');
+    expect(data.url_path).toBe('/practice-areas/car-accident/');
   });
 });
 
@@ -1102,8 +1118,8 @@ describe('Full pipeline integration', () => {
 
     const prepared = prepareRecord(mappedRecord, 'practice');
 
-    // Slug should be normalized
-    expect(prepared.slug).toBe('/car-accident/');
+    // Slug should preserve the full source pathname after removing only the domain
+    expect(prepared.slug).toBe('/practice-areas/car-accident/');
 
     // Should have content sections
     expect(prepared.contentSections).toBeDefined();
@@ -1112,7 +1128,7 @@ describe('Full pipeline integration', () => {
     // CMS record should have proper structure
     const data = prepared.data as Record<string, unknown>;
     expect(data.title).toBe('Car Accident Lawyer');
-    expect(data.url_path).toBe('/car-accident/');
+    expect(data.url_path).toBe('/practice-areas/car-accident/');
     expect(data.page_type).toBe('practice_detail');
   });
 });
