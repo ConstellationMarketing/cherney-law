@@ -82,34 +82,54 @@ export default function GoogleReviews({ content }: GoogleReviewsProps) {
   useEffect(() => {
     async function fetchReviews() {
       try {
-        const response = await fetch("/api/google-reviews");
-        const rawBody = await response.text();
+        const endpoints = [
+          "/api/google-reviews",
+          "/.netlify/functions/api/google-reviews",
+        ];
 
-        let data: ReviewsData | null = null;
-        try {
-          data = rawBody ? (JSON.parse(rawBody) as ReviewsData) : null;
-        } catch {
-          data = null;
-        }
+        for (const endpoint of endpoints) {
+          const response = await fetch(endpoint);
+          const rawBody = await response.text();
 
-        if (!response.ok) {
-          setReviewsData(
-            data ?? {
-              reviews: [],
-              averageRating: 0,
-              totalReviews: 0,
-              error: "Failed to load reviews",
-              source: "google_api_error",
-            },
-          );
+          let data: ReviewsData | null = null;
+          try {
+            data = rawBody ? (JSON.parse(rawBody) as ReviewsData) : null;
+          } catch {
+            data = null;
+          }
+
+          if (!response.ok) {
+            if (response.status === 404 && endpoint !== endpoints[endpoints.length - 1]) {
+              continue;
+            }
+
+            setReviewsData(
+              data ?? {
+                reviews: [],
+                averageRating: 0,
+                totalReviews: 0,
+                error: "Failed to load reviews",
+                source: "google_api_error",
+              },
+            );
+            return;
+          }
+
+          if (!data) {
+            throw new Error(`Google reviews API (${endpoint}) returned non-JSON response`);
+          }
+
+          setReviewsData(data);
           return;
         }
 
-        if (!data) {
-          throw new Error("Google reviews API returned non-JSON response");
-        }
-
-        setReviewsData(data);
+        setReviewsData({
+          reviews: [],
+          averageRating: 0,
+          totalReviews: 0,
+          error: "Failed to load reviews",
+          source: "google_api_error",
+        });
       } catch (error) {
         console.error("Error fetching reviews:", error);
         setReviewsData({
