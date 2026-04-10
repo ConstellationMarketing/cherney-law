@@ -22,9 +22,9 @@ export default function AboutStory({ content, phoneDisplay, phoneLabel }: AboutS
         </h2>
 
         {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-[4%]">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-[4%] lg:items-center">
           {/* Left Column — All text + badges */}
-          <div className="lg:col-span-3 space-y-8">
+          <div className="lg:col-span-3 space-y-8 lg:self-center">
             {/* First text block */}
             <div
               className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-black prose prose-sm max-w-none [&_a]:text-law-accent [&_a]:underline"
