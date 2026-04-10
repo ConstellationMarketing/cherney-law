@@ -14,9 +14,8 @@ interface UseAboutContentResult {
   error: Error | null;
 }
 
-// Cache for about content
-let cachedContent: AboutPageContent | null = null;
-let cachedPage: PageSeoFields | null = null;
+// Cache for about content by url path
+const aboutContentCache = new Map<string, { content: AboutPageContent; page: PageSeoFields | null }>();
 
 export function useAboutContent(urlPath: string = '/about/'): UseAboutContentResult {
   const [content, setContent] = useState<AboutPageContent>(defaultAboutContent);
@@ -29,11 +28,12 @@ export function useAboutContent(urlPath: string = '/about/'): UseAboutContentRes
 
     async function fetchAboutContent() {
       try {
-        // Return cached content if available
-        if (cachedContent && cachedPage) {
+        // Return cached content for this path if available
+        const cachedEntry = aboutContentCache.get(urlPath);
+        if (cachedEntry) {
           if (isMounted) {
-            setContent(cachedContent);
-            setPage(cachedPage);
+            setContent(cachedEntry.content);
+            setPage(cachedEntry.page);
             setIsLoading(false);
           }
           return;
@@ -88,9 +88,11 @@ export function useAboutContent(urlPath: string = '/about/'): UseAboutContentRes
           title: pageData.title,
         };
 
-        // Cache the results
-        cachedContent = mergedContent;
-        cachedPage = pageSeoFields;
+        // Cache the results for this path
+        aboutContentCache.set(urlPath, {
+          content: mergedContent,
+          page: pageSeoFields,
+        });
 
         if (isMounted) {
           setContent(mergedContent);
@@ -179,7 +181,11 @@ function mergeWithDefaults(
 }
 
 // Helper to clear cache (useful after admin edits)
-export function clearAboutContentCache() {
-  cachedContent = null;
-  cachedPage = null;
+export function clearAboutContentCache(urlPath?: string) {
+  if (urlPath) {
+    aboutContentCache.delete(urlPath);
+    return;
+  }
+
+  aboutContentCache.clear();
 }
