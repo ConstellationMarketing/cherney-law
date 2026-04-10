@@ -83,7 +83,32 @@ export default function GoogleReviews({ content }: GoogleReviewsProps) {
     async function fetchReviews() {
       try {
         const response = await fetch("/api/google-reviews");
-        const data = await response.json();
+        const rawBody = await response.text();
+
+        let data: ReviewsData | null = null;
+        try {
+          data = rawBody ? (JSON.parse(rawBody) as ReviewsData) : null;
+        } catch {
+          data = null;
+        }
+
+        if (!response.ok) {
+          setReviewsData(
+            data ?? {
+              reviews: [],
+              averageRating: 0,
+              totalReviews: 0,
+              error: "Failed to load reviews",
+              source: "google_api_error",
+            },
+          );
+          return;
+        }
+
+        if (!data) {
+          throw new Error("Google reviews API returned non-JSON response");
+        }
+
         setReviewsData(data);
       } catch (error) {
         console.error("Error fetching reviews:", error);
@@ -91,7 +116,8 @@ export default function GoogleReviews({ content }: GoogleReviewsProps) {
           reviews: [],
           averageRating: 0,
           totalReviews: 0,
-          error: "Failed to load reviews"
+          error: "Failed to load reviews",
+          source: "google_api_error",
         });
       } finally {
         setLoading(false);

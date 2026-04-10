@@ -10,9 +10,15 @@
 # API routes → Netlify Functions (must be first)
 [[redirects]]
   force = true
+  from = "/api"
+  status = 200
+  to = "/.netlify/functions/api/api"
+
+[[redirects]]
+  force = true
   from = "/api/*"
   status = 200
-  to = "/.netlify/functions/api/:splat"
+  to = "/.netlify/functions/api/api/:splat"
 
 # Trailing-slash enforcement: redirect non-slash URLs to their slash versions.
 # Rules are matched top-to-bottom; first match wins.
