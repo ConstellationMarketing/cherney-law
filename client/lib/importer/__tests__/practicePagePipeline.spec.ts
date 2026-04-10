@@ -57,6 +57,20 @@ describe('Auto-mapping', () => {
     expect(result.mappings.find((m) => m.sourceColumn === 'metadata.twitter:image')?.targetField).toBe('og_image');
   });
 
+  it('does not auto-map plain text columns into practice image fields', () => {
+    const columns = [
+      { name: 'metadata.og:image', sampleValues: ['Cherney Law Firm'], detectedType: 'text' as const },
+      { name: 'metadata.twitter:image', sampleValues: ['Homepage share card'], detectedType: 'text' as const },
+    ];
+
+    const result = autoMapFields(columns, 'practice');
+
+    expect(result.mappings.find((m) => m.sourceColumn === 'metadata.og:image')).toBeUndefined();
+    expect(result.mappings.find((m) => m.sourceColumn === 'metadata.twitter:image')).toBeUndefined();
+    expect(result.unmappedColumns).toContain('metadata.og:image');
+    expect(result.unmappedColumns).toContain('metadata.twitter:image');
+  });
+
   it('maps practice meta title from real title metadata and leaves metadata.og:type unmapped', () => {
     const columns = [
       { name: 'metadata.og:type', sampleValues: ['article'], detectedType: 'text' as const },
@@ -83,6 +97,17 @@ describe('Auto-mapping', () => {
     expect(result.mappings.find((m) => m.sourceColumn === 'post_title')?.targetField).toBe('title');
     expect(result.mappings.find((m) => m.sourceColumn === 'post_content')?.targetField).toBe('body');
     expect(result.mappings.find((m) => m.sourceColumn === 'post_excerpt')?.targetField).toBe('excerpt');
+  });
+
+  it('does not auto-map plain text into featured image fields for posts', () => {
+    const columns = [
+      { name: 'featured_image', sampleValues: ['Homepage banner'], detectedType: 'text' as const },
+    ];
+
+    const result = autoMapFields(columns, 'post');
+
+    expect(result.mappings.find((m) => m.sourceColumn === 'featured_image')).toBeUndefined();
+    expect(result.unmappedColumns).toContain('featured_image');
   });
 });
 

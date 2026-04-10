@@ -43,6 +43,12 @@ const NON_TITLE_META_COLUMNS = new Set([
   'og_type',
 ]);
 
+const IMAGE_FIELD_KEYS = new Set([
+  'hero_image',
+  'featured_image',
+  'og_image',
+]);
+
 /**
  * Auto-map source columns to template fields using fuzzy name matching.
  * Returns a MappingConfig with all mappings, unmapped columns, and unmapped fields.
@@ -66,11 +72,19 @@ export function autoMapFields(
   for (const col of filteredColumns) {
     const normalizedCol = normalize(col.name);
 
+    if (isImageLikeColumnName(normalizedCol) && !hasClearImageUrlSample(col)) {
+      continue;
+    }
+
     for (const field of fields) {
       if (usedFields.has(field.key)) continue;
       if (field.excludeFromAutoMap) continue;
 
       if (templateType === 'practice' && field.key === 'meta_title' && NON_TITLE_META_COLUMNS.has(normalizedCol)) {
+        continue;
+      }
+
+      if (isImageTargetField(field) && !hasClearImageUrlSample(col)) {
         continue;
       }
 
@@ -99,8 +113,12 @@ export function autoMapFields(
     const colLower = col.name.toLowerCase();
     const colNorm = normalize(col.name);
 
+    if (isImageLikeColumnName(colNorm) && !hasClearImageUrlSample(col)) {
+      continue;
+    }
+
     // Determine column characteristics for guard rules
-    const isImageColumn = /image|img|photo|thumb|banner|cover|avatar|icon|picture/.test(colLower);
+    const isImageColumn = isImageLikeColumnName(colLower);
     const isSocialMetaColumn = /twitter|facebook|instagram|linkedin/.test(colLower);
     const isOgPrefixed = colNorm.startsWith('metadata_og') || colNorm.startsWith('og_');
 
@@ -116,6 +134,7 @@ export function autoMapFields(
       if ((isSocialMetaColumn || isOgPrefixed) && ['title', 'body', 'why_body', 'closing_body'].includes(field.key)) continue;
 
       if (templateType === 'practice' && field.key === 'meta_title' && NON_TITLE_META_COLUMNS.has(colNorm)) continue;
+      if (isImageTargetField(field) && !hasClearImageUrlSample(col)) continue;
 
       let score = fuzzyMatchScore(col.name, field, col);
 
@@ -164,6 +183,43 @@ export function autoMapFields(
  * Calculate a fuzzy match score between a source column and a template field.
  * Returns 0-1 where 1 is perfect match.
  */
+function isImageTargetField(field: TemplateField): boolean {
+  return IMAGE_FIELD_KEYS.has(field.key);
+}
+
+function isImageLikeColumnName(value: string): boolean {
+  return /image|img|photo|thumb|thumbnail|banner|cover|avatar|icon|picture/.test(value);
+}
+
+function hasClearImageUrlSample(column: SourceColumn): boolean {
+  if (column.detectedType !== 'url') return false;
+
+  const normalizedName = normalize(column.name);
+  const imageNamedColumn = isImageLikeColumnName(normalizedName);
+  const hasImageLikeSample = column.sampleValues.some((sample) => isLikelyImageUrl(sample));
+
+  return imageNamedColumn || hasImageLikeSample;
+}
+
+function isLikelyImageUrl(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+
+  if (/^data:image\//i.test(trimmed)) return true;
+
+  try {
+    const url = /^https?:\/\//i.test(trimmed) ? new URL(trimmed) : null;
+    const candidate = (url?.pathname || trimmed).toLowerCase();
+
+    return /\.(avif|gif|jpe?g|png|svg|webp|bmp|tiff?)(?:$|[?#])/.test(candidate)
+      || /\/image(s)?\//.test(candidate)
+      || /\/(media|uploads|assets|files)\//.test(candidate)
+      || /[?&](format|fm|ext)=((avif|gif|jpe?g|png|svg|webp|bmp|tiff?))\b/.test(trimmed.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
 function fuzzyMatchScore(
   columnName: string,
   field: TemplateField,
