@@ -99,7 +99,7 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                       if (child.children && child.children.length > 0) {
                         return (
                           <DropdownMenuSub key={child.id || child.href || child.label}>
-                            <DropdownMenuSubTrigger className="font-outfit text-[19px] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer px-4 py-3 rounded-none">
+                            <DropdownMenuSubTrigger className="font-outfit font-normal text-[18px] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer px-4 py-3 rounded-none">
                               {child.label}
                             </DropdownMenuSubTrigger>
                             <DropdownMenuSubContent className="bg-law-dark border border-law-border z-50 p-1">
@@ -132,7 +132,7 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                         <DropdownMenuItem key={child.id || child.href || child.label} asChild>
                           <Link
                             to={normalizeInternalHref(child.href, child.external || child.openInNewTab)}
-                            className="font-outfit text-[19px] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer px-4 py-3"
+                            className="font-outfit font-normal text-[18px] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer px-4 py-3"
                             target={
                               child.external || child.openInNewTab
                                 ? "_blank"
