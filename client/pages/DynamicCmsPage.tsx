@@ -18,6 +18,14 @@ import { resolveSeo } from "@site/utils/resolveSeo";
 import type { ContentBlock } from "@site/lib/blocks";
 import BlogPost from "./BlogPost";
 import NotFound from "./NotFound";
+import Index from "./Index";
+import Homepage2 from "./Homepage2";
+import AboutUs from "./AboutUs";
+import ContactPage from "./ContactPage";
+import PracticeAreas from "./PracticeAreas";
+import TestimonialsPage from "./TestimonialsPage";
+import CommonQuestionsPage from "./CommonQuestionsPage";
+import AreasWeServePage from "./AreasWeServePage";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
@@ -27,7 +35,7 @@ interface CmsPage {
   title: string;
   url_path: string;
   page_type: string;
-  content: ContentBlock[] | AreaPageContent;
+  content: unknown;
   meta_title: string | null;
   meta_description: string | null;
   canonical_url: string | null;
@@ -38,9 +46,55 @@ interface CmsPage {
   status: string;
 }
 
+type StructuredTemplateType =
+  | "home"
+  | "homepage-2"
+  | "about"
+  | "contact"
+  | "practice-areas"
+  | "testimonials"
+  | "common-questions"
+  | "areas-we-serve";
+
 // Module-level cache
 const cmsPageCache = new Map<string, CmsPage | null>();
 const blogSlugCache = new Map<string, boolean>();
+
+function inferStructuredTemplateType(content: unknown): StructuredTemplateType | null {
+  if (!content || typeof content !== "object" || Array.isArray(content)) return null;
+
+  const normalized = content as Record<string, unknown>;
+
+  if (normalized.hero && normalized.about && Array.isArray(normalized.practiceAreas)) {
+    return "home";
+  }
+
+  if (normalized.story && normalized.missionVision && normalized.whyChooseUs) {
+    return "about";
+  }
+
+  if (Array.isArray(normalized.offices) && normalized.formSettings && normalized.process) {
+    return "contact";
+  }
+
+  if (Array.isArray(normalized.tabs) && normalized.grid && normalized.faq) {
+    return "practice-areas";
+  }
+
+  if (normalized.reviews && normalized.cta && normalized.hero) {
+    return "testimonials";
+  }
+
+  if (normalized.faqSection && normalized.closingSection && normalized.hero) {
+    return "common-questions";
+  }
+
+  if (normalized.locationsSection && normalized.introSection && normalized.whySection) {
+    return "areas-we-serve";
+  }
+
+  return null;
+}
 
 export default function DynamicCmsPage() {
   const { pathname } = useLocation();
@@ -183,6 +237,31 @@ export default function DynamicCmsPage() {
   // No published CMS page found — show 404
   if (!page) {
     return <NotFound />;
+  }
+
+  if (page.page_type !== "area" && page.page_type !== "practice_detail") {
+    const inferredTemplate = inferStructuredTemplateType(page.content);
+    if (inferredTemplate === "home") {
+      return pathname === "/homepage-2/" ? <Homepage2 /> : <Index />;
+    }
+    if (inferredTemplate === "about") {
+      return <AboutUs />;
+    }
+    if (inferredTemplate === "contact") {
+      return <ContactPage />;
+    }
+    if (inferredTemplate === "practice-areas") {
+      return <PracticeAreas />;
+    }
+    if (inferredTemplate === "testimonials") {
+      return <TestimonialsPage />;
+    }
+    if (inferredTemplate === "common-questions") {
+      return <CommonQuestionsPage />;
+    }
+    if (inferredTemplate === "areas-we-serve") {
+      return <AreasWeServePage />;
+    }
   }
 
   const seo = resolveSeo(page, siteSettings.settings, pathname, siteUrl);
