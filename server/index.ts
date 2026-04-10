@@ -134,7 +134,7 @@ export function createServer() {
   app.get("/sitemap-posts.xml", handlePostsSitemap);
 
   app.get("/api/demo", handleDemo);
-  app.get("/api/google-reviews", handleGoogleReviews);
+  app.get(["/api/google-reviews", "/google-reviews", "/api/api/google-reviews"], handleGoogleReviews);
   app.post("/api/bulk-import", handleBulkImport);
   app.post("/api/bulk-import/post-slugs", handleGetExistingPostSlugs);
   app.get("/api/import-sessions", handleListImportSessions);

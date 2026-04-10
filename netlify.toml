@@ -12,13 +12,13 @@
   force = true
   from = "/api"
   status = 200
-  to = "/.netlify/functions/api/api"
+  to = "/.netlify/functions/api"
 
 [[redirects]]
   force = true
   from = "/api/*"
   status = 200
-  to = "/.netlify/functions/api/api/:splat"
+  to = "/.netlify/functions/api/:splat"
 
 # Trailing-slash enforcement: redirect non-slash URLs to their slash versions.
 # Rules are matched top-to-bottom; first match wins.
