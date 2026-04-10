@@ -77,6 +77,94 @@ const clearCachesForPath = (path: string) => {
   }
 };
 
+const inferStructuredPageTypeFromContent = (content: unknown): string | undefined => {
+  if (!content || typeof content !== "object" || Array.isArray(content)) return undefined;
+
+  const normalizedContent = content as Record<string, unknown>;
+
+  if (
+    Array.isArray(normalizedContent.contentSections) &&
+    normalizedContent.faqSection &&
+    normalizedContent.closingSection
+  ) {
+    return "practice_detail";
+  }
+
+  if (
+    Array.isArray(normalizedContent.locations) &&
+    normalizedContent.localCourt &&
+    normalizedContent.whyChooseUs
+  ) {
+    return "area";
+  }
+
+  if (
+    normalizedContent.hero &&
+    normalizedContent.about &&
+    Array.isArray(normalizedContent.practiceAreas)
+  ) {
+    return "home";
+  }
+
+  if (
+    normalizedContent.story &&
+    normalizedContent.missionVision &&
+    normalizedContent.whyChooseUs
+  ) {
+    return "about";
+  }
+
+  if (
+    Array.isArray(normalizedContent.offices) &&
+    normalizedContent.formSettings &&
+    normalizedContent.process
+  ) {
+    return "contact";
+  }
+
+  if (
+    Array.isArray(normalizedContent.tabs) &&
+    normalizedContent.grid &&
+    normalizedContent.faq
+  ) {
+    return "practice-areas";
+  }
+
+  if (
+    normalizedContent.reviews &&
+    normalizedContent.cta &&
+    normalizedContent.hero &&
+    typeof normalizedContent.hero === "object" &&
+    (normalizedContent.hero as Record<string, unknown>).tagline
+  ) {
+    return "testimonials";
+  }
+
+  if (
+    normalizedContent.faqSection &&
+    normalizedContent.closingSection &&
+    normalizedContent.hero &&
+    typeof normalizedContent.hero === "object" &&
+    (normalizedContent.hero as Record<string, unknown>).tagline
+  ) {
+    return "common-questions";
+  }
+
+  if (
+    normalizedContent.locationsSection &&
+    normalizedContent.introSection &&
+    normalizedContent.whySection
+  ) {
+    return "areas-we-serve";
+  }
+
+  return undefined;
+};
+
+const isAreaOrPracticeDetailPageType = (pageType: string): pageType is "area" | "practice_detail" => {
+  return pageType === "area" || pageType === "practice_detail";
+};
+
 export default function AdminPageEdit() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -237,11 +325,11 @@ export default function AdminPageEdit() {
     await performSave();
   };
 
-  // Check if this is a structured page using stable page IDs or explicit page_type
+  // Check if this is a structured page using explicit page_type, stable IDs, or content shape
   const resolvedStructuredPageType = page
-    ? page.page_type === "area" || page.page_type === "practice_detail"
+    ? isAreaOrPracticeDetailPageType(page.page_type)
       ? page.page_type
-      : STRUCTURED_EDITOR_TYPE_BY_ID[page.id]
+      : STRUCTURED_EDITOR_TYPE_BY_ID[page.id] || inferStructuredPageTypeFromContent(page.content)
     : undefined;
 
   const isStructuredPage = Boolean(resolvedStructuredPageType);
