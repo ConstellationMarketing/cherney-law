@@ -90,6 +90,8 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                   // Shared class for both link and trigger to ensure identical alignment
                   const navItemClass =
                     "font-outfit text-[20px] text-white py-[31px] whitespace-nowrap hover:opacity-80 transition-opacity duration-400 inline-flex items-center gap-1";
+                  const navParentLinkClass =
+                    "font-outfit text-[20px] text-white py-[31px] whitespace-nowrap hover:opacity-80 transition-opacity duration-400 inline-flex items-center";
 
                   return navItems.map((item) => {
                     const childColumns = item.children?.length
@@ -182,12 +184,37 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                             }
                           }}
                         >
-                          <DropdownMenuTrigger asChild>
-                            <button type="button" className={`${navItemClass} bg-transparent border-0 cursor-pointer outline-none focus:outline-none`}>
-                              {item.label}
-                              <ChevronDown className="h-4 w-4" />
-                            </button>
-                          </DropdownMenuTrigger>
+                          <div className="inline-flex items-center">
+                            {item.href ? (
+                              <Link
+                                to={normalizeInternalHref(item.href, item.external || item.openInNewTab)}
+                                className={navParentLinkClass}
+                                target={
+                                  item.external || item.openInNewTab
+                                    ? "_blank"
+                                    : undefined
+                                }
+                                rel={
+                                  item.external || item.openInNewTab
+                                    ? "noopener noreferrer"
+                                    : undefined
+                                }
+                              >
+                                {item.label}
+                              </Link>
+                            ) : (
+                              <span className={navParentLinkClass}>{item.label}</span>
+                            )}
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                type="button"
+                                aria-label={`Open ${item.label} menu`}
+                                className="text-white py-[31px] pl-1 bg-transparent border-0 cursor-pointer outline-none focus:outline-none hover:opacity-80 transition-opacity duration-400 inline-flex items-center"
+                              >
+                                <ChevronDown className="h-4 w-4" />
+                              </button>
+                            </DropdownMenuTrigger>
+                          </div>
                           <DropdownMenuContent
                             align="start"
                             sideOffset={8}
