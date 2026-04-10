@@ -22,37 +22,127 @@ import AreasWeServePageFieldEditor from "@site/components/admin/AreasWeServePage
 import AreaPageFieldEditor from "@site/components/admin/AreaPageFieldEditor";
 import PracticeAreaDetailFieldEditor from "@site/components/admin/PracticeAreaDetailFieldEditor";
 
+type ResolvedPageType =
+  | "home"
+  | "about"
+  | "contact"
+  | "practice-areas"
+  | "testimonials"
+  | "common-questions"
+  | "areas-we-serve"
+  | "area"
+  | "practice_detail"
+  | "unknown";
+
 interface PageContentEditorProps {
   pageKey: string;
   content: any;
   onChange: (content: any) => void;
   pageType?: string;
+  pageUrlPath?: string;
 }
+
+const normalizePath = (path: string): string => {
+  if (!path) return "";
+  if (path === "/") return "/";
+  return `/${path.replace(/^\/+|\/+$/g, "")}`;
+};
+
+const getPageTypeFromPath = (path: string): ResolvedPageType => {
+  const p = normalizePath(path);
+  if (p === "/" || p === "/homepage-2") return "home";
+  if (p.startsWith("/about")) return "about";
+  if (p.startsWith("/contact")) return "contact";
+  if (p.startsWith("/practice-areas")) return "practice-areas";
+  if (p.startsWith("/testimonials")) return "testimonials";
+  if (p.startsWith("/common-questions")) return "common-questions";
+  if (p.startsWith("/areas-we-serve")) return "areas-we-serve";
+  return "unknown";
+};
+
+const getPageTypeFromContent = (content: any): ResolvedPageType | null => {
+  if (!content || typeof content !== "object") return null;
+
+  if (Array.isArray(content?.contentSections) && content?.faqSection && content?.closingSection) {
+    return "practice_detail";
+  }
+
+  if (Array.isArray(content?.locations) && content?.localCourt && content?.whyChooseUs) {
+    return "area";
+  }
+
+  if (content?.hero?.h1Title && content?.about && Array.isArray(content?.practiceAreas)) {
+    return "home";
+  }
+
+  if (content?.story && content?.missionVision && content?.whyChooseUs) {
+    return "about";
+  }
+
+  if (Array.isArray(content?.offices) && content?.formSettings && content?.process) {
+    return "contact";
+  }
+
+  if (Array.isArray(content?.tabs) && content?.grid && content?.faq) {
+    return "practice-areas";
+  }
+
+  if (content?.reviews && content?.cta && content?.hero?.tagline) {
+    return "testimonials";
+  }
+
+  if (content?.faqSection && content?.closingSection && content?.hero?.tagline) {
+    return "common-questions";
+  }
+
+  if (content?.locationsSection && content?.introSection && content?.whySection) {
+    return "areas-we-serve";
+  }
+
+  return null;
+};
+
+const getResolvedPageType = ({
+  explicitPageType,
+  content,
+  pageUrlPath,
+}: {
+  explicitPageType?: string;
+  content: any;
+  pageUrlPath?: string;
+}): ResolvedPageType => {
+  if (explicitPageType === "area") return "area";
+  if (explicitPageType === "practice_detail") return "practice_detail";
+  if (
+    explicitPageType === "home" ||
+    explicitPageType === "about" ||
+    explicitPageType === "contact" ||
+    explicitPageType === "practice-areas" ||
+    explicitPageType === "testimonials" ||
+    explicitPageType === "common-questions" ||
+    explicitPageType === "areas-we-serve"
+  ) {
+    return explicitPageType;
+  }
+
+  const fromContent = getPageTypeFromContent(content);
+  if (fromContent) return fromContent;
+
+  return getPageTypeFromPath(pageUrlPath || "");
+};
 
 export default function PageContentEditor({
   pageKey,
   content,
   onChange,
   pageType: explicitPageType,
+  pageUrlPath,
 }: PageContentEditorProps) {
   const [normalized, setNormalized] = useState<any>(null);
 
-  // Determine page type from URL path (handles both with and without trailing slash)
-  const getPageType = (path: string): string => {
-    const p = path.replace(/\/$/, ''); // strip trailing slash for comparison
-    if (p === "/" || p === "" || p === "/homepage-2") return "home";
-    if (p.startsWith("/about")) return "about";
-    if (p.startsWith("/contact")) return "contact";
-    if (p.startsWith("/practice-areas")) return "practice-areas";
-    if (p.startsWith("/testimonials")) return "testimonials";
-    if (p.startsWith("/common-questions")) return "common-questions";
-    if (p.startsWith("/areas-we-serve")) return "areas-we-serve";
-    return "unknown";
-  };
+  const pageType = getResolvedPageType({ explicitPageType, content, pageUrlPath });
+  const isHomepage2 = normalizePath(pageUrlPath || "") === "/homepage-2";
 
-  const pageType = explicitPageType === 'area' ? 'area' : explicitPageType === 'practice_detail' ? 'practice_detail' : getPageType(pageKey);
-
-  // Normalize on mount / when content changes from outside
   useEffect(() => {
     try {
       let n: any;
@@ -73,7 +163,7 @@ export default function PageContentEditor({
       console.error("[PageContentEditor] Normalization error:", err);
       setNormalized(content || {});
     }
-  }, [pageKey]); // intentionally only re-normalize when the page changes, not on every keystroke
+  }, [pageKey, pageType]);
 
   const handleChange = (updated: any) => {
     setNormalized(updated);
@@ -102,10 +192,10 @@ export default function PageContentEditor({
 
   return (
     <div className="space-y-2">
-      {pageType === "home" && (pageKey === "/homepage-2" || pageKey === "/homepage-2/") && (
+      {pageType === "home" && isHomepage2 && (
         <Homepage2FieldEditor content={normalized} onChange={handleChange} />
       )}
-      {pageType === "home" && pageKey !== "/homepage-2" && pageKey !== "/homepage-2/" && (
+      {pageType === "home" && !isHomepage2 && (
         <HomePageFieldEditor content={normalized} onChange={handleChange} />
       )}
       {pageType === "about" && (

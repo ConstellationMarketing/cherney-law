@@ -32,16 +32,50 @@ import RevisionPanel, { createPageRevision } from "../../components/admin/Revisi
 import URLChangeRedirectModal from "../../components/admin/URLChangeRedirectModal";
 import type { PageRevision } from "@/lib/database.types";
 
-// Stable page IDs for structured pages (won't break when URL paths change)
-const STRUCTURED_PAGE_IDS = new Set([
-  "9422cf5e-b52f-4f88-b7e0-ac2f90fba501", // Home
-  "74ea7c23-8d54-4e19-bc54-28763cc76023", // About Us
-  "1ec9d2c9-093e-4c61-9815-ac7e1833e1de", // Areas We Serve
-  "727a9faa-3741-450b-a372-e54a75610c8f", // Common Questions
-  "f8002912-cfa0-4960-a6f9-1ce197fdaac5", // Contact Us
-  "91678baf-bf47-430a-b303-5094f10a8971", // Practice Areas
-  "9db8a16d-bbca-4308-8b42-00f8142921f2", // Testimonials
-]);
+// Stable editor types for structured pages (won't break when URL paths change)
+const STRUCTURED_EDITOR_TYPE_BY_ID: Record<string, string> = {
+  "9422cf5e-b52f-4f88-b7e0-ac2f90fba501": "home", // Home
+  "74ea7c23-8d54-4e19-bc54-28763cc76023": "about", // About Us
+  "1ec9d2c9-093e-4c61-9815-ac7e1833e1de": "areas-we-serve", // Areas We Serve
+  "727a9faa-3741-450b-a372-e54a75610c8f": "common-questions", // Common Questions
+  "f8002912-cfa0-4960-a6f9-1ce197fdaac5": "contact", // Contact Us
+  "91678baf-bf47-430a-b303-5094f10a8971": "practice-areas", // Practice Areas
+  "9db8a16d-bbca-4308-8b42-00f8142921f2": "testimonials", // Testimonials
+};
+
+const normalizePath = (path: string): string => {
+  if (!path) return "";
+  if (path === "/") return "/";
+  return `/${path.replace(/^\/+|\/+$/g, "")}`;
+};
+
+const getKnownCacheKeyForPath = (path: string): string | null => {
+  const normalized = normalizePath(path);
+  if (normalized === "/") return "home";
+  if (normalized === "/homepage-2") return "homepage-2";
+  if (normalized === "/about") return "about";
+  if (normalized === "/contact") return "contact";
+  if (normalized === "/practice-areas") return "practice-areas";
+  if (normalized === "/common-questions") return "common-questions";
+  if (normalized === "/areas-we-serve") return "areas-we-serve";
+  return null;
+};
+
+const clearCachesForPath = (path: string) => {
+  const cacheKey = getKnownCacheKeyForPath(path);
+  if (cacheKey === "home" || cacheKey === "about" || cacheKey === "contact" || cacheKey === "practice-areas") {
+    clearPageCache(cacheKey);
+  }
+
+  if (cacheKey) {
+    window.dispatchEvent(new CustomEvent("cms:cache-clear", { detail: { key: cacheKey } }));
+  }
+
+  const normalized = normalizePath(path);
+  if (normalized) {
+    window.dispatchEvent(new CustomEvent("cms:cache-clear", { detail: { path: normalized } }));
+  }
+};
 
 export default function AdminPageEdit() {
   const { id } = useParams<{ id: string }>();
@@ -115,7 +149,9 @@ export default function AdminPageEdit() {
       await createPageRevision(page);
     }
 
-    const { error } = await supabase
+    const oldUrlPath = originalUrlPath;
+
+    const { data: savedPage, error } = await supabase
       .from("pages")
       .update({
         title: page.title,
@@ -137,31 +173,24 @@ export default function AdminPageEdit() {
             ? new Date().toISOString()
             : page.published_at,
       } as Record<string, unknown>)
-      .eq("id", page.id);
+      .eq("id", page.id)
+      .select("*")
+      .single();
 
     if (error) {
       console.error("Error saving page:", error);
       alert("Failed to save page: " + error.message);
     } else {
-      // Clear the page cache so the frontend fetches fresh content
-      if (page.url_path === "/") {
-        clearPageCache("home");
-      } else if (page.url_path === "/homepage-2") {
-        window.dispatchEvent(new CustomEvent("cms:cache-clear", { detail: { key: "homepage-2" } }));
-      } else if (page.url_path === "/about") {
-        clearPageCache("about");
-      } else if (page.url_path === "/contact") {
-        clearPageCache("contact");
-      } else if (page.url_path === "/practice-areas") {
-        clearPageCache("practice-areas");
-      } else if (page.url_path === "/common-questions") {
-        window.dispatchEvent(new CustomEvent("cms:cache-clear", { detail: { key: "common-questions" } }));
-      } else if (page.url_path === "/areas-we-serve") {
-        window.dispatchEvent(new CustomEvent("cms:cache-clear", { detail: { key: "areas-we-serve" } }));
+      if (oldUrlPath) {
+        clearCachesForPath(oldUrlPath);
       }
-      // Update tracking state after successful save
-      setOriginalUrlPath(page.url_path);
-      setPreviousStatus(page.status);
+      if (!oldUrlPath || normalizePath(savedPage.url_path) !== normalizePath(oldUrlPath)) {
+        clearCachesForPath(savedPage.url_path);
+      }
+
+      setPage(savedPage);
+      setOriginalUrlPath(savedPage.url_path);
+      setPreviousStatus(savedPage.status);
       alert("Page saved successfully!");
       setPendingSave(false);
     }
@@ -208,10 +237,14 @@ export default function AdminPageEdit() {
     await performSave();
   };
 
-  // Check if this is a structured page using stable page IDs or page_type
-  const isStructuredPage = page?.id
-    ? STRUCTURED_PAGE_IDS.has(page.id) || page.page_type === 'area' || page.page_type === 'practice_detail'
-    : false;
+  // Check if this is a structured page using stable page IDs or explicit page_type
+  const resolvedStructuredPageType = page
+    ? page.page_type === "area" || page.page_type === "practice_detail"
+      ? page.page_type
+      : STRUCTURED_EDITOR_TYPE_BY_ID[page.id]
+    : undefined;
+
+  const isStructuredPage = Boolean(resolvedStructuredPageType);
 
   const handleStructuredContentChange = (content: unknown) => {
     updatePage({ content: content as ContentBlock[] });
@@ -299,10 +332,11 @@ export default function AdminPageEdit() {
                   </p>
                 </div>
                 <PageContentEditor
-                  pageKey={page.url_path}
+                  pageKey={page.id}
                   content={page.content}
                   onChange={handleStructuredContentChange}
-                  pageType={page.page_type}
+                  pageType={resolvedStructuredPageType}
+                  pageUrlPath={page.url_path}
                 />
               </div>
             ) : (

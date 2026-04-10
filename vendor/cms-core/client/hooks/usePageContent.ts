@@ -24,6 +24,21 @@ interface UsePageContentResult<T> {
 // Cache for page content to avoid refetching on navigation
 const pageCache = new Map<string, PageRow>();
 
+const normalizePath = (path: string): string => {
+  if (!path) return "";
+  if (path === "/") return "/";
+  return `/${path.replace(/^\/+|\/+$/g, "")}`;
+};
+
+const getCacheKeysForPath = (path: string): string[] => {
+  const normalized = normalizePath(path);
+  if (!normalized) return [];
+  if (normalized === "/") return ["home", "/"];
+
+  const trimmed = normalized.replace(/^\//, "");
+  return [trimmed, normalized, `${normalized}/`];
+};
+
 export function usePageContent<K extends PageKey>(
   pageKey: K,
 ): UsePageContentResult<PageKeyToContent[K]> {
@@ -132,6 +147,11 @@ export function clearPageCache(pageKey?: PageKey) {
   }
 }
 
+export function clearPageCacheByPath(path: string) {
+  const keys = getCacheKeysForPath(path);
+  keys.forEach((key) => pageCache.delete(key));
+}
+
 // Helper to prefetch page content
 export async function prefetchPageContent(pageKey: PageKey): Promise<void> {
   if (pageCache.has(pageKey)) {
@@ -150,4 +170,16 @@ export async function prefetchPageContent(pageKey: PageKey): Promise<void> {
   if (!error && data) {
     pageCache.set(pageKey, data as PageRow);
   }
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("cms:cache-clear", (event: Event) => {
+    const detail = (event as CustomEvent<{ key?: string; path?: string }>).detail;
+    if (detail?.key) {
+      clearPageCache(detail.key);
+    }
+    if (detail?.path) {
+      clearPageCacheByPath(detail.path);
+    }
+  });
 }
