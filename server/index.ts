@@ -29,6 +29,11 @@ import {
   handleSaveImportSession,
   handleUpdateImportSessionStatus,
 } from "./routes/import-sessions";
+import {
+  handleSitemapIndex,
+  handlePagesSitemap,
+  handlePostsSitemap,
+} from "./routes/sitemap";
 
 const DEFAULT_BODY_LIMIT = '10mb';
 const IMPORTER_BODY_LIMIT = '150mb';
@@ -123,6 +128,10 @@ export function createServer() {
     const ping = process.env.PING_MESSAGE ?? "ping";
     res.json({ message: ping });
   });
+
+  app.get("/sitemap.xml", handleSitemapIndex);
+  app.get("/sitemap-pages.xml", handlePagesSitemap);
+  app.get("/sitemap-posts.xml", handlePostsSitemap);
 
   app.get("/api/demo", handleDemo);
   app.get("/api/google-reviews", handleGoogleReviews);
