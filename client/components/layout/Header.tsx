@@ -184,40 +184,40 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                             }
                           }}
                         >
-                          <div className="inline-flex items-center">
-                            {item.href ? (
-                              <Link
-                                to={normalizeInternalHref(item.href, item.external || item.openInNewTab)}
-                                className={navParentLinkClass}
-                                target={
-                                  item.external || item.openInNewTab
-                                    ? "_blank"
-                                    : undefined
-                                }
-                                rel={
-                                  item.external || item.openInNewTab
-                                    ? "noopener noreferrer"
-                                    : undefined
-                                }
-                              >
-                                {item.label}
-                              </Link>
-                            ) : (
-                              <span className={navParentLinkClass}>{item.label}</span>
-                            )}
-                            <DropdownMenuTrigger asChild>
-                              <button
-                                type="button"
-                                aria-label={`Open ${item.label} menu`}
-                                className="text-white py-[31px] pl-1 bg-transparent border-0 cursor-pointer outline-none focus:outline-none hover:opacity-80 transition-opacity duration-400 inline-flex items-center"
-                              >
+                          <DropdownMenuTrigger asChild>
+                            <div
+                              aria-label={`Open ${item.label} menu`}
+                              className="inline-flex items-center cursor-pointer"
+                            >
+                              {item.href ? (
+                                <Link
+                                  to={normalizeInternalHref(item.href, item.external || item.openInNewTab)}
+                                  className={navParentLinkClass}
+                                  onClick={(event) => event.stopPropagation()}
+                                  target={
+                                    item.external || item.openInNewTab
+                                      ? "_blank"
+                                      : undefined
+                                  }
+                                  rel={
+                                    item.external || item.openInNewTab
+                                      ? "noopener noreferrer"
+                                      : undefined
+                                  }
+                                >
+                                  {item.label}
+                                </Link>
+                              ) : (
+                                <span className={navParentLinkClass}>{item.label}</span>
+                              )}
+                              <span className="text-white py-[31px] pl-1 inline-flex items-center hover:opacity-80 transition-opacity duration-400">
                                 <ChevronDown className="h-4 w-4" />
-                              </button>
-                            </DropdownMenuTrigger>
-                          </div>
+                              </span>
+                            </div>
+                          </DropdownMenuTrigger>
                           <DropdownMenuContent
                             align="start"
-                            sideOffset={8}
+                            sideOffset={0}
                             className="bg-law-dark border border-law-border z-50"
                           >
                             <div className="grid grid-flow-col auto-cols-max divide-x divide-law-border">
