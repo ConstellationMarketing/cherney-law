@@ -528,7 +528,7 @@ describe('Practice deterministic section parsing', () => {
     expect(content.contentSections[0].body).not.toContain('Frequently Asked Questions: Vehicle Repossession in Georgia');
   });
 
-  it('populates the practice hero h1 field from the resolved page title', () => {
+  it('populates the practice hero h1 field from the resolved page title without forcing a tagline', () => {
     const prepared = prepareRecord({
       rowIndex: 0,
       sourceData: {},
@@ -542,7 +542,25 @@ describe('Practice deterministic section parsing', () => {
     const content = (prepared.data as { content: { hero: { sectionLabel: string; tagline: string } } }).content;
 
     expect(content.hero.sectionLabel).toBe('Catastrophic Injury');
-    expect(content.hero.tagline).toBe('Catastrophic Injury');
+    expect(content.hero.tagline).toBe('');
+  });
+
+  it('preserves an explicitly mapped practice hero tagline when provided', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Catastrophic Injury',
+        hero_tagline: 'Trusted representation for serious injury claims',
+        slug: '/practice-areas/catastrophic-injury/',
+        body: '<p>Lead copy for the hero and page body.</p>',
+      },
+    }, 'practice');
+
+    const content = (prepared.data as { content: { hero: { sectionLabel: string; tagline: string } } }).content;
+
+    expect(content.hero.sectionLabel).toBe('Catastrophic Injury');
+    expect(content.hero.tagline).toBe('Trusted representation for serious injury claims');
   });
 
   it('preserves the full practice meta title while keeping the page title cleaned', () => {
