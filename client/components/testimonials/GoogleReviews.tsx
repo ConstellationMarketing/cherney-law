@@ -87,6 +87,8 @@ export default function GoogleReviews({ content }: GoogleReviewsProps) {
           "/.netlify/functions/api/google-reviews",
         ];
 
+        let lastFailureData: ReviewsData | null = null;
+
         for (const endpoint of endpoints) {
           const response = await fetch(endpoint);
           const rawBody = await response.text();
@@ -99,37 +101,41 @@ export default function GoogleReviews({ content }: GoogleReviewsProps) {
           }
 
           if (!response.ok) {
-            if (response.status === 404 && endpoint !== endpoints[endpoints.length - 1]) {
-              continue;
-            }
-
-            setReviewsData(
+            lastFailureData =
               data ?? {
                 reviews: [],
                 averageRating: 0,
                 totalReviews: 0,
                 error: "Failed to load reviews",
                 source: "google_api_error",
-              },
-            );
-            return;
+              };
+            continue;
           }
 
           if (!data) {
-            throw new Error(`Google reviews API (${endpoint}) returned non-JSON response`);
+            lastFailureData = {
+              reviews: [],
+              averageRating: 0,
+              totalReviews: 0,
+              error: "Failed to load reviews",
+              source: "google_api_error",
+            };
+            continue;
           }
 
           setReviewsData(data);
           return;
         }
 
-        setReviewsData({
-          reviews: [],
-          averageRating: 0,
-          totalReviews: 0,
-          error: "Failed to load reviews",
-          source: "google_api_error",
-        });
+        setReviewsData(
+          lastFailureData ?? {
+            reviews: [],
+            averageRating: 0,
+            totalReviews: 0,
+            error: "Failed to load reviews",
+            source: "google_api_error",
+          },
+        );
       } catch (error) {
         console.error("Error fetching reviews:", error);
         setReviewsData({
