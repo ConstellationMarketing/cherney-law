@@ -13,6 +13,7 @@ interface Review {
 type ReviewsErrorSource =
   | "missing_api_key"
   | "missing_place_id"
+  | "google_api_forbidden"
   | "google_api_error"
   | "unexpected_error";
 
@@ -56,6 +57,8 @@ function getErrorMessage(data: ReviewsData): string {
       return "Google reviews are temporarily unavailable due to API configuration.";
     case "missing_place_id":
       return "Google reviews are temporarily unavailable due to place ID configuration.";
+    case "google_api_forbidden":
+      return "Google reviews are unavailable because Google Places API access is denied (API not enabled, restricted, or billing not active).";
     case "google_api_error":
       return "Google reviews are temporarily unavailable from the Google API. Please try again shortly.";
     case "unexpected_error":

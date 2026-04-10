@@ -21,6 +21,7 @@ interface GooglePlacesResponse {
 export type ReviewsErrorSource =
   | "missing_api_key"
   | "missing_place_id"
+  | "google_api_forbidden"
   | "google_api_error"
   | "unexpected_error";
 
@@ -115,9 +116,13 @@ export const handleGoogleReviews: RequestHandler = async (req, res) => {
         message: getSanitizedErrorMessage(errorText),
       });
 
-      return res
-        .status(500)
-        .json(errorResponse("Failed to fetch reviews from Google", "google_api_error"));
+      const source = response.status === 403 ? "google_api_forbidden" : "google_api_error";
+      const errorMessage =
+        response.status === 403
+          ? "Google Places API access denied"
+          : "Failed to fetch reviews from Google";
+
+      return res.status(500).json(errorResponse(errorMessage, source));
     }
 
     const data: GooglePlacesResponse = await response.json();
