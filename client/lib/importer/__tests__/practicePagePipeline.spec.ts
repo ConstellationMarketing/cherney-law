@@ -528,7 +528,7 @@ describe('Practice deterministic section parsing', () => {
     expect(content.contentSections[0].body).not.toContain('Frequently Asked Questions: Vehicle Repossession in Georgia');
   });
 
-  it('populates the practice hero h1 field from the resolved page title without forcing a tagline', () => {
+  it('populates the practice hero h1 field and default tagline from the import template', () => {
     const prepared = prepareRecord({
       rowIndex: 0,
       sourceData: {},
@@ -542,7 +542,7 @@ describe('Practice deterministic section parsing', () => {
     const content = (prepared.data as { content: { hero: { sectionLabel: string; tagline: string } } }).content;
 
     expect(content.hero.sectionLabel).toBe('Catastrophic Injury');
-    expect(content.hero.tagline).toBe('');
+    expect(content.hero.tagline).toBe('Helping You Rebuild Financial Freedom');
   });
 
   it('preserves an explicitly mapped practice hero tagline when provided', () => {
@@ -561,6 +561,23 @@ describe('Practice deterministic section parsing', () => {
 
     expect(content.hero.sectionLabel).toBe('Catastrophic Injury');
     expect(content.hero.tagline).toBe('Trusted representation for serious injury claims');
+  });
+
+  it('does not reuse extracted source hero subtitle text as the practice tagline default', () => {
+    const prepared = prepareRecord({
+      rowIndex: 0,
+      sourceData: {},
+      mappedData: {
+        title: 'Debt Relief',
+        slug: '/practice-areas/debt-relief/',
+        body: '<h1>Debt Relief</h1><p>Source subtitle that should not become the CMS tagline.</p><p>Body copy follows for the imported page.</p>',
+      },
+    }, 'practice');
+
+    const content = (prepared.data as { content: { hero: { sectionLabel: string; tagline: string } } }).content;
+
+    expect(content.hero.sectionLabel).toBe('Debt Relief');
+    expect(content.hero.tagline).toBe('Helping You Rebuild Financial Freedom');
   });
 
   it('preserves the full practice meta title while keeping the page title cleaned', () => {

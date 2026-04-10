@@ -1008,10 +1008,12 @@ export function buildNormalizedContent(
   const schemaType = mappedData.schema_type || (templateType === 'post' ? 'BlogPosting' : 'LegalService');
   const status = mappedData.status || 'draft';
   const explicitHeroTagline = normalizeText(mappedData.hero_tagline || '');
-  const heroTagline = explicitHeroTagline || earlyHeroTagline;
+  const heroTagline = templateType === 'practice'
+    ? explicitHeroTagline
+    : explicitHeroTagline || earlyHeroTagline;
   const heroTaglineSource: HeroTaglineSource = explicitHeroTagline
     ? 'mapped-hero-tagline'
-    : earlyHeroTagline
+    : templateType !== 'practice' && earlyHeroTagline
       ? 'early-hero-tagline'
       : 'empty';
   const heroDescription = mappedData.hero_description || '';

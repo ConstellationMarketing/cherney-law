@@ -7,6 +7,8 @@ import { normalizeHtml } from './htmlNormalizer';
 import { extractImagesFromHtml as resolveImagesFromHtml } from './imageSources';
 import { defaultFilterOptions } from './types';
 
+const DEFAULT_PRACTICE_IMPORT_TAGLINE = 'Helping You Rebuild Financial Freedom';
+
 // ─── Dispatch ────────────────────────────────────────────────────────────────
 
 /**
@@ -379,7 +381,7 @@ function allocateForPracticePage(
   const content = {
     hero: {
       sectionLabel: pageTitle,
-      tagline: normalized.heroTagline || '',
+      tagline: normalized.heroTagline || DEFAULT_PRACTICE_IMPORT_TAGLINE,
       description: normalized.heroDescription || '',
       backgroundImage: normalized.heroImage || normalized.featuredImage || '',
       backgroundImageAlt: pageTitle || '',
