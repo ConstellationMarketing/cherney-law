@@ -24,6 +24,8 @@ const contactFormSchema = z.object({
 
 type ContactFormData = z.infer<typeof contactFormSchema>;
 
+const CONTACT_US_FORM_NAME = 'contact-us-form';
+
 export default function ContactForm() {
   const {
     register,
@@ -47,10 +49,30 @@ export default function ContactForm() {
 
   const onSubmit = async (data: ContactFormData) => {
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      console.log('Form submitted:', data);
+      const payload = new URLSearchParams({
+        'form-name': CONTACT_US_FORM_NAME,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        message: data.message,
+        preferredContact: data.preferredContact.join(', '),
+        consent: data.consent ? 'yes' : 'no',
+        honeypot: data.honeypot,
+      });
+
+      const response = await fetch('/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: payload.toString(),
+      });
+
+      if (!response.ok) {
+        throw new Error('Netlify form submission failed');
+      }
+
       toast.success('Thank you! We will contact you soon.');
       reset();
     } catch (error) {
@@ -61,7 +83,16 @@ export default function ContactForm() {
 
   return (
     <div className="bg-[#161715] border border-law-border p-[30px]">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-[25px]">
+      <form
+        name={CONTACT_US_FORM_NAME}
+        method="POST"
+        action="/"
+        data-netlify="true"
+        netlify-honeypot="honeypot"
+        onSubmit={handleSubmit(onSubmit)}
+        className="space-y-[25px]"
+      >
+        <input type="hidden" name="form-name" value={CONTACT_US_FORM_NAME} />
         {/* First Name */}
         <div>
           <Input

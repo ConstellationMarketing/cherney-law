@@ -481,6 +481,8 @@ function TestimonialsBlock({
   );
 }
 
+const CMS_CONTACT_FORM_NAME = "cms-contact-form";
+
 function ContactFormBlock({
   block,
 }: {
@@ -508,8 +510,30 @@ function ContactFormBlock({
 
   const onSubmit = async (data: ContactFormData) => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log("Form submitted:", data);
+      const payload = new URLSearchParams({
+        "form-name": CMS_CONTACT_FORM_NAME,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        message: data.message,
+        preferredContact: data.preferredContact.join(", "),
+        consent: data.consent ? "yes" : "no",
+        honeypot: data.honeypot,
+      });
+
+      const response = await fetch("/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: payload.toString(),
+      });
+
+      if (!response.ok) {
+        throw new Error("Netlify form submission failed");
+      }
+
       toast.success("Thank you! We will contact you soon.");
       reset();
     } catch (error) {
@@ -521,7 +545,16 @@ function ContactFormBlock({
   return (
     <div className="bg-white p-6 rounded-lg border">
       <h3 className="text-xl font-bold text-gray-900 mb-4">{block.heading}</h3>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form
+        name={CMS_CONTACT_FORM_NAME}
+        method="POST"
+        action="/"
+        data-netlify="true"
+        netlify-honeypot="honeypot"
+        onSubmit={handleSubmit(onSubmit)}
+        className="space-y-4"
+      >
+        <input type="hidden" name="form-name" value={CMS_CONTACT_FORM_NAME} />
         {/* First Name */}
         <div>
           <Input

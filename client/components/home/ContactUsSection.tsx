@@ -26,6 +26,8 @@ const contactFormSchema = z.object({
 
 type ContactFormData = z.infer<typeof contactFormSchema>;
 
+const CONTACT_US_FORM_NAME = "contact-us-form";
+
 interface ContactUsSectionProps {
   content?: ContactContent & { headingLevel?: 1 | 2 | 3 | 4 };
 }
@@ -68,8 +70,30 @@ export default function ContactUsSection({ content }: ContactUsSectionProps) {
 
   const onSubmit = async (formData: ContactFormData) => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log("Form submitted:", formData);
+      const payload = new URLSearchParams({
+        "form-name": CONTACT_US_FORM_NAME,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        message: formData.message,
+        preferredContact: formData.preferredContact.join(", "),
+        consent: formData.consent ? "yes" : "no",
+        honeypot: formData.honeypot,
+      });
+
+      const response = await fetch("/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: payload.toString(),
+      });
+
+      if (!response.ok) {
+        throw new Error("Netlify form submission failed");
+      }
+
       toast.success("Thank you! We will contact you soon.");
       reset();
     } catch (error) {
@@ -184,7 +208,16 @@ export default function ContactUsSection({ content }: ContactUsSectionProps) {
         {/* Right Side: Form */}
         <div className="lg:w-[31.3333%] relative p-[30px] pt-[30px] shadow-[0px_7px_29px_0px_rgba(100,100,111,0.2)]">
           <div className="relative">
-            <form onSubmit={handleSubmit(onSubmit)} className="p-[5px] mx-auto">
+            <form
+              name={CONTACT_US_FORM_NAME}
+              method="POST"
+              action="/"
+              data-netlify="true"
+              netlify-honeypot="honeypot"
+              onSubmit={handleSubmit(onSubmit)}
+              className="p-[5px] mx-auto"
+            >
+              <input type="hidden" name="form-name" value={CONTACT_US_FORM_NAME} />
               <div className="space-y-[20px]">
                 {/* First Name */}
                 <div className="relative">
