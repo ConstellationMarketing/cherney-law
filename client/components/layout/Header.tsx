@@ -56,6 +56,7 @@ function chunkMenuItems<T>(items: T[], chunkSize: number): T[][] {
 export default function Header({ transparentTopBar = false }: HeaderProps) {
   const { settings } = useSiteSettings();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [openDesktopSubmenu, setOpenDesktopSubmenu] = useState<string | null>(null);
 
   const navItems = [...settings.navigationItems]
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
@@ -95,11 +96,21 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                       ? chunkMenuItems(item.children, 10)
                       : [];
 
+                    const childItemClass = "font-outfit font-normal text-[17px] leading-[1.25] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer px-4 py-3";
+
                     const renderDropdownItem = (child: NavigationItem) => {
+                      const childKey = `${item.id || item.href || item.label}-${child.id || child.href || child.label}`;
                       if (child.children && child.children.length > 0) {
                         return (
-                          <DropdownMenuSub key={child.id || child.href || child.label}>
-                            <DropdownMenuSubTrigger className="font-outfit font-normal text-[17px] leading-[1.25] text-white hover:bg-law-accent hover:text-black focus:bg-transparent focus:text-white data-[state=open]:bg-transparent data-[state=open]:text-white transition-colors cursor-pointer px-4 py-3 rounded-none">
+                          <DropdownMenuSub
+                            key={child.id || child.href || child.label}
+                            open={openDesktopSubmenu === childKey}
+                            onOpenChange={(open) => setOpenDesktopSubmenu(open ? childKey : null)}
+                          >
+                            <DropdownMenuSubTrigger
+                              onPointerMove={() => setOpenDesktopSubmenu(childKey)}
+                              className={`${childItemClass} rounded-none focus:bg-transparent focus:text-white data-[state=open]:!bg-transparent data-[state=open]:!text-white`}
+                            >
                               {child.label}
                             </DropdownMenuSubTrigger>
                             <DropdownMenuSubContent className="bg-law-dark border border-law-border z-50 p-1">
@@ -107,7 +118,7 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                                 <DropdownMenuItem key={grandchild.id || grandchild.href || grandchild.label} asChild>
                                   <Link
                                     to={normalizeInternalHref(grandchild.href, grandchild.external || grandchild.openInNewTab)}
-                                    className="font-outfit font-normal text-[17px] leading-[1.25] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer px-4 py-3"
+                                    className={childItemClass}
                                     target={
                                       grandchild.external || grandchild.openInNewTab
                                         ? "_blank"
@@ -132,7 +143,7 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                         <DropdownMenuItem key={child.id || child.href || child.label} asChild>
                           <Link
                             to={normalizeInternalHref(child.href, child.external || child.openInNewTab)}
-                            className="font-outfit font-normal text-[17px] leading-[1.25] text-white hover:bg-law-accent hover:text-black transition-colors cursor-pointer px-4 py-3"
+                            className={childItemClass}
                             target={
                               child.external || child.openInNewTab
                                 ? "_blank"
@@ -155,13 +166,21 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                       key={item.id || item.href}
                       className={item.children?.length ? "px-[11px] relative" : "px-[11px]"}
                       onMouseEnter={() => item.children?.length && setOpenDropdown(item.id || item.href || item.label)}
-                      onMouseLeave={() => setOpenDropdown(null)}
+                      onMouseLeave={() => {
+                        setOpenDropdown(null);
+                        setOpenDesktopSubmenu(null);
+                      }}
                     >
                       {item.children && item.children.length > 0 ? (
                         // Item with dropdown - no wrapper, DropdownMenu is direct child
                         <DropdownMenu
                           open={openDropdown === (item.id || item.href || item.label)}
-                          onOpenChange={(open) => setOpenDropdown(open ? (item.id || item.href || item.label) : null)}
+                          onOpenChange={(open) => {
+                            setOpenDropdown(open ? (item.id || item.href || item.label) : null);
+                            if (!open) {
+                              setOpenDesktopSubmenu(null);
+                            }
+                          }}
                         >
                           <DropdownMenuTrigger asChild>
                             <button type="button" className={`${navItemClass} bg-transparent border-0 cursor-pointer outline-none focus:outline-none`}>
