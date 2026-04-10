@@ -32,7 +32,7 @@ export default function PracticeAreasGrid({ areas }: PracticeAreasGridProps) {
   const practiceAreas = areas || defaultAreas;
 
   return (
-    <div className="bg-white">
+    <div className="bg-black">
       {" "}
       {/* Removed py-[40px] */}
       <div className="w-full">
