@@ -10,11 +10,18 @@ interface Review {
   publishTime: string;
 }
 
+type ReviewsErrorSource =
+  | "missing_api_key"
+  | "missing_place_id"
+  | "google_api_error"
+  | "unexpected_error";
+
 interface ReviewsData {
   reviews: Review[];
   averageRating: number;
   totalReviews: number;
   error?: string;
+  source?: ReviewsErrorSource;
 }
 
 interface GoogleReviewsProps {
@@ -37,6 +44,25 @@ function StarRating({ rating }: { rating: number }) {
       ))}
     </div>
   );
+}
+
+function getErrorMessage(data: ReviewsData): string {
+  if (!data.error) {
+    return "Unable to load Google reviews right now.";
+  }
+
+  switch (data.source) {
+    case "missing_api_key":
+      return "Google reviews are temporarily unavailable due to API configuration.";
+    case "missing_place_id":
+      return "Google reviews are temporarily unavailable due to place ID configuration.";
+    case "google_api_error":
+      return "Google reviews are temporarily unavailable from the Google API. Please try again shortly.";
+    case "unexpected_error":
+      return "Google reviews are temporarily unavailable due to a server error. Please try again shortly.";
+    default:
+      return data.error;
+  }
 }
 
 export default function GoogleReviews({ content }: GoogleReviewsProps) {
@@ -136,7 +162,7 @@ export default function GoogleReviews({ content }: GoogleReviewsProps) {
           ) : reviewsData?.error ? (
             <div className="bg-red-50 border-2 border-red-200 p-[40px] text-center mb-[30px]">
               <p className="font-outfit text-[16px] text-red-800 mb-[20px]">
-                {reviewsData.error}
+                {getErrorMessage(reviewsData)}
               </p>
               <a
                 href={googleReviewsUrl}

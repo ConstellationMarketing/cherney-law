@@ -18,6 +18,12 @@ interface GooglePlacesResponse {
   userRatingCount?: number;
 }
 
+export type ReviewsErrorSource =
+  | "missing_api_key"
+  | "missing_place_id"
+  | "google_api_error"
+  | "unexpected_error";
+
 export interface ReviewsResponse {
   reviews: Array<{
     authorName: string;
@@ -29,78 +35,117 @@ export interface ReviewsResponse {
   averageRating: number;
   totalReviews: number;
   error?: string;
+  source?: ReviewsErrorSource;
 }
 
 // Cache for reviews (1 hour)
 let cachedReviews: ReviewsResponse | null = null;
-let cacheTime: number = 0;
+let cacheTime = 0;
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
+
+function getQueryValue(value: unknown): string {
+  return Array.isArray(value) ? String(value[0] ?? "") : String(value ?? "");
+}
+
+function canBypassCache(req: Parameters<RequestHandler>[0]): boolean {
+  const refreshRequested = getQueryValue(req.query.refresh) === "1";
+  if (!refreshRequested) {
+    return false;
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    return true;
+  }
+
+  const refreshKey = process.env.GOOGLE_REVIEWS_REFRESH_KEY;
+  const providedRefreshKey = getQueryValue(req.query.refreshKey);
+
+  return Boolean(refreshKey && providedRefreshKey === refreshKey);
+}
+
+function getSanitizedErrorMessage(errorText: string): string {
+  const compact = errorText.replace(/\s+/g, " ").trim();
+  return compact.length > 200 ? `${compact.slice(0, 200)}...` : compact;
+}
+
+function errorResponse(error: string, source: ReviewsErrorSource): ReviewsResponse {
+  return {
+    reviews: [],
+    averageRating: 0,
+    totalReviews: 0,
+    error,
+    source,
+  };
+}
 
 export const handleGoogleReviews: RequestHandler = async (req, res) => {
   try {
+    const bypassCache = canBypassCache(req);
+
     // Check cache
     const now = Date.now();
-    if (cachedReviews && (now - cacheTime) < CACHE_DURATION) {
+    if (!bypassCache && cachedReviews && now - cacheTime < CACHE_DURATION) {
       return res.json(cachedReviews);
     }
 
     const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-    
     if (!apiKey) {
-      return res.status(500).json({
-        reviews: [],
-        averageRating: 0,
-        totalReviews: 0,
-        error: "Google Places API key not configured"
-      });
+      return res
+        .status(500)
+        .json(errorResponse("Google Places API key not configured", "missing_api_key"));
     }
 
-    // Place ID converted from hex format 0x88f513c2103ad111:0xf0c853b13f4aa2fc
-    const placeId = "ChIJEa0QIMA1X4gR_KJK_xOI8PA";
-    
-    // Google Places API (New) endpoint
-    const url = `https://places.googleapis.com/v1/places/${placeId}?fields=reviews,rating,userRatingCount&key=${apiKey}`;
+    const placeId = process.env.GOOGLE_PLACES_PLACE_ID;
+    if (!placeId) {
+      return res
+        .status(500)
+        .json(errorResponse("Google Places place ID not configured", "missing_place_id"));
+    }
+
+    const endpointPath = `/v1/places/${placeId}`;
+    const url = `https://places.googleapis.com${endpointPath}?fields=reviews,rating,userRatingCount&key=${apiKey}`;
 
     const response = await fetch(url);
-    
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Google Places API error:", errorText);
-      return res.status(500).json({
-        reviews: [],
-        averageRating: 0,
-        totalReviews: 0,
-        error: "Failed to fetch reviews from Google"
+      console.error("[google-reviews] Google Places API request failed", {
+        status: response.status,
+        endpointPath,
+        message: getSanitizedErrorMessage(errorText),
       });
+
+      return res
+        .status(500)
+        .json(errorResponse("Failed to fetch reviews from Google", "google_api_error"));
     }
 
     const data: GooglePlacesResponse = await response.json();
 
-    // Format the response
     const formattedResponse: ReviewsResponse = {
-      reviews: (data.reviews || []).map(review => ({
+      reviews: (data.reviews || []).map((review) => ({
         authorName: review.authorAttribution?.displayName || "Anonymous",
         authorPhoto: review.authorAttribution?.photoUri,
         rating: review.rating,
         text: review.text?.text || "",
-        publishTime: review.relativePublishTimeDescription || ""
+        publishTime: review.relativePublishTimeDescription || "",
       })),
       averageRating: data.rating || 0,
-      totalReviews: data.userRatingCount || 0
+      totalReviews: data.userRatingCount || 0,
     };
 
-    // Update cache
+    // Cache only successful responses
     cachedReviews = formattedResponse;
     cacheTime = now;
 
     res.json(formattedResponse);
   } catch (error) {
-    console.error("Error fetching Google reviews:", error);
-    res.status(500).json({
-      reviews: [],
-      averageRating: 0,
-      totalReviews: 0,
-      error: "An unexpected error occurred"
+    console.error("[google-reviews] Unexpected error while fetching reviews", {
+      message: error instanceof Error ? error.message : String(error),
     });
+
+    res
+      .status(500)
+      .json(errorResponse("An unexpected error occurred", "unexpected_error"));
   }
 };
