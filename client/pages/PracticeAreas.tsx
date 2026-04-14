@@ -21,6 +21,7 @@ import { usePracticeAreasContent } from "@site/hooks/usePracticeAreasContent";
 import { useAboutContent } from "@site/hooks/useAboutContent";
 import { useGlobalPhone, useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { resolveSeo } from "@site/utils/resolveSeo";
+import { getSiteUrlFallback } from "@site/lib/runtime-env";
 
 // Icon mapping for practice areas
 const iconMap: Record<string, LucideIcon> = {
@@ -38,7 +39,7 @@ export default function PracticeAreas() {
   const { content: aboutContent } = useAboutContent();
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
   const siteSettings = useSiteSettings();
-  const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || '';
+  const siteUrl = siteSettings.settings.siteUrl || getSiteUrlFallback();
 
   // Centralized SEO resolution
   const seo = resolveSeo(page, siteSettings.settings, pathname, siteUrl);

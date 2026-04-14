@@ -14,13 +14,14 @@ import ContactUsSection from "@site/components/home/ContactUsSection";
 import { useHomeContent } from "@site/hooks/useHomeContent";
 import { useGlobalPhone, useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { resolveSeo } from "@site/utils/resolveSeo";
+import { getSiteUrlFallback } from "@site/lib/runtime-env";
 
 export default function Index() {
   const { pathname } = useLocation();
   const { content, page, isLoading } = useHomeContent(pathname);
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
   const siteSettings = useSiteSettings();
-  const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || '';
+  const siteUrl = siteSettings.settings.siteUrl || getSiteUrlFallback();
   const aboutNavItem = siteSettings.settings.navigationItems.find(
     (item) => item.label?.trim().toLowerCase() === "about us" && item.href,
   );

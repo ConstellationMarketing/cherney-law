@@ -14,6 +14,7 @@ import ContactUsSection from "@site/components/home/ContactUsSection";
 import { useHomepage2Content } from "@site/hooks/useHomepage2Content";
 import { useGlobalPhone, useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { resolveSeo } from "@site/utils/resolveSeo";
+import { getSiteUrlFallback } from "@site/lib/runtime-env";
 
 const DEFAULT_HERO_BG =
   "https://cdn.builder.io/api/v1/image/assets%2F50bd0f2438824f8ea1271cf7dd2c508e%2F1e4bfebf4b62496e9f4b00ad011729ba?format=webp&width=800&height=1200";
@@ -25,7 +26,7 @@ export default function Homepage2() {
   const { content, page, isLoading } = useHomepage2Content(pathname);
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
   const siteSettings = useSiteSettings();
-  const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || "";
+  const siteUrl = siteSettings.settings.siteUrl || getSiteUrlFallback();
   const aboutNavItem = siteSettings.settings.navigationItems.find(
     (item) => item.label?.trim().toLowerCase() === "about us" && item.href,
   );

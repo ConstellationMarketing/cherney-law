@@ -4,6 +4,7 @@ import Layout from "@site/components/layout/Layout";
 import { useAreasWeServeContent } from "@site/hooks/useAreasWeServeContent";
 import { useGlobalPhone, useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { resolveSeo } from "@site/utils/resolveSeo";
+import { getSiteUrlFallback } from "@site/lib/runtime-env";
 import AboutHero from "@site/components/about/AboutHero";
 import LocationsGrid from "@site/components/areas-we-serve/LocationsGrid";
 
@@ -25,7 +26,7 @@ export default function AreasWeServePage() {
   const { content, page } = useAreasWeServeContent(pathname);
   const { phoneDisplay } = useGlobalPhone();
   const siteSettings = useSiteSettings();
-  const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || "";
+  const siteUrl = siteSettings.settings.siteUrl || getSiteUrlFallback();
 
   // Centralized SEO resolution
   const seo = resolveSeo(page, siteSettings.settings, pathname, siteUrl);

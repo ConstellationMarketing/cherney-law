@@ -5,12 +5,13 @@ import Layout from '@site/components/layout/Layout';
 import { Button } from '@site/components/ui/button';
 import { useSiteSettings } from '@site/contexts/SiteSettingsContext';
 import { resolveSeo } from '@site/utils/resolveSeo';
+import { getSiteUrlFallback } from '@site/lib/runtime-env';
 
 const NotFound = () => {
   const location = useLocation();
   const siteSettings = useSiteSettings();
   const { pathname } = location;
-  const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || '';
+  const siteUrl = siteSettings.settings.siteUrl || getSiteUrlFallback();
 
   // Create a synthetic page object for 404
   const notFoundPage = {

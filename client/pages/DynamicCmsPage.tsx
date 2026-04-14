@@ -1,9 +1,3 @@
-/**
- * DynamicCmsPage
- * Renders any page published via the CMS block editor.
- * Falls through to NotFound if no published page matches the current URL path.
- */
-
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import Layout from "@site/components/layout/Layout";
@@ -16,6 +10,14 @@ import type { PracticeAreaDetailPageContent } from "@site/lib/cms/practiceAreaDe
 import { useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { resolveSeo } from "@site/utils/resolveSeo";
 import type { ContentBlock } from "@site/lib/blocks";
+import {
+  getCachedDynamicCmsRoute,
+  inferStructuredTemplateType,
+  loadDynamicCmsRoute,
+  normalizeCmsPath,
+  type CmsPage,
+} from "@site/lib/cms/dynamicRoute";
+import { getSiteUrlFallback } from "@site/lib/runtime-env";
 import BlogPost from "./BlogPost";
 import NotFound from "./NotFound";
 import Index from "./Index";
@@ -27,197 +29,50 @@ import TestimonialsPage from "./TestimonialsPage";
 import CommonQuestionsPage from "./CommonQuestionsPage";
 import AreasWeServePage from "./AreasWeServePage";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-
-interface CmsPage {
-  id: string;
-  title: string;
-  url_path: string;
-  page_type: string;
-  content: unknown;
-  meta_title: string | null;
-  meta_description: string | null;
-  canonical_url: string | null;
-  og_title: string | null;
-  og_description: string | null;
-  og_image: string | null;
-  noindex: boolean;
-  status: string;
-}
-
-type StructuredTemplateType =
-  | "home"
-  | "homepage-2"
-  | "about"
-  | "contact"
-  | "practice-areas"
-  | "testimonials"
-  | "common-questions"
-  | "areas-we-serve";
-
-// Module-level cache
-const cmsPageCache = new Map<string, CmsPage | null>();
-const blogSlugCache = new Map<string, boolean>();
-
-function inferStructuredTemplateType(content: unknown): StructuredTemplateType | null {
-  if (!content || typeof content !== "object" || Array.isArray(content)) return null;
-
-  const normalized = content as Record<string, unknown>;
-
-  if (normalized.hero && normalized.about && Array.isArray(normalized.practiceAreas)) {
-    return "home";
-  }
-
-  if (normalized.story && normalized.missionVision && normalized.whyChooseUs) {
-    return "about";
-  }
-
-  if (Array.isArray(normalized.offices) && normalized.formSettings && normalized.process) {
-    return "contact";
-  }
-
-  if (Array.isArray(normalized.tabs) && normalized.grid && normalized.faq) {
-    return "practice-areas";
-  }
-
-  if (normalized.reviews && normalized.cta && normalized.hero) {
-    return "testimonials";
-  }
-
-  if (normalized.faqSection && normalized.closingSection && normalized.hero) {
-    return "common-questions";
-  }
-
-  if (normalized.locationsSection && normalized.introSection && normalized.whySection) {
-    return "areas-we-serve";
-  }
-
-  return null;
-}
-
 export default function DynamicCmsPage() {
   const { pathname } = useLocation();
   const siteSettings = useSiteSettings();
-  const siteUrl =
-    siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || "";
+  const siteUrl = siteSettings.settings.siteUrl || getSiteUrlFallback();
+  const initialRoute = getCachedDynamicCmsRoute(pathname);
 
-  const [page, setPage] = useState<CmsPage | null | undefined>(undefined); // undefined = loading
-  const [isBlogPost, setIsBlogPost] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState<CmsPage | null | undefined>(
+    initialRoute ? initialRoute.page : undefined,
+  );
+  const [isBlogPost, setIsBlogPost] = useState(initialRoute?.isBlogPost ?? false);
+  const [isLoading, setIsLoading] = useState(!initialRoute);
 
   useEffect(() => {
-    let isActive = true;
+    const cached = getCachedDynamicCmsRoute(pathname);
+    if (cached) {
+      setPage(cached.page);
+      setIsBlogPost(cached.isBlogPost);
+      setIsLoading(false);
+      return;
+    }
 
-    // Normalise path for lookup (ensure trailing slash)
-    const normPath = pathname.endsWith("/") ? pathname : `${pathname}/`;
+    let isActive = true;
 
     setIsLoading(true);
     setPage(undefined);
     setIsBlogPost(false);
 
-    if (cmsPageCache.has(normPath)) {
-      if (!isActive) return;
-      setPage(cmsPageCache.get(normPath)!);
-      setIsBlogPost(false);
-      setIsLoading(false);
-      return () => {
-        isActive = false;
-      };
-    }
-
-    async function fetchPage() {
-      try {
-        // Try both with and without trailing slash
-        const paths = [normPath];
-        if (normPath.endsWith("/")) {
-          paths.push(normPath.slice(0, -1));
-        }
-
-        const orFilter = paths
-          .map((p) => `url_path.eq.${p}`)
-          .join(",");
-
-        const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/pages?or=(${encodeURIComponent(orFilter)})&status=eq.published&select=id,title,url_path,page_type,content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,status&limit=1`,
-          {
-            headers: {
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error: ${response.status}`);
-        }
-
-        const data = await response.json();
-
+    loadDynamicCmsRoute(pathname)
+      .then((route) => {
         if (!isActive) return;
-
-        if (Array.isArray(data) && data.length > 0) {
-          const p = data[0] as CmsPage;
-          cmsPageCache.set(normPath, p);
-          setPage(p);
-          setIsBlogPost(false);
-        } else {
-          cmsPageCache.set(normPath, null);
-
-          // No CMS page found — check if it's a blog post
-          const slug = normPath.replace(/^\//, ""); // strip leading slash, keep trailing
-          if (blogSlugCache.has(slug)) {
-            const isBlog = blogSlugCache.get(slug)!;
-            setIsBlogPost(isBlog);
-            if (!isBlog) setPage(null);
-          } else {
-            const found = await checkBlogPost(slug);
-            if (!isActive) return;
-            blogSlugCache.set(slug, found);
-            setIsBlogPost(found);
-            if (!found) setPage(null);
-          }
-        }
-      } catch (err) {
-        if (!isActive) return;
-        console.error(`[DynamicCmsPage] Error loading ${normPath}:`, err);
-        setPage(null);
-      } finally {
+        setPage(route.page);
+        setIsBlogPost(route.isBlogPost);
+      })
+      .finally(() => {
         if (isActive) {
           setIsLoading(false);
         }
-      }
-    }
-
-    async function checkBlogPost(slug: string): Promise<boolean> {
-      try {
-        const slugs = [slug, slug.endsWith("/") ? slug.slice(0, -1) : `${slug}/`];
-        const orFilter = slugs.map((s) => `slug.eq.${s}`).join(",");
-        const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/posts?or=(${encodeURIComponent(orFilter)})&status=eq.published&select=id&limit=1`,
-          {
-            headers: {
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-          }
-        );
-        if (!response.ok) return false;
-        const data = await response.json();
-        return Array.isArray(data) && data.length > 0;
-      } catch {
-        return false;
-      }
-    }
-
-    fetchPage();
+      });
 
     return () => {
       isActive = false;
     };
   }, [pathname]);
 
-  // Loading state
   if (isLoading) {
     return (
       <Layout>
@@ -228,13 +83,11 @@ export default function DynamicCmsPage() {
     );
   }
 
-  // Blog post found — render BlogPost component
   if (isBlogPost) {
-    const slug = (pathname.endsWith("/") ? pathname : `${pathname}/`).replace(/^\//, "");
+    const slug = normalizeCmsPath(pathname).replace(/^\//, "");
     return <BlogPost slugOverride={slug} />;
   }
 
-  // No published CMS page found — show 404
   if (!page) {
     return <NotFound />;
   }
@@ -266,20 +119,32 @@ export default function DynamicCmsPage() {
 
   const seo = resolveSeo(page, siteSettings.settings, pathname, siteUrl);
 
-  // Determine if first block is a hero that needs transparent header overlap
-  const firstBlock = Array.isArray(page.content) && page.content.length > 0
-    ? (page.content as ContentBlock[])[0]
-    : null;
-  const needsHeroBg = page.page_type === 'practice_detail'
-    || (firstBlock?.type === 'hero' && ((firstBlock as any).variant === 'dark' || firstBlock.backgroundImage));
+  const firstBlock =
+    Array.isArray(page.content) && page.content.length > 0
+      ? (page.content as ContentBlock[])[0]
+      : null;
+  const needsHeroBg =
+    page.page_type === "practice_detail" ||
+    (firstBlock?.type === "hero" &&
+      ((firstBlock as any).variant === "dark" || firstBlock.backgroundImage));
 
   return (
-    <Layout heroBg={needsHeroBg ? (page.page_type === 'practice_detail' ? 'practice_detail' : 'hero') : undefined}>
-      <Seo {...seo} />
-      {page.page_type === 'area' ? (
+    <Layout
+      heroBg={
+        needsHeroBg
+          ? page.page_type === "practice_detail"
+            ? "practice_detail"
+            : "hero"
+          : undefined
+      }
+    >
+      <Seo {...seo} pageContent={page.content} />
+      {page.page_type === "area" ? (
         <AreaPageRenderer content={page.content as AreaPageContent} />
-      ) : page.page_type === 'practice_detail' ? (
-        <PracticeAreaDetailRenderer content={page.content as unknown as PracticeAreaDetailPageContent} />
+      ) : page.page_type === "practice_detail" ? (
+        <PracticeAreaDetailRenderer
+          content={page.content as unknown as PracticeAreaDetailPageContent}
+        />
       ) : (
         <BlockRenderer content={page.content as ContentBlock[]} />
       )}

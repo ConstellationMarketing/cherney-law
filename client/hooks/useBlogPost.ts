@@ -1,77 +1,97 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { PostWithCategory } from "@site/lib/cms/blogTypes";
+import { fetchSupabaseJson } from "@site/lib/cms/api";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+interface BlogPostCacheEntry {
+  post: PostWithCategory | null;
+  notFound: boolean;
+}
 
-const cache = new Map<string, PostWithCategory | null>();
+const cache = new Map<string, BlogPostCacheEntry>();
+
+function normalizeSlug(slug: string) {
+  return slug.endsWith("/") ? slug : `${slug}/`;
+}
+
+function getCachedEntry(slug: string): BlogPostCacheEntry | null {
+  return cache.get(normalizeSlug(slug)) ?? null;
+}
+
+export async function loadBlogPost(
+  slug: string,
+): Promise<BlogPostCacheEntry> {
+  const normalizedSlug = normalizeSlug(slug);
+  const cached = getCachedEntry(normalizedSlug);
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const slugs = [normalizedSlug, normalizedSlug.slice(0, -1)];
+    const orFilter = slugs.map((entry) => `slug.eq.${entry}`).join(",");
+    const data = await fetchSupabaseJson<PostWithCategory[]>(
+      `/rest/v1/posts?or=(${encodeURIComponent(orFilter)})&status=eq.published&select=*,post_categories(name,slug)&limit=1`,
+    );
+
+    const entry: BlogPostCacheEntry =
+      Array.isArray(data) && data.length > 0
+        ? { post: data[0], notFound: false }
+        : { post: null, notFound: true };
+
+    cache.set(normalizedSlug, entry);
+    return entry;
+  } catch (err) {
+    console.error("[useBlogPost] Error:", err);
+    const entry: BlogPostCacheEntry = { post: null, notFound: true };
+    cache.set(normalizedSlug, entry);
+    return entry;
+  }
+}
+
+export function primeBlogPostCache(slug: string, entry: BlogPostCacheEntry) {
+  cache.set(normalizeSlug(slug), entry);
+}
 
 export function clearBlogPostCache(slug?: string) {
   if (slug) {
-    cache.delete(slug);
+    cache.delete(normalizeSlug(slug));
   } else {
     cache.clear();
   }
 }
 
 export function useBlogPost(slug: string) {
-  const [post, setPost] = useState<PostWithCategory | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const initialEntry = getCachedEntry(slug);
+  const [post, setPost] = useState<PostWithCategory | null>(initialEntry?.post ?? null);
+  const [isLoading, setIsLoading] = useState(!initialEntry);
+  const [notFound, setNotFound] = useState(initialEntry?.notFound ?? false);
 
   useEffect(() => {
-    // Normalize: ensure trailing slash
-    const normalizedSlug = slug.endsWith("/") ? slug : `${slug}/`;
-
-    if (cache.has(normalizedSlug)) {
-      const cached = cache.get(normalizedSlug)!;
-      if (cached) {
-        setPost(cached);
-        setNotFound(false);
-      } else {
-        setNotFound(true);
-      }
+    const cached = getCachedEntry(slug);
+    if (cached) {
+      setPost(cached.post);
+      setNotFound(cached.notFound);
       setIsLoading(false);
       return;
     }
 
-    async function fetchPost() {
-      try {
-        // Try both with and without trailing slash
-        const slugs = [normalizedSlug, normalizedSlug.slice(0, -1)];
-        const orFilter = slugs.map((s) => `slug.eq.${s}`).join(",");
+    let isMounted = true;
 
-        const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/posts?or=(${encodeURIComponent(orFilter)})&status=eq.published&select=*,post_categories(name,slug)&limit=1`,
-          {
-            headers: {
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-          }
-        );
-
-        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
-        const data = await response.json();
-
-        if (Array.isArray(data) && data.length > 0) {
-          cache.set(normalizedSlug, data[0]);
-          setPost(data[0]);
-          setNotFound(false);
-        } else {
-          cache.set(normalizedSlug, null);
-          setNotFound(true);
+    loadBlogPost(slug)
+      .then((entry) => {
+        if (!isMounted) return;
+        setPost(entry.post);
+        setNotFound(entry.notFound);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
         }
-      } catch (err) {
-        console.error("[useBlogPost] Error:", err);
-        setNotFound(true);
-      } finally {
-        setIsLoading(false);
-      }
-    }
+      });
 
-    fetchPost();
+    return () => {
+      isMounted = false;
+    };
   }, [slug]);
 
   return { post, isLoading, notFound };

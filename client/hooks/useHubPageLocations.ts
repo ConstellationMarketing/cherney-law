@@ -1,13 +1,9 @@
-import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import type { AreaLocationsSection, AreaCTAContent } from '@site/lib/cms/areaPageTypes';
-
-function getSupabaseClient() {
-  const url = import.meta.env.VITE_SUPABASE_URL;
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
+import { useEffect, useState } from "react";
+import type {
+  AreaCTAContent,
+  AreaLocationsSection,
+} from "@site/lib/cms/areaPageTypes";
+import { fetchSupabaseJson } from "@site/lib/cms/api";
 
 interface HubAreaData {
   locationsSection: AreaLocationsSection | null;
@@ -17,11 +13,44 @@ interface HubAreaData {
 let cachedData: HubAreaData = { locationsSection: null, cta: null };
 let cacheLoaded = false;
 
-/**
- * Fetches the locationsSection and cta from the /areas-we-serve/ hub page.
- * These are the single source of truth — individual area pages render from
- * this instead of their own stored data.
- */
+export async function loadHubPageLocations(): Promise<HubAreaData> {
+  if (cacheLoaded) {
+    return { ...cachedData };
+  }
+
+  try {
+    const data = await fetchSupabaseJson<{ content?: Record<string, unknown> }[]>(
+      "/rest/v1/pages?url_path=eq./areas-we-serve/&status=eq.published&select=content&limit=1",
+    );
+
+    if (Array.isArray(data) && data.length > 0 && data[0]?.content) {
+      const content = data[0].content as Record<string, unknown>;
+      if (content.locationsSection) {
+        cachedData.locationsSection =
+          content.locationsSection as AreaLocationsSection;
+      }
+      if (content.cta) {
+        cachedData.cta = content.cta as AreaCTAContent;
+      }
+    }
+  } catch (error) {
+    console.error("[useHubPageLocations] Error:", error);
+  }
+
+  cacheLoaded = true;
+  return { ...cachedData };
+}
+
+export function primeHubPageLocationsCache(data: HubAreaData) {
+  cachedData = { ...data };
+  cacheLoaded = true;
+}
+
+export function clearHubPageLocationsCache() {
+  cachedData = { locationsSection: null, cta: null };
+  cacheLoaded = false;
+}
+
 export function useHubPageLocations(): {
   locationsSection: AreaLocationsSection | null;
   cta: AreaCTAContent | null;
@@ -37,32 +66,22 @@ export function useHubPageLocations(): {
       return;
     }
 
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
+    let isMounted = true;
 
-    supabase
-      .from('pages')
-      .select('content')
-      .eq('url_path', '/areas-we-serve/')
-      .eq('status', 'published')
-      .single()
-      .then(({ data: pageData, error }) => {
-        if (!error && pageData?.content) {
-          const content = pageData.content as Record<string, unknown>;
-          if (content.locationsSection) {
-            cachedData.locationsSection = content.locationsSection as AreaLocationsSection;
-          }
-          if (content.cta) {
-            cachedData.cta = content.cta as AreaCTAContent;
-          }
+    loadHubPageLocations()
+      .then((loadedData) => {
+        if (!isMounted) return;
+        setData(loadedData);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoading(false);
         }
-        cacheLoaded = true;
-        setData({ ...cachedData });
-        setLoading(false);
       });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return { locationsSection: data.locationsSection, cta: data.cta, loading };

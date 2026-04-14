@@ -1,11 +1,8 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { HomePageContent } from "../lib/cms/homePageTypes";
 import { defaultHomeContent } from "../lib/cms/homePageTypes";
 import type { PageSeoFields } from "../utils/resolveSeo";
-
-// Supabase configuration - use environment variables
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+import { PAGE_SEO_SELECT, fetchSupabaseJson } from "@site/lib/cms/api";
 
 interface UseHomepage2ContentResult {
   content: HomePageContent;
@@ -14,110 +11,17 @@ interface UseHomepage2ContentResult {
   error: Error | null;
 }
 
-// Separate cache for homepage-2
-let cachedContent2: HomePageContent | null = null;
-let cachedPage2: PageSeoFields | null = null;
-
-export function useHomepage2Content(urlPath: string = '/homepage-2/'): UseHomepage2ContentResult {
-  const [content, setContent] = useState<HomePageContent>(defaultHomeContent);
-  const [page, setPage] = useState<PageSeoFields | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function fetchContent() {
-      try {
-        // Return cached content if available
-        if (cachedContent2 && cachedPage2) {
-          if (isMounted) {
-            setContent(cachedContent2);
-            setPage(cachedPage2);
-            setIsLoading(false);
-          }
-          return;
-        }
-
-        // Fetch homepage-2 from pages table with SEO fields
-        const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/pages?url_path=eq.${urlPath}&status=eq.published&select=content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,url_path,title`,
-          {
-            headers: {
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (!Array.isArray(data) || data.length === 0) {
-          // No CMS content, use defaults
-          if (isMounted) {
-            setContent(defaultHomeContent);
-            setPage(null);
-            setIsLoading(false);
-          }
-          return;
-        }
-
-        const pageData = data[0];
-        const cmsContent = pageData.content as HomePageContent;
-
-        // Merge CMS content with defaults (CMS content takes precedence)
-        const mergedContent = mergeWithDefaults(cmsContent, defaultHomeContent);
-
-        // Extract SEO fields
-        const pageSeoFields: PageSeoFields = {
-          meta_title: pageData.meta_title,
-          meta_description: pageData.meta_description,
-          canonical_url: pageData.canonical_url,
-          og_title: pageData.og_title,
-          og_description: pageData.og_description,
-          og_image: pageData.og_image,
-          noindex: pageData.noindex ?? false,
-          url_path: pageData.url_path,
-          title: pageData.title,
-        };
-
-        // Cache the results
-        cachedContent2 = mergedContent;
-        cachedPage2 = pageSeoFields;
-
-        if (isMounted) {
-          setContent(mergedContent);
-          setPage(pageSeoFields);
-          setError(null);
-        }
-      } catch (err) {
-        console.error("[useHomepage2Content] Error:", err);
-        if (isMounted) {
-          setError(err instanceof Error ? err : new Error("Unknown error"));
-          setContent(defaultHomeContent);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    fetchContent();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [urlPath]);
-
-  return { content, page, isLoading, error };
+interface Homepage2ContentCacheEntry {
+  content: HomePageContent;
+  page: PageSeoFields | null;
 }
 
-// Deep merge CMS content with defaults
+let cachedEntry: Homepage2ContentCacheEntry | null = null;
+
+function getCachedEntry(): Homepage2ContentCacheEntry | null {
+  return cachedEntry;
+}
+
 function mergeWithDefaults(
   cmsContent: Partial<HomePageContent> | null | undefined,
   defaults: HomePageContent,
@@ -169,14 +73,107 @@ function mergeWithDefaults(
   };
 }
 
-// Helper to clear cache (useful after admin edits)
-export function clearHomepage2ContentCache() {
-  cachedContent2 = null;
-  cachedPage2 = null;
+export async function loadHomepage2Content(
+  urlPath: string = "/homepage-2/",
+): Promise<Homepage2ContentCacheEntry> {
+  const cached = getCachedEntry();
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const data = await fetchSupabaseJson<any[]>(
+      `/rest/v1/pages?url_path=eq.${urlPath}&status=eq.published&select=${PAGE_SEO_SELECT}`,
+    );
+
+    if (!Array.isArray(data) || data.length === 0) {
+      return { content: defaultHomeContent, page: null };
+    }
+
+    const pageData = data[0];
+    const mergedContent = mergeWithDefaults(
+      pageData.content as HomePageContent,
+      defaultHomeContent,
+    );
+    const entry: Homepage2ContentCacheEntry = {
+      content: mergedContent,
+      page: {
+        meta_title: pageData.meta_title,
+        meta_description: pageData.meta_description,
+        canonical_url: pageData.canonical_url,
+        og_title: pageData.og_title,
+        og_description: pageData.og_description,
+        og_image: pageData.og_image,
+        noindex: pageData.noindex ?? false,
+        url_path: pageData.url_path,
+        title: pageData.title,
+      },
+    };
+
+    cachedEntry = entry;
+    return entry;
+  } catch (err) {
+    console.error("[useHomepage2Content] Error:", err);
+    return { content: defaultHomeContent, page: null };
+  }
 }
 
-// Listen for cache-clear events dispatched by the admin panel.
-// CustomEvent avoids any cross-boundary imports between vendor and client code.
+export function primeHomepage2ContentCache(entry: Homepage2ContentCacheEntry) {
+  cachedEntry = entry;
+}
+
+export function useHomepage2Content(
+  urlPath: string = "/homepage-2/",
+): UseHomepage2ContentResult {
+  const initialEntry = getCachedEntry();
+  const [content, setContent] = useState<HomePageContent>(
+    initialEntry?.content ?? defaultHomeContent,
+  );
+  const [page, setPage] = useState<PageSeoFields | null>(initialEntry?.page ?? null);
+  const [isLoading, setIsLoading] = useState(!initialEntry);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const cached = getCachedEntry();
+    if (cached) {
+      setContent(cached.content);
+      setPage(cached.page);
+      setIsLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    loadHomepage2Content(urlPath)
+      .then((entry) => {
+        if (!isMounted) return;
+        setContent(entry.content);
+        setPage(entry.page);
+        setError(null);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setError(err instanceof Error ? err : new Error("Unknown error"));
+        setContent(defaultHomeContent);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [urlPath]);
+
+  return { content, page, isLoading, error };
+}
+
+export function clearHomepage2ContentCache() {
+  cachedEntry = null;
+}
+
 if (typeof window !== "undefined") {
   window.addEventListener("cms:cache-clear", (e: Event) => {
     const detail = (e as CustomEvent<{ key: string }>).detail;

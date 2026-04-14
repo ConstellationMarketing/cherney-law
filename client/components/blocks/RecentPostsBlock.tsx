@@ -1,9 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { PostWithCategory } from "@site/lib/cms/blogTypes";
 import BlogPostCard from "@site/components/blog/BlogPostCard";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+import { fetchSupabaseJson } from "@site/lib/cms/api";
 
 interface RecentPostsBlockProps {
   heading?: string;
@@ -11,41 +9,91 @@ interface RecentPostsBlockProps {
   showLoadMore?: boolean;
 }
 
+interface RecentPostsPageEntry {
+  posts: PostWithCategory[];
+  hasMore: boolean;
+}
+
+const recentPostsBlockCache = new Map<string, RecentPostsPageEntry>();
+
+function getRecentPostsBlockCacheKey(postsPerPage: number, offset: number) {
+  return `${postsPerPage}:${offset}`;
+}
+
+function getCachedRecentPostsPage(postsPerPage: number, offset: number) {
+  return recentPostsBlockCache.get(
+    getRecentPostsBlockCacheKey(postsPerPage, offset),
+  ) ?? null;
+}
+
+export async function loadRecentPostsBlockPage(
+  postsPerPage: number,
+  offset: number,
+): Promise<RecentPostsPageEntry> {
+  const cached = getCachedRecentPostsPage(postsPerPage, offset);
+  if (cached) {
+    return cached;
+  }
+
+  const limit = postsPerPage + 1;
+
+  try {
+    const data = await fetchSupabaseJson<PostWithCategory[]>(
+      `/rest/v1/posts?status=eq.published&select=*,post_categories(name,slug)&order=published_at.desc&limit=${limit}&offset=${offset}`,
+    );
+    const hasMore = data.length > postsPerPage;
+    const entry: RecentPostsPageEntry = {
+      posts: hasMore ? data.slice(0, postsPerPage) : data,
+      hasMore,
+    };
+
+    recentPostsBlockCache.set(
+      getRecentPostsBlockCacheKey(postsPerPage, offset),
+      entry,
+    );
+    return entry;
+  } catch (err) {
+    console.error("[RecentPostsBlock] Error:", err);
+    return { posts: [], hasMore: false };
+  }
+}
+
+export function primeRecentPostsBlockCache(
+  postsPerPage: number,
+  offset: number,
+  entry: RecentPostsPageEntry,
+) {
+  recentPostsBlockCache.set(
+    getRecentPostsBlockCacheKey(postsPerPage, offset),
+    entry,
+  );
+}
+
 export default function RecentPostsBlock({
   heading,
   postsPerPage = 6,
   showLoadMore = true,
 }: RecentPostsBlockProps) {
-  const [posts, setPosts] = useState<PostWithCategory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const initialEntry = getCachedRecentPostsPage(postsPerPage, 0);
+  const [posts, setPosts] = useState<PostWithCategory[]>(initialEntry?.posts ?? []);
+  const [isLoading, setIsLoading] = useState(!initialEntry);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
+  const [hasMore, setHasMore] = useState(initialEntry?.hasMore ?? false);
 
   const fetchPosts = useCallback(
-    async (offset: number) => {
-      // Fetch one extra to know if there are more
-      const limit = postsPerPage + 1;
-      const url = `${SUPABASE_URL}/rest/v1/posts?status=eq.published&select=*,post_categories(name,slug)&order=published_at.desc&limit=${limit}&offset=${offset}`;
-
-      const response = await fetch(url, {
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-      });
-
-      if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
-      const data: PostWithCategory[] = await response.json();
-      const hasMoreResults = data.length > postsPerPage;
-      const sliced = hasMoreResults ? data.slice(0, postsPerPage) : data;
-
-      return { posts: sliced, hasMore: hasMoreResults };
-    },
-    [postsPerPage]
+    async (offset: number) => loadRecentPostsBlockPage(postsPerPage, offset),
+    [postsPerPage],
   );
 
   useEffect(() => {
+    const cached = getCachedRecentPostsPage(postsPerPage, 0);
+    if (cached) {
+      setPosts(cached.posts);
+      setHasMore(cached.hasMore);
+      setIsLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     async function load() {
@@ -55,8 +103,6 @@ export default function RecentPostsBlock({
           setPosts(result.posts);
           setHasMore(result.hasMore);
         }
-      } catch (err) {
-        console.error("[RecentPostsBlock] Error:", err);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -66,7 +112,7 @@ export default function RecentPostsBlock({
     return () => {
       cancelled = true;
     };
-  }, [fetchPosts]);
+  }, [fetchPosts, postsPerPage]);
 
   const handleLoadMore = async () => {
     setIsLoadingMore(true);

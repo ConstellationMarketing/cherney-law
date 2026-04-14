@@ -1,11 +1,8 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { TestimonialsPageContent } from "../lib/cms/testimonialsPageTypes";
 import { defaultTestimonialsContent } from "../lib/cms/testimonialsPageTypes";
 import type { PageSeoFields } from "../utils/resolveSeo";
-
-// Supabase configuration - use environment variables
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+import { PAGE_SEO_SELECT, fetchSupabaseJson } from "@site/lib/cms/api";
 
 interface UseTestimonialsContentResult {
   content: TestimonialsPageContent;
@@ -14,114 +11,17 @@ interface UseTestimonialsContentResult {
   error: Error | null;
 }
 
-// Cache for testimonials content
-let cachedContent: TestimonialsPageContent | null = null;
-let cachedPage: PageSeoFields | null = null;
-
-export function useTestimonialsContent(urlPath: string = '/testimonials/'): UseTestimonialsContentResult {
-  const [content, setContent] = useState<TestimonialsPageContent>(
-    defaultTestimonialsContent,
-  );
-  const [page, setPage] = useState<PageSeoFields | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function fetchContent() {
-      try {
-        // Return cached content if available
-        if (cachedContent && cachedPage) {
-          if (isMounted) {
-            setContent(cachedContent);
-            setPage(cachedPage);
-            setIsLoading(false);
-          }
-          return;
-        }
-
-        // Fetch testimonials page from pages table with SEO fields
-        const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/pages?url_path=eq.${urlPath}&status=eq.published&select=content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,url_path,title`,
-          {
-            headers: {
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (!Array.isArray(data) || data.length === 0) {
-          if (isMounted) {
-            setContent(defaultTestimonialsContent);
-            setPage(null);
-            setIsLoading(false);
-          }
-          return;
-        }
-
-        const pageData = data[0];
-        const cmsContent = pageData.content as TestimonialsPageContent;
-
-        // Merge CMS content with defaults (CMS content takes precedence)
-        const mergedContent = mergeWithDefaults(
-          cmsContent,
-          defaultTestimonialsContent,
-        );
-
-        // Extract SEO fields
-        const pageSeoFields: PageSeoFields = {
-          meta_title: pageData.meta_title,
-          meta_description: pageData.meta_description,
-          canonical_url: pageData.canonical_url,
-          og_title: pageData.og_title,
-          og_description: pageData.og_description,
-          og_image: pageData.og_image,
-          noindex: pageData.noindex ?? false,
-          url_path: pageData.url_path,
-          title: pageData.title,
-        };
-
-        // Cache the results
-        cachedContent = mergedContent;
-        cachedPage = pageSeoFields;
-
-        if (isMounted) {
-          setContent(mergedContent);
-          setPage(pageSeoFields);
-          setError(null);
-        }
-      } catch (err) {
-        console.error("[useTestimonialsContent] Error:", err);
-        if (isMounted) {
-          setError(err instanceof Error ? err : new Error("Unknown error"));
-          setContent(defaultTestimonialsContent);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    fetchContent();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [urlPath]);
-
-  return { content, page, isLoading, error };
+interface TestimonialsContentCacheEntry {
+  content: TestimonialsPageContent;
+  page: PageSeoFields | null;
 }
 
-// Deep merge CMS content with defaults
+let cachedEntry: TestimonialsContentCacheEntry | null = null;
+
+function getCachedEntry(): TestimonialsContentCacheEntry | null {
+  return cachedEntry;
+}
+
 function mergeWithDefaults(
   cmsContent: Partial<TestimonialsPageContent> | null | undefined,
   defaults: TestimonialsPageContent,
@@ -142,8 +42,104 @@ function mergeWithDefaults(
   };
 }
 
-// Helper to clear cache (useful after admin edits)
+export async function loadTestimonialsContent(
+  urlPath: string = "/testimonials/",
+): Promise<TestimonialsContentCacheEntry> {
+  const cached = getCachedEntry();
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const data = await fetchSupabaseJson<any[]>(
+      `/rest/v1/pages?url_path=eq.${urlPath}&status=eq.published&select=${PAGE_SEO_SELECT}`,
+    );
+
+    if (!Array.isArray(data) || data.length === 0) {
+      return { content: defaultTestimonialsContent, page: null };
+    }
+
+    const pageData = data[0];
+    const entry: TestimonialsContentCacheEntry = {
+      content: mergeWithDefaults(
+        pageData.content as TestimonialsPageContent,
+        defaultTestimonialsContent,
+      ),
+      page: {
+        meta_title: pageData.meta_title,
+        meta_description: pageData.meta_description,
+        canonical_url: pageData.canonical_url,
+        og_title: pageData.og_title,
+        og_description: pageData.og_description,
+        og_image: pageData.og_image,
+        noindex: pageData.noindex ?? false,
+        url_path: pageData.url_path,
+        title: pageData.title,
+      },
+    };
+
+    cachedEntry = entry;
+    return entry;
+  } catch (err) {
+    console.error("[useTestimonialsContent] Error:", err);
+    return { content: defaultTestimonialsContent, page: null };
+  }
+}
+
+export function primeTestimonialsContentCache(
+  entry: TestimonialsContentCacheEntry,
+) {
+  cachedEntry = entry;
+}
+
+export function useTestimonialsContent(
+  urlPath: string = "/testimonials/",
+): UseTestimonialsContentResult {
+  const initialEntry = getCachedEntry();
+  const [content, setContent] = useState<TestimonialsPageContent>(
+    initialEntry?.content ?? defaultTestimonialsContent,
+  );
+  const [page, setPage] = useState<PageSeoFields | null>(initialEntry?.page ?? null);
+  const [isLoading, setIsLoading] = useState(!initialEntry);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const cached = getCachedEntry();
+    if (cached) {
+      setContent(cached.content);
+      setPage(cached.page);
+      setIsLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    loadTestimonialsContent(urlPath)
+      .then((entry) => {
+        if (!isMounted) return;
+        setContent(entry.content);
+        setPage(entry.page);
+        setError(null);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setError(err instanceof Error ? err : new Error("Unknown error"));
+        setContent(defaultTestimonialsContent);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [urlPath]);
+
+  return { content, page, isLoading, error };
+}
+
 export function clearTestimonialsContentCache() {
-  cachedContent = null;
-  cachedPage = null;
+  cachedEntry = null;
 }

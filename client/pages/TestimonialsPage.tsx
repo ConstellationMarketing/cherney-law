@@ -5,6 +5,7 @@ import GoogleReviews from "@site/components/testimonials/GoogleReviews";
 import { useTestimonialsContent } from "@site/hooks/useTestimonialsContent";
 import { useGlobalPhone, useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { resolveSeo } from "@site/utils/resolveSeo";
+import { getSiteUrlFallback } from "@site/lib/runtime-env";
 import { Link } from "react-router-dom";
 import { Phone } from "lucide-react";
 
@@ -13,7 +14,7 @@ export default function TestimonialsPage() {
   const { content, page } = useTestimonialsContent(pathname);
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
   const siteSettings = useSiteSettings();
-  const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || '';
+  const siteUrl = siteSettings.settings.siteUrl || getSiteUrlFallback();
 
   // Centralized SEO resolution
   const seo = resolveSeo(page, siteSettings.settings, pathname, siteUrl);

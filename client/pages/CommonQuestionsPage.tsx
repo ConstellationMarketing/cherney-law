@@ -4,6 +4,7 @@ import Layout from "@site/components/layout/Layout";
 import { useCommonQuestionsContent } from "@site/hooks/useCommonQuestionsContent";
 import { useGlobalPhone, useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { resolveSeo } from "@site/utils/resolveSeo";
+import { getSiteUrlFallback } from "@site/lib/runtime-env";
 import AboutHero from "@site/components/about/AboutHero";
 import FaqAccordion from "@site/components/common-questions/FaqAccordion";
 
@@ -12,7 +13,7 @@ export default function CommonQuestionsPage() {
   const { content, page } = useCommonQuestionsContent(pathname);
   const { phoneDisplay } = useGlobalPhone();
   const siteSettings = useSiteSettings();
-  const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || "";
+  const siteUrl = siteSettings.settings.siteUrl || getSiteUrlFallback();
 
   // Centralized SEO resolution
   const seo = resolveSeo(page, siteSettings.settings, pathname, siteUrl);

@@ -1,12 +1,34 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
 import { Link } from "react-router-dom";
 import type { BlogSidebarSettings } from "@site/lib/cms/blogTypes";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+import { fetchSupabaseJson } from "@site/lib/cms/api";
 
 let sidebarCache: BlogSidebarSettings | null = null;
+
+export async function loadBlogSidebarSettings(): Promise<BlogSidebarSettings | null> {
+  if (sidebarCache) {
+    return sidebarCache;
+  }
+
+  try {
+    const data = await fetchSupabaseJson<BlogSidebarSettings[]>(
+      "/rest/v1/blog_sidebar_settings?select=*&limit=1",
+    );
+
+    if (Array.isArray(data) && data.length > 0) {
+      sidebarCache = data[0];
+    }
+  } catch (err) {
+    console.error("[BlogSidebar] Error:", err);
+  }
+
+  return sidebarCache;
+}
+
+export function primeBlogSidebarCache(settings: BlogSidebarSettings | null) {
+  sidebarCache = settings;
+}
 
 export default function BlogSidebar() {
   const { phoneDisplay, phoneNumber } = useGlobalPhone();
@@ -15,33 +37,20 @@ export default function BlogSidebar() {
   useEffect(() => {
     if (sidebarCache) return;
 
-    async function fetchSidebar() {
-      try {
-        const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/blog_sidebar_settings?select=*&limit=1`,
-          {
-            headers: {
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-          }
-        );
-        if (!response.ok) return;
-        const data = await response.json();
-        if (Array.isArray(data) && data.length > 0) {
-          sidebarCache = data[0];
-          setSidebar(data[0]);
-        }
-      } catch (err) {
-        console.error("[BlogSidebar] Error:", err);
-      }
-    }
-    fetchSidebar();
+    let isMounted = true;
+
+    loadBlogSidebarSettings().then((settings) => {
+      if (!isMounted) return;
+      setSidebar(settings);
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (
     <div>
-      {/* Attorney Image with gradient fade */}
       {sidebar?.attorney_image && (
         <div className="relative overflow-hidden">
           <img
@@ -54,7 +63,6 @@ export default function BlogSidebar() {
         </div>
       )}
 
-      {/* CTA card */}
       <div className="bg-[#1a1a2e] p-6 text-center space-y-4">
         <h3 className="font-playfair text-[22px] md:text-[26px] text-white leading-tight">
           Ready to Talk?
@@ -79,7 +87,6 @@ export default function BlogSidebar() {
         </a>
       </div>
 
-      {/* Award Images */}
       {sidebar?.award_images && Array.isArray(sidebar.award_images) && sidebar.award_images.length > 0 && (
         <div className="grid grid-cols-2 gap-3 mt-6">
           {(sidebar.award_images as { src: string; alt: string }[]).map((img, i) => (

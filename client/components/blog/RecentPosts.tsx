@@ -1,44 +1,89 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { PostWithCategory } from "@site/lib/cms/blogTypes";
 import BlogPostCard from "./BlogPostCard";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+import { fetchSupabaseJson } from "@site/lib/cms/api";
 
 interface Props {
   excludePostId?: string;
   limit?: number;
 }
 
+interface RecentPostsCacheEntry {
+  posts: PostWithCategory[];
+  limit: number;
+  excludePostId?: string;
+}
+
+const recentPostsCache = new Map<string, RecentPostsCacheEntry>();
+
+function getCacheKey(limit: number, excludePostId?: string) {
+  return `${limit}:${excludePostId || ""}`;
+}
+
+function getCachedEntry(limit: number, excludePostId?: string) {
+  return recentPostsCache.get(getCacheKey(limit, excludePostId)) ?? null;
+}
+
+export async function loadRecentPosts(
+  limit: number,
+  excludePostId?: string,
+): Promise<RecentPostsCacheEntry> {
+  const cached = getCachedEntry(limit, excludePostId);
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const data = await fetchSupabaseJson<PostWithCategory[]>(
+      `/rest/v1/posts?status=eq.published&select=*,post_categories(name,slug)&order=published_at.desc&limit=${limit + 1}`,
+    );
+
+    const filtered = excludePostId
+      ? data.filter((post) => post.id !== excludePostId).slice(0, limit)
+      : data.slice(0, limit);
+
+    const entry: RecentPostsCacheEntry = { posts: filtered, limit, excludePostId };
+    recentPostsCache.set(getCacheKey(limit, excludePostId), entry);
+    return entry;
+  } catch (err) {
+    console.error("[RecentPosts] Error:", err);
+    return { posts: [], limit, excludePostId };
+  }
+}
+
+export function primeRecentPostsCache(entry: RecentPostsCacheEntry) {
+  recentPostsCache.set(getCacheKey(entry.limit, entry.excludePostId), entry);
+}
+
 export default function RecentPosts({ excludePostId, limit = 3 }: Props) {
-  const [posts, setPosts] = useState<PostWithCategory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const initialEntry = getCachedEntry(limit, excludePostId);
+  const [posts, setPosts] = useState<PostWithCategory[]>(initialEntry?.posts ?? []);
+  const [isLoading, setIsLoading] = useState(!initialEntry);
 
   useEffect(() => {
-    async function fetchPosts() {
-      try {
-        const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/posts?status=eq.published&select=*,post_categories(name,slug)&order=published_at.desc&limit=${limit + 1}`,
-          {
-            headers: {
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-          }
-        );
-        if (!response.ok) return;
-        const data: PostWithCategory[] = await response.json();
-        const filtered = excludePostId
-          ? data.filter((p) => p.id !== excludePostId).slice(0, limit)
-          : data.slice(0, limit);
-        setPosts(filtered);
-      } catch (err) {
-        console.error("[RecentPosts] Error:", err);
-      } finally {
-        setIsLoading(false);
-      }
+    const cached = getCachedEntry(limit, excludePostId);
+    if (cached) {
+      setPosts(cached.posts);
+      setIsLoading(false);
+      return;
     }
-    fetchPosts();
+
+    let isMounted = true;
+
+    loadRecentPosts(limit, excludePostId)
+      .then((entry) => {
+        if (!isMounted) return;
+        setPosts(entry.posts);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [excludePostId, limit]);
 
   if (isLoading || posts.length === 0) return null;

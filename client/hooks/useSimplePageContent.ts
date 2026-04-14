@@ -1,97 +1,92 @@
-/**
- * useSimplePageContent Hook
- * Fetches simple page content from Supabase, with caching and default fallback
- */
-
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { SimplePageContent } from "@site/lib/cms/simplePageTypes";
+import { fetchSupabaseJson } from "@site/lib/cms/api";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-
-// Module-level cache
 const pageContentCache = new Map<string, SimplePageContent>();
 
-/**
- * Fetch simple page content from Supabase
- * Merges CMS content with default content, CMS content takes precedence
- */
+function getCachedEntry(urlPath: string): SimplePageContent | null {
+  return pageContentCache.get(urlPath) ?? null;
+}
+
+export async function loadSimplePageContent(
+  urlPath: string,
+  defaultContent: SimplePageContent,
+): Promise<SimplePageContent> {
+  const cached = getCachedEntry(urlPath);
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const data = await fetchSupabaseJson<any[]>(
+      `/rest/v1/pages?url_path=eq.${encodeURIComponent(urlPath)}&select=content`,
+    );
+
+    let resolved = defaultContent;
+
+    if (Array.isArray(data) && data.length > 0) {
+      const pageContent = data[0].content as SimplePageContent | null;
+      if (pageContent && pageContent.title && pageContent.body) {
+        resolved = {
+          title: pageContent.title || defaultContent.title,
+          body: pageContent.body || defaultContent.body,
+        };
+      }
+    }
+
+    pageContentCache.set(urlPath, resolved);
+    return resolved;
+  } catch (err) {
+    console.error(`[useSimplePageContent] Error loading ${urlPath}:`, err);
+    pageContentCache.set(urlPath, defaultContent);
+    return defaultContent;
+  }
+}
+
+export function primeSimplePageContentCache(
+  urlPath: string,
+  content: SimplePageContent,
+) {
+  pageContentCache.set(urlPath, content);
+}
+
 export function useSimplePageContent(
   urlPath: string,
-  defaultContent: SimplePageContent
+  defaultContent: SimplePageContent,
 ): { content: SimplePageContent; isLoading: boolean } {
-  const [content, setContent] = useState<SimplePageContent>(defaultContent);
-  const [isLoading, setIsLoading] = useState(true);
+  const initialContent = getCachedEntry(urlPath) ?? defaultContent;
+  const [content, setContent] = useState<SimplePageContent>(initialContent);
+  const [isLoading, setIsLoading] = useState(!getCachedEntry(urlPath));
 
   useEffect(() => {
-    // Check cache first
-    if (pageContentCache.has(urlPath)) {
-      const cached = pageContentCache.get(urlPath)!;
+    const cached = getCachedEntry(urlPath);
+    if (cached) {
       setContent(cached);
       setIsLoading(false);
       return;
     }
 
-    // Fetch from Supabase
-    async function fetchContent() {
-      try {
-        const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/pages?url_path=eq.${encodeURIComponent(urlPath)}&select=content`,
-          {
-            headers: {
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-          }
-        );
+    let isMounted = true;
 
-        if (!response.ok) {
-          throw new Error(`HTTP error: ${response.status}`);
+    loadSimplePageContent(urlPath, defaultContent)
+      .then((loadedContent) => {
+        if (!isMounted) return;
+        setContent(loadedContent);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
         }
+      });
 
-        const data = await response.json();
-
-        if (Array.isArray(data) && data.length > 0) {
-          const page = data[0];
-          const pageContent = page.content as SimplePageContent | null;
-
-          if (pageContent && pageContent.title && pageContent.body) {
-            // CMS content takes precedence
-            const merged: SimplePageContent = {
-              title: pageContent.title || defaultContent.title,
-              body: pageContent.body || defaultContent.body,
-            };
-            pageContentCache.set(urlPath, merged);
-            setContent(merged);
-          } else {
-            // No valid CMS content, use defaults
-            pageContentCache.set(urlPath, defaultContent);
-            setContent(defaultContent);
-          }
-        } else {
-          // No page found, use defaults
-          pageContentCache.set(urlPath, defaultContent);
-          setContent(defaultContent);
-        }
-      } catch (err) {
-        console.error(`[useSimplePageContent] Error loading ${urlPath}:`, err);
-        // Use defaults on error
-        pageContentCache.set(urlPath, defaultContent);
-        setContent(defaultContent);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchContent();
+    return () => {
+      isMounted = false;
+    };
   }, [urlPath, defaultContent]);
 
   return { content, isLoading };
 }
 
-/**
- * Clear the cache for a specific page or all pages
- */
 export function clearSimplePageContentCache(urlPath?: string): void {
   if (urlPath) {
     pageContentCache.delete(urlPath);

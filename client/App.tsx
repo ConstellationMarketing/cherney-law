@@ -1,12 +1,10 @@
-import "./global.css";
-import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Component, useRef, type ErrorInfo, type ReactNode } from "react";
+import { HelmetProvider } from "@site/lib/helmet";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Route, Routes, useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
-import { createRoot } from "react-dom/client";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { HelmetProvider } from "react-helmet-async";
 import { SiteSettingsProvider } from "./contexts/SiteSettingsContext";
 import WcDniManager from "./components/WcDniManager";
 import GlobalScripts from "./components/GlobalScripts";
@@ -14,15 +12,12 @@ import DynamicCmsPage from "./pages/DynamicCmsPage";
 import AdminRoutes from "./pages/AdminRoutes";
 import ScrollToTop from "./components/ScrollToTop";
 
-const queryClient = new QueryClient();
-
-// ─── Error Boundary ───────────────────────────────────────────────────────────
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
 }
 
-class ErrorBoundary extends Component<
+export class ErrorBoundary extends Component<
   { children: ReactNode },
   ErrorBoundaryState
 > {
@@ -67,9 +62,7 @@ class ErrorBoundary extends Component<
             {this.state.error?.stack}
           </pre>
           <button
-            onClick={() =>
-              this.setState({ hasError: false, error: null })
-            }
+            onClick={() => this.setState({ hasError: false, error: null })}
             style={{
               marginTop: "1rem",
               padding: "0.5rem 1rem",
@@ -85,9 +78,8 @@ class ErrorBoundary extends Component<
     return this.props.children;
   }
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
-function AppShell() {
+export function AppShell() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
 
@@ -98,31 +90,36 @@ function AppShell() {
       <ScrollToTop />
       <Routes>
         <Route path="/admin/*" element={<AdminRoutes />} />
-        {/* All public routes resolve from CMS slugs (including /) */}
         <Route path="*" element={<DynamicCmsPage />} />
       </Routes>
     </>
   );
 }
 
-const App = () => (
-  <HelmetProvider>
-    <QueryClientProvider client={queryClient}>
-      <SiteSettingsProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppShell />
-          </BrowserRouter>
-        </TooltipProvider>
-      </SiteSettingsProvider>
-    </QueryClientProvider>
-  </HelmetProvider>
-);
+export function AppProviders({
+  children,
+  helmetContext,
+}: {
+  children: ReactNode;
+  helmetContext?: Record<string, unknown>;
+}) {
+  const queryClientRef = useRef<QueryClient | null>(null);
 
-createRoot(document.getElementById("root")!).render(
-  <ErrorBoundary>
-    <App />
-  </ErrorBoundary>
-);
+  if (!queryClientRef.current) {
+    queryClientRef.current = new QueryClient();
+  }
+
+  return (
+    <HelmetProvider context={helmetContext}>
+      <QueryClientProvider client={queryClientRef.current}>
+        <SiteSettingsProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            {children}
+          </TooltipProvider>
+        </SiteSettingsProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
+  );
+}

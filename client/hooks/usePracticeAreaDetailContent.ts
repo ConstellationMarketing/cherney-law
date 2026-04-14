@@ -1,9 +1,7 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { PracticeAreaDetailPageContent } from "@site/lib/cms/practiceAreaDetailPageTypes";
 import { defaultPracticeAreaDetailContent } from "@site/lib/cms/practiceAreaDetailPageTypes";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+import { PRACTICE_DETAIL_SELECT, fetchSupabaseJson } from "@site/lib/cms/api";
 
 interface PageData {
   id: string;
@@ -22,8 +20,13 @@ interface PageData {
   schema_data: Record<string, unknown> | null;
 }
 
-// Module-level cache
-const cache = new Map<string, PageData | null>();
+interface PracticeAreaDetailCacheEntry {
+  page: PageData | null;
+  content: PracticeAreaDetailPageContent;
+  notFound: boolean;
+}
+
+const cache = new Map<string, PracticeAreaDetailCacheEntry>();
 
 function deepMerge(defaults: any, cms: any): any {
   if (!cms || typeof cms !== "object") return defaults;
@@ -31,7 +34,12 @@ function deepMerge(defaults: any, cms: any): any {
   const result = { ...defaults };
   for (const key of Object.keys(cms)) {
     if (cms[key] !== undefined && cms[key] !== null) {
-      if (typeof cms[key] === "object" && !Array.isArray(cms[key]) && typeof defaults[key] === "object" && !Array.isArray(defaults[key])) {
+      if (
+        typeof cms[key] === "object" &&
+        !Array.isArray(cms[key]) &&
+        typeof defaults[key] === "object" &&
+        !Array.isArray(defaults[key])
+      ) {
         result[key] = deepMerge(defaults[key], cms[key]);
       } else {
         result[key] = cms[key];
@@ -41,76 +49,111 @@ function deepMerge(defaults: any, cms: any): any {
   return result;
 }
 
+function getCacheKey(slug: string) {
+  return `/practice-areas/${slug}/`;
+}
+
+function getCachedEntry(slug: string): PracticeAreaDetailCacheEntry | null {
+  return cache.get(getCacheKey(slug)) ?? null;
+}
+
+export async function loadPracticeAreaDetailContent(
+  slug: string,
+): Promise<PracticeAreaDetailCacheEntry> {
+  const cached = getCachedEntry(slug);
+  if (cached) {
+    return cached;
+  }
+
+  const urlPath = getCacheKey(slug);
+
+  try {
+    const paths = [urlPath, urlPath.slice(0, -1)];
+    const orFilter = paths.map((path) => `url_path.eq.${path}`).join(",");
+    const data = await fetchSupabaseJson<PageData[]>(
+      `/rest/v1/pages?or=(${encodeURIComponent(orFilter)})&status=eq.published&select=${PRACTICE_DETAIL_SELECT}&limit=1`,
+    );
+
+    const entry: PracticeAreaDetailCacheEntry =
+      Array.isArray(data) && data.length > 0
+        ? {
+            page: data[0],
+            content: deepMerge(defaultPracticeAreaDetailContent, data[0].content),
+            notFound: false,
+          }
+        : {
+            page: null,
+            content: defaultPracticeAreaDetailContent,
+            notFound: true,
+          };
+
+    cache.set(urlPath, entry);
+    return entry;
+  } catch (err) {
+    console.error(`[usePracticeAreaDetailContent] Error:`, err);
+    const entry: PracticeAreaDetailCacheEntry = {
+      page: null,
+      content: defaultPracticeAreaDetailContent,
+      notFound: true,
+    };
+    cache.set(urlPath, entry);
+    return entry;
+  }
+}
+
+export function primePracticeAreaDetailCache(
+  slug: string,
+  entry: PracticeAreaDetailCacheEntry,
+) {
+  cache.set(getCacheKey(slug), entry);
+}
+
 export function clearPracticeAreaDetailCache(slug?: string) {
   if (slug) {
-    cache.delete(`/practice-areas/${slug}/`);
+    cache.delete(getCacheKey(slug));
   } else {
     cache.clear();
   }
 }
 
 export function usePracticeAreaDetailContent(slug: string) {
-  const [page, setPage] = useState<PageData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const initialEntry = getCachedEntry(slug);
+  const [page, setPage] = useState<PageData | null>(initialEntry?.page ?? null);
+  const [content, setContent] = useState<PracticeAreaDetailPageContent>(
+    initialEntry?.content ?? defaultPracticeAreaDetailContent,
+  );
+  const [isLoading, setIsLoading] = useState(!initialEntry);
+  const [notFound, setNotFound] = useState(initialEntry?.notFound ?? false);
 
   useEffect(() => {
-    const urlPath = `/practice-areas/${slug}/`;
-
-    if (cache.has(urlPath)) {
-      const cached = cache.get(urlPath)!;
-      if (cached) {
-        setPage(cached);
-        setNotFound(false);
-      } else {
-        setNotFound(true);
-      }
+    const cached = getCachedEntry(slug);
+    if (cached) {
+      setPage(cached.page);
+      setContent(cached.content);
+      setNotFound(cached.notFound);
       setIsLoading(false);
       return;
     }
 
-    async function fetchData() {
-      try {
-        // Try both with and without trailing slash
-        const paths = [urlPath, urlPath.slice(0, -1)];
-        const orFilter = paths.map((p) => `url_path.eq.${p}`).join(",");
+    let isMounted = true;
 
-        const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/pages?or=(${encodeURIComponent(orFilter)})&status=eq.published&select=id,title,url_path,page_type,content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,schema_type,schema_data&limit=1`,
-          {
-            headers: {
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-          }
-        );
-
-        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
-        const data = await response.json();
-
-        if (Array.isArray(data) && data.length > 0) {
-          cache.set(urlPath, data[0]);
-          setPage(data[0]);
-          setNotFound(false);
-        } else {
-          cache.set(urlPath, null);
-          setNotFound(true);
+    loadPracticeAreaDetailContent(slug)
+      .then((entry) => {
+        if (!isMounted) return;
+        setPage(entry.page);
+        setContent(entry.content);
+        setNotFound(entry.notFound);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
         }
-      } catch (err) {
-        console.error(`[usePracticeAreaDetailContent] Error:`, err);
-        setNotFound(true);
-      } finally {
-        setIsLoading(false);
-      }
-    }
+      });
 
-    fetchData();
+    return () => {
+      isMounted = false;
+    };
   }, [slug]);
-
-  const content: PracticeAreaDetailPageContent = page
-    ? deepMerge(defaultPracticeAreaDetailContent, page.content)
-    : defaultPracticeAreaDetailContent;
 
   return { content, page, isLoading, notFound };
 }

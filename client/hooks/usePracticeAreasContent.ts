@@ -1,14 +1,11 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   defaultPracticeAreasContent,
   normalizePracticeAreasPageContent,
   type PracticeAreasPageContent,
 } from "../lib/cms/practiceAreasPageTypes";
 import type { PageSeoFields } from "../utils/resolveSeo";
-
-// Supabase configuration - use environment variables
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+import { PAGE_SEO_SELECT, fetchSupabaseJson } from "@site/lib/cms/api";
 
 interface UsePracticeAreasContentResult {
   content: PracticeAreasPageContent;
@@ -17,104 +14,106 @@ interface UsePracticeAreasContentResult {
   error: Error | null;
 }
 
-// Cache for practice areas content
-let cachedContent: PracticeAreasPageContent | null = null;
-let cachedPage: PageSeoFields | null = null;
+interface PracticeAreasContentCacheEntry {
+  content: PracticeAreasPageContent;
+  page: PageSeoFields | null;
+}
 
-export function usePracticeAreasContent(urlPath: string = '/practice-areas/'): UsePracticeAreasContentResult {
+let cachedEntry: PracticeAreasContentCacheEntry | null = null;
+
+function getCachedEntry(): PracticeAreasContentCacheEntry | null {
+  return cachedEntry;
+}
+
+export async function loadPracticeAreasContent(
+  urlPath: string = "/practice-areas/",
+): Promise<PracticeAreasContentCacheEntry> {
+  const cached = getCachedEntry();
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const data = await fetchSupabaseJson<any[]>(
+      `/rest/v1/pages?url_path=eq.${urlPath}&status=eq.published&select=${PAGE_SEO_SELECT}`,
+    );
+
+    if (!Array.isArray(data) || data.length === 0) {
+      return { content: defaultPracticeAreasContent, page: null };
+    }
+
+    const pageData = data[0];
+    const entry: PracticeAreasContentCacheEntry = {
+      content: normalizePracticeAreasPageContent(
+        pageData.content as Partial<PracticeAreasPageContent>,
+        defaultPracticeAreasContent,
+      ),
+      page: {
+        meta_title: pageData.meta_title,
+        meta_description: pageData.meta_description,
+        canonical_url: pageData.canonical_url,
+        og_title: pageData.og_title,
+        og_description: pageData.og_description,
+        og_image: pageData.og_image,
+        noindex: pageData.noindex ?? false,
+        url_path: pageData.url_path,
+        title: pageData.title,
+      },
+    };
+
+    cachedEntry = entry;
+    return entry;
+  } catch (err) {
+    console.error("[usePracticeAreasContent] Error:", err);
+    return { content: defaultPracticeAreasContent, page: null };
+  }
+}
+
+export function primePracticeAreasContentCache(
+  entry: PracticeAreasContentCacheEntry,
+) {
+  cachedEntry = entry;
+}
+
+export function usePracticeAreasContent(
+  urlPath: string = "/practice-areas/",
+): UsePracticeAreasContentResult {
+  const initialEntry = getCachedEntry();
   const [content, setContent] = useState<PracticeAreasPageContent>(
-    defaultPracticeAreasContent,
+    initialEntry?.content ?? defaultPracticeAreasContent,
   );
-  const [page, setPage] = useState<PageSeoFields | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState<PageSeoFields | null>(initialEntry?.page ?? null);
+  const [isLoading, setIsLoading] = useState(!initialEntry);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    const cached = getCachedEntry();
+    if (cached) {
+      setContent(cached.content);
+      setPage(cached.page);
+      setIsLoading(false);
+      return;
+    }
+
     let isMounted = true;
 
-    async function fetchContent() {
-      try {
-        // Return cached content if available
-        if (cachedContent && cachedPage) {
-          if (isMounted) {
-            setContent(cachedContent);
-            setPage(cachedPage);
-            setIsLoading(false);
-          }
-          return;
-        }
-
-        // Fetch practice areas page from pages table with SEO fields
-        const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/pages?url_path=eq.${urlPath}&status=eq.published&select=content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,url_path,title`,
-          {
-            headers: {
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (!Array.isArray(data) || data.length === 0) {
-          // No CMS content, use defaults
-          if (isMounted) {
-            setContent(defaultPracticeAreasContent);
-            setPage(null);
-            setIsLoading(false);
-          }
-          return;
-        }
-
-        const pageData = data[0];
-        const cmsContent = pageData.content as Partial<PracticeAreasPageContent>;
-        const mergedContent = normalizePracticeAreasPageContent(
-          cmsContent,
-          defaultPracticeAreasContent,
-        );
-
-        // Extract SEO fields
-        const pageSeoFields: PageSeoFields = {
-          meta_title: pageData.meta_title,
-          meta_description: pageData.meta_description,
-          canonical_url: pageData.canonical_url,
-          og_title: pageData.og_title,
-          og_description: pageData.og_description,
-          og_image: pageData.og_image,
-          noindex: pageData.noindex ?? false,
-          url_path: pageData.url_path,
-          title: pageData.title,
-        };
-
-        // Cache the results
-        cachedContent = mergedContent;
-        cachedPage = pageSeoFields;
-
-        if (isMounted) {
-          setContent(mergedContent);
-          setPage(pageSeoFields);
-          setError(null);
-        }
-      } catch (err) {
-        console.error("[usePracticeAreasContent] Error:", err);
-        if (isMounted) {
-          setError(err instanceof Error ? err : new Error("Unknown error"));
-          // Fall back to defaults on error
-          setContent(defaultPracticeAreasContent);
-        }
-      } finally {
+    loadPracticeAreasContent(urlPath)
+      .then((entry) => {
+        if (!isMounted) return;
+        setContent(entry.content);
+        setPage(entry.page);
+        setError(null);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setError(err instanceof Error ? err : new Error("Unknown error"));
+        setContent(defaultPracticeAreasContent);
+      })
+      .finally(() => {
         if (isMounted) {
           setIsLoading(false);
         }
-      }
-    }
-
-    fetchContent();
+      });
 
     return () => {
       isMounted = false;
@@ -124,8 +123,6 @@ export function usePracticeAreasContent(urlPath: string = '/practice-areas/'): U
   return { content, page, isLoading, error };
 }
 
-// Helper to clear cache (useful after admin edits)
 export function clearPracticeAreasContentCache() {
-  cachedContent = null;
-  cachedPage = null;
+  cachedEntry = null;
 }

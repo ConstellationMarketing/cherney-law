@@ -1,11 +1,8 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { AboutPageContent } from "../lib/cms/aboutPageTypes";
 import { defaultAboutContent } from "../lib/cms/aboutPageTypes";
 import type { PageSeoFields } from "../utils/resolveSeo";
-
-// Supabase configuration - use environment variables
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+import { PAGE_SEO_SELECT, fetchSupabaseJson } from "@site/lib/cms/api";
 
 interface UseAboutContentResult {
   content: AboutPageContent;
@@ -14,116 +11,17 @@ interface UseAboutContentResult {
   error: Error | null;
 }
 
-// Cache for about content by url path
-const aboutContentCache = new Map<string, { content: AboutPageContent; page: PageSeoFields | null }>();
-
-export function useAboutContent(urlPath: string = '/about/'): UseAboutContentResult {
-  const [content, setContent] = useState<AboutPageContent>(defaultAboutContent);
-  const [page, setPage] = useState<PageSeoFields | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function fetchAboutContent() {
-      try {
-        // Return cached content for this path if available
-        const cachedEntry = aboutContentCache.get(urlPath);
-        if (cachedEntry) {
-          if (isMounted) {
-            setContent(cachedEntry.content);
-            setPage(cachedEntry.page);
-            setIsLoading(false);
-          }
-          return;
-        }
-
-        // Fetch about page from pages table with SEO fields
-        const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/pages?url_path=eq.${urlPath}&status=eq.published&select=content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,url_path,title`,
-          {
-            headers: {
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (!Array.isArray(data) || data.length === 0) {
-          // No CMS content, use defaults
-          if (isMounted) {
-            setContent(defaultAboutContent);
-            setPage(null);
-            setIsLoading(false);
-          }
-          return;
-        }
-
-        const pageData = data[0];
-        const cmsContent = pageData.content as AboutPageContent;
-
-        // Merge CMS content with defaults (CMS content takes precedence)
-        const mergedContent = mergeWithDefaults(
-          cmsContent,
-          defaultAboutContent,
-        );
-
-        // Extract SEO fields
-        const pageSeoFields: PageSeoFields = {
-          meta_title: pageData.meta_title,
-          meta_description: pageData.meta_description,
-          canonical_url: pageData.canonical_url,
-          og_title: pageData.og_title,
-          og_description: pageData.og_description,
-          og_image: pageData.og_image,
-          noindex: pageData.noindex ?? false,
-          url_path: pageData.url_path,
-          title: pageData.title,
-        };
-
-        // Cache the results for this path
-        aboutContentCache.set(urlPath, {
-          content: mergedContent,
-          page: pageSeoFields,
-        });
-
-        if (isMounted) {
-          setContent(mergedContent);
-          setPage(pageSeoFields);
-          setError(null);
-        }
-      } catch (err) {
-        console.error("[useAboutContent] Error:", err);
-        if (isMounted) {
-          setError(err instanceof Error ? err : new Error("Unknown error"));
-          // Fall back to defaults on error
-          setContent(defaultAboutContent);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    fetchAboutContent();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [urlPath]);
-
-  return { content, page, isLoading, error };
+interface AboutContentCacheEntry {
+  content: AboutPageContent;
+  page: PageSeoFields | null;
 }
 
-// Deep merge CMS content with defaults
+const aboutContentCache = new Map<string, AboutContentCacheEntry>();
+
+function getCachedEntry(urlPath: string): AboutContentCacheEntry | null {
+  return aboutContentCache.get(urlPath) ?? null;
+}
+
 function mergeWithDefaults(
   cmsContent: Partial<AboutPageContent> | null | undefined,
   defaults: AboutPageContent,
@@ -180,7 +78,105 @@ function mergeWithDefaults(
   };
 }
 
-// Helper to clear cache (useful after admin edits)
+export async function loadAboutContent(
+  urlPath: string = "/about/",
+): Promise<AboutContentCacheEntry> {
+  const cached = getCachedEntry(urlPath);
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const data = await fetchSupabaseJson<any[]>(
+      `/rest/v1/pages?url_path=eq.${urlPath}&status=eq.published&select=${PAGE_SEO_SELECT}`,
+    );
+
+    if (!Array.isArray(data) || data.length === 0) {
+      return { content: defaultAboutContent, page: null };
+    }
+
+    const pageData = data[0];
+    const entry: AboutContentCacheEntry = {
+      content: mergeWithDefaults(
+        pageData.content as AboutPageContent,
+        defaultAboutContent,
+      ),
+      page: {
+        meta_title: pageData.meta_title,
+        meta_description: pageData.meta_description,
+        canonical_url: pageData.canonical_url,
+        og_title: pageData.og_title,
+        og_description: pageData.og_description,
+        og_image: pageData.og_image,
+        noindex: pageData.noindex ?? false,
+        url_path: pageData.url_path,
+        title: pageData.title,
+      },
+    };
+
+    aboutContentCache.set(urlPath, entry);
+    return entry;
+  } catch (err) {
+    console.error("[useAboutContent] Error:", err);
+    return { content: defaultAboutContent, page: null };
+  }
+}
+
+export function primeAboutContentCache(
+  entry: AboutContentCacheEntry,
+  urlPath: string = "/about/",
+) {
+  aboutContentCache.set(urlPath, entry);
+}
+
+export function useAboutContent(
+  urlPath: string = "/about/",
+): UseAboutContentResult {
+  const initialEntry = getCachedEntry(urlPath);
+  const [content, setContent] = useState<AboutPageContent>(
+    initialEntry?.content ?? defaultAboutContent,
+  );
+  const [page, setPage] = useState<PageSeoFields | null>(initialEntry?.page ?? null);
+  const [isLoading, setIsLoading] = useState(!initialEntry);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const cached = getCachedEntry(urlPath);
+    if (cached) {
+      setContent(cached.content);
+      setPage(cached.page);
+      setIsLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    loadAboutContent(urlPath)
+      .then((entry) => {
+        if (!isMounted) return;
+        setContent(entry.content);
+        setPage(entry.page);
+        setError(null);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setError(err instanceof Error ? err : new Error("Unknown error"));
+        setContent(defaultAboutContent);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [urlPath]);
+
+  return { content, page, isLoading, error };
+}
+
 export function clearAboutContentCache(urlPath?: string) {
   if (urlPath) {
     aboutContentCache.delete(urlPath);

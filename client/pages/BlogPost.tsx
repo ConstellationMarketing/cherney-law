@@ -3,6 +3,8 @@ import Layout from "@site/components/layout/Layout";
 import Seo from "@site/components/Seo";
 import { useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { useBlogPost } from "@site/hooks/useBlogPost";
+import { resolveSeo } from "@site/utils/resolveSeo";
+import { getSiteUrlFallback } from "@site/lib/runtime-env";
 import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
 import BlogSidebar from "@site/components/blog/BlogSidebar";
 import RecentPosts from "@site/components/blog/RecentPosts";
@@ -29,8 +31,7 @@ export default function BlogPost({ slugOverride }: { slugOverride?: string }) {
   const { pathname } = useLocation();
   const siteSettings = useSiteSettings();
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
-  const siteUrl = siteSettings.settings.siteUrl || "";
-  const siteName = siteSettings.settings.siteName || "";
+  const siteUrl = siteSettings.settings.siteUrl || getSiteUrlFallback();
 
   const { post, isLoading, notFound } = useBlogPost(slug || "");
 
@@ -48,20 +49,29 @@ export default function BlogPost({ slugOverride }: { slugOverride?: string }) {
     return <NotFound />;
   }
 
-  const title = post.meta_title || `${post.title} | ${siteName}`;
-  const description = post.meta_description || post.excerpt || "";
-  const canonical = post.canonical_url || (siteUrl ? `${siteUrl}/${post.slug.endsWith("/") ? post.slug : post.slug + "/"}` : undefined);
+  const seo = resolveSeo(
+    {
+      meta_title: post.meta_title,
+      meta_description: post.meta_description || post.excerpt,
+      canonical_url: post.canonical_url,
+      og_title: post.og_title,
+      og_description: post.og_description || post.excerpt,
+      og_image: post.og_image || post.featured_image,
+      noindex: post.noindex,
+      url_path: `/${post.slug.endsWith("/") ? post.slug : `${post.slug}/`}`,
+      title: post.title,
+    },
+    siteSettings.settings,
+    pathname,
+    siteUrl,
+  );
 
   return (
     <Layout heroBg="blog">
       <Seo
-        title={title}
-        description={description}
-        canonical={canonical}
-        image={post.og_image || post.featured_image || undefined}
-        noindex={post.noindex}
+        {...seo}
         ogTitle={post.og_title || undefined}
-        ogDescription={post.og_description || undefined}
+        ogDescription={post.og_description || post.excerpt || undefined}
       />
 
       {/* Hero */}

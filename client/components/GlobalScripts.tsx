@@ -5,7 +5,7 @@
  */
 
 import { useEffect } from "react";
-import { Helmet } from "react-helmet-async";
+import { Helmet } from "@site/lib/helmet";
 import { useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { refreshWhatConvertsDni } from "@site/lib/whatconvertsRefresh";
 
@@ -15,8 +15,19 @@ export default function GlobalScripts(): JSX.Element {
   useEffect(() => {
     // Inject custom head and footer scripts into the DOM
     if (typeof window !== "undefined" && typeof document !== "undefined") {
+      const hasPrerenderedHeadScripts = !!document.querySelector(
+        'meta[name="cms-prerendered-head-scripts"]',
+      );
+      const hasPrerenderedFooterScripts = !!document.querySelector(
+        'meta[name="cms-prerendered-footer-scripts"]',
+      );
+
       // Head scripts
-      if (settings.headScripts && settings.headScripts.trim()) {
+      if (
+        settings.headScripts &&
+        settings.headScripts.trim() &&
+        !hasPrerenderedHeadScripts
+      ) {
         const headDiv = document.createElement("div");
         headDiv.innerHTML = settings.headScripts;
 
@@ -51,7 +62,11 @@ export default function GlobalScripts(): JSX.Element {
       }
 
       // Footer scripts
-      if (settings.footerScripts && settings.footerScripts.trim()) {
+      if (
+        settings.footerScripts &&
+        settings.footerScripts.trim() &&
+        !hasPrerenderedFooterScripts
+      ) {
         const footerDiv = document.createElement("div");
         footerDiv.innerHTML = settings.footerScripts;
 

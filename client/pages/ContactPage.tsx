@@ -6,12 +6,13 @@ import ContactFormNew from "@site/components/contact/ContactFormNew";
 import { useContactContent } from "@site/hooks/useContactContent";
 import { useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { resolveSeo } from "@site/utils/resolveSeo";
+import { getSiteUrlFallback } from "@site/lib/runtime-env";
 
 export default function ContactPage() {
   const { pathname } = useLocation();
   const { content, page } = useContactContent(pathname);
   const siteSettings = useSiteSettings();
-  const siteUrl = siteSettings.settings.siteUrl || import.meta.env.VITE_SITE_URL || '';
+  const siteUrl = siteSettings.settings.siteUrl || getSiteUrlFallback();
 
   // Centralized SEO resolution
   const seo = resolveSeo(page, siteSettings.settings, pathname, siteUrl);
