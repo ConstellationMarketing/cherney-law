@@ -241,7 +241,10 @@ async function generateSSG() {
     : "";
 
   const fullRedirectsContent = [
-    "# Trailing-slash enforcement",
+    "# API routes",
+    "/api /.netlify/functions/api 200!",
+    "/api/* /.netlify/functions/api/:splat 200!",
+    "\n# Trailing-slash enforcement",
     trailingSlashRules,
     blogTrailingSlashRules
       ? `\n# Blog trailing-slash enforcement\n${blogTrailingSlashRules}`
