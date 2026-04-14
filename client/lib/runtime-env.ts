@@ -1,10 +1,19 @@
+function getProcessEnv(): Record<string, string | undefined> | undefined {
+  if (typeof globalThis === "undefined" || !("process" in globalThis)) {
+    return undefined;
+  }
+
+  const runtimeProcess = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
+  return runtimeProcess?.env;
+}
+
 export function getEnv(name: string): string | undefined {
   const importMetaEnv =
     typeof import.meta !== "undefined"
       ? (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env
       : undefined;
 
-  return importMetaEnv?.[name] ?? process.env[name];
+  return importMetaEnv?.[name] ?? getProcessEnv()?.[name];
 }
 
 export function isProductionRuntime(): boolean {
@@ -17,7 +26,7 @@ export function isProductionRuntime(): boolean {
     return importMetaEnv.PROD;
   }
 
-  return process.env.NODE_ENV === "production";
+  return getProcessEnv()?.NODE_ENV === "production";
 }
 
 export function getSiteUrlFallback(): string {

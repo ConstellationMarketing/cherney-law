@@ -2,7 +2,7 @@
  * Privacy Policy Page
  */
 
-import { Helmet } from "react-helmet-async";
+import { Helmet } from "@site/lib/helmet";
 import SimpleContentPage from "@site/components/pages/SimpleContentPage";
 import { useSimplePageContent } from "@site/hooks/useSimplePageContent";
 import { defaultPrivacyPolicyContent } from "@site/lib/cms/simplePageTypes";

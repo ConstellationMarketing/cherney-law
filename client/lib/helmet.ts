@@ -1,8 +1,15 @@
-import * as ReactHelmetAsyncModule from "react-helmet-async";
+import ReactHelmetAsync from "react-helmet-async/lib/index.js";
 
-const ReactHelmetAsync =
-  ((ReactHelmetAsyncModule as any)["default"] as typeof ReactHelmetAsyncModule) ||
-  ReactHelmetAsyncModule;
+const helmetModule =
+  (ReactHelmetAsync as {
+    default?: {
+      Helmet?: unknown;
+      HelmetProvider?: unknown;
+    };
+    Helmet?: unknown;
+    HelmetProvider?: unknown;
+  }).default ?? ReactHelmetAsync;
 
-export const Helmet = (ReactHelmetAsync as any).Helmet;
-export const HelmetProvider = (ReactHelmetAsync as any).HelmetProvider;
+export const Helmet = helmetModule.Helmet as typeof import("react-helmet-async").Helmet;
+export const HelmetProvider =
+  helmetModule.HelmetProvider as typeof import("react-helmet-async").HelmetProvider;

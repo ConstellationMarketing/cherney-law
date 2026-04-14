@@ -3,7 +3,7 @@
  * Renders JSON-LD structured data via React Helmet
  */
 
-import { Helmet } from "react-helmet-async";
+import { Helmet } from "@site/lib/helmet";
 import {
   parseSchemaTypes,
   buildStructuredData,
