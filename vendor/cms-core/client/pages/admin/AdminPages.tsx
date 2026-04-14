@@ -36,6 +36,7 @@ import {
 export default function AdminPages() {
   const [pages, setPages] = useState<Page[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const navigate = useNavigate();
@@ -50,13 +51,26 @@ export default function AdminPages() {
 
   const fetchPages = async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       const res = await fetch('/api/admin/pages');
-      if (!res.ok) throw new Error(`Failed to fetch pages: ${res.status}`);
+      const contentType = res.headers.get('content-type') || '';
+
+      if (!res.ok) {
+        const bodyText = await res.text().catch(() => '');
+        throw new Error(bodyText || `Failed to fetch pages: ${res.status}`);
+      }
+
+      if (!contentType.includes('application/json')) {
+        throw new Error('Pages API returned an unexpected non-JSON response. This usually means the production API route is misconfigured.');
+      }
+
       const data = await res.json();
-      setPages(data || []);
+      setPages(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching pages:', err);
+      setPages([]);
+      setFetchError(err instanceof Error ? err.message : 'Failed to load pages.');
     } finally {
       setLoading(false);
     }
@@ -241,6 +255,12 @@ export default function AdminPages() {
         </Select>
       </div>
 
+      {fetchError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          Failed to load pages. {fetchError}
+        </div>
+      )}
+
       <div className="bg-white rounded-lg border">
         <Table>
           <TableHeader>
@@ -271,7 +291,7 @@ export default function AdminPages() {
             {filteredPages.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                  No pages found
+                  {fetchError ? 'Unable to load pages' : 'No pages found'}
                 </TableCell>
               </TableRow>
             ) : (
