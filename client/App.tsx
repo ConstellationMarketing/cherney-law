@@ -10,7 +10,6 @@ import WcDniManager from "./components/WcDniManager";
 import GlobalScripts from "./components/GlobalScripts";
 import DynamicCmsPage from "./pages/DynamicCmsPage";
 import AdminRoutes from "./pages/AdminRoutes";
-import ThankYou from "./pages/ThankYou";
 import ScrollToTop from "./components/ScrollToTop";
 
 interface ErrorBoundaryState {
@@ -91,7 +90,6 @@ export function AppShell() {
       <ScrollToTop />
       <Routes>
         <Route path="/admin/*" element={<AdminRoutes />} />
-        <Route path="/thank-you/" element={<ThankYou />} />
         <Route path="*" element={<DynamicCmsPage />} />
       </Routes>
     </>
