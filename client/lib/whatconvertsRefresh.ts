@@ -6,6 +6,8 @@
  * utility forces WC to see the current URL and rescan the current document.
  */
 
+import { isWhatConvertsScriptSrc } from "@site/lib/whatconvertsScripts";
+
 interface RefreshOptions {
   force?: boolean;
 }
@@ -16,21 +18,12 @@ const WC_REFRESH_ATTR = "data-wc-dni-refresh";
 
 let lastRefreshTime = 0;
 
-function isWcScriptSrc(src: string): boolean {
-  return (
-    src.includes("whatconverts") ||
-    src.includes("_wc.js") ||
-    src.includes("ksrndkehqnwntyxlhgto.com") ||
-    /\/103496\.js(?:[?#]|$)/.test(src)
-  );
-}
-
 function findOriginalWcScript(): HTMLScriptElement | null {
   const scripts = document.querySelectorAll<HTMLScriptElement>("script[src]");
 
   for (const script of scripts) {
     const src = script.src || script.getAttribute("src") || "";
-    if (src && isWcScriptSrc(src)) {
+    if (src && isWhatConvertsScriptSrc(src)) {
       return script;
     }
   }

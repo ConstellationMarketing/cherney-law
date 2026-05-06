@@ -5,6 +5,7 @@ import type { Database } from "../client/lib/database.types";
 import { renderAppToString } from "../../../client/entry-server.tsx";
 import { preparePrerenderState } from "../../../client/lib/prerender/preparePrerenderState.ts";
 import { serializePreloadedState } from "../../../client/lib/prerender/preloadedState.ts";
+import { splitWhatConvertsScripts } from "../../../client/lib/whatconvertsScripts.ts";
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -90,6 +91,7 @@ function injectRenderedHtml(
 ) {
   const cleanedTemplate = stripPlaceholderSeo(template);
   const helmet = helmetContext.helmet;
+  const headScripts = splitWhatConvertsScripts(preloadedSiteSettings.headScripts);
 
   const headParts = [
     helmet?.title?.toString() || "",
@@ -101,7 +103,7 @@ function injectRenderedHtml(
     preloadedSiteSettings.headScripts
       ? '<meta name="cms-prerendered-head-scripts" content="true">'
       : "",
-    preloadedSiteSettings.headScripts || "",
+    headScripts.safeHtml,
   ].filter(Boolean);
 
   const preloadScript = `<script>window.__CMS_PRELOADED_STATE__=${serializedState};</script>`;
