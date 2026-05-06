@@ -112,11 +112,49 @@ interface SiteSettingsRow {
   footer_scripts?: string | null;
 }
 
+interface DniPhoneOverride {
+  phoneNumber: string;
+  phoneDisplay: string;
+}
+
 interface SiteSettingsContextValue {
   settings: SiteSettings;
   isLoading: boolean;
+  phoneNumber: string;
   phoneDisplay: string;
   phoneLabel: string;
+}
+
+const DNI_PHONE_EVENT = "dni-phone-updated";
+const DNI_PHONE_STORAGE_KEY = "dni-phone-override";
+
+function sanitizePhoneNumber(input: string): string {
+  return input.replace(/\D/g, "");
+}
+
+function readStoredDniPhoneOverride(): DniPhoneOverride | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(DNI_PHONE_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<DniPhoneOverride>;
+    const phoneNumber = sanitizePhoneNumber(parsed.phoneNumber || "");
+    const phoneDisplay = (parsed.phoneDisplay || "").trim();
+
+    if (!phoneNumber || !phoneDisplay) {
+      return null;
+    }
+
+    return { phoneNumber, phoneDisplay };
+  } catch {
+    return null;
+  }
 }
 
 const SiteSettingsContext = createContext<SiteSettingsContextValue | null>(null);
@@ -215,6 +253,9 @@ export function SiteSettingsProvider({ children }: SiteSettingsProviderProps) {
     cachedSettings || DEFAULT_SETTINGS,
   );
   const [isLoading, setIsLoading] = useState(!cachedSettings);
+  const [dniPhoneOverride, setDniPhoneOverride] = useState<DniPhoneOverride | null>(
+    () => readStoredDniPhoneOverride(),
+  );
 
   useEffect(() => {
     const existing = getCachedSiteSettings();
@@ -242,10 +283,53 @@ export function SiteSettingsProvider({ children }: SiteSettingsProviderProps) {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleDniPhoneUpdate = (event: Event) => {
+      const detail = (event as CustomEvent<Partial<DniPhoneOverride>>).detail;
+      const phoneNumber = sanitizePhoneNumber(detail?.phoneNumber || "");
+      const phoneDisplay = (detail?.phoneDisplay || "").trim();
+
+      if (!phoneNumber || !phoneDisplay) {
+        return;
+      }
+
+      const nextOverride = { phoneNumber, phoneDisplay };
+      setDniPhoneOverride(nextOverride);
+
+      try {
+        window.sessionStorage.setItem(
+          DNI_PHONE_STORAGE_KEY,
+          JSON.stringify(nextOverride),
+        );
+      } catch {
+        // Ignore storage failures
+      }
+    };
+
+    const initialOverride = readStoredDniPhoneOverride();
+    if (initialOverride) {
+      setDniPhoneOverride(initialOverride);
+    }
+
+    window.addEventListener(DNI_PHONE_EVENT, handleDniPhoneUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener(DNI_PHONE_EVENT, handleDniPhoneUpdate as EventListener);
+    };
+  }, []);
+
+  const effectivePhoneNumber = dniPhoneOverride?.phoneNumber || settings.phoneNumber;
+  const effectivePhoneDisplay = dniPhoneOverride?.phoneDisplay || settings.phoneDisplay;
+
   const value: SiteSettingsContextValue = {
     settings,
     isLoading,
-    phoneDisplay: settings.phoneDisplay,
+    phoneNumber: effectivePhoneNumber,
+    phoneDisplay: effectivePhoneDisplay,
     phoneLabel: settings.phoneAvailability,
   };
 
@@ -262,6 +346,7 @@ export function useSiteSettings(): SiteSettingsContextValue {
     return {
       settings: DEFAULT_SETTINGS,
       isLoading: false,
+      phoneNumber: DEFAULT_SETTINGS.phoneNumber,
       phoneDisplay: DEFAULT_SETTINGS.phoneDisplay,
       phoneLabel: DEFAULT_SETTINGS.phoneAvailability,
     };
@@ -270,11 +355,11 @@ export function useSiteSettings(): SiteSettingsContextValue {
 }
 
 export function useGlobalPhone() {
-  const { settings, isLoading } = useSiteSettings();
+  const { phoneNumber, phoneDisplay, phoneLabel, isLoading } = useSiteSettings();
   return {
-    phoneNumber: settings.phoneNumber,
-    phoneDisplay: settings.phoneDisplay,
-    phoneLabel: settings.phoneAvailability,
+    phoneNumber,
+    phoneDisplay,
+    phoneLabel,
     isLoading,
   };
 }

@@ -105,7 +105,13 @@ export default function BlogPost({ slugOverride }: { slugOverride?: string }) {
             </div>
 
             <div className="shrink-0 w-full md:w-auto md:max-w-[380px] space-y-3">
-              <a href={`tel:${phoneDisplay.replace(/[^0-9]/g, "")}`} data-dni-phone="primary" className="block">
+              <a
+                href={`tel:${phoneDisplay.replace(/[^0-9]/g, "")}`}
+                data-dni-phone="primary"
+                data-dni-original-href={`tel:${phoneDisplay.replace(/[^0-9]/g, "")}`}
+                data-dni-original-text={phoneDisplay}
+                className="block"
+              >
                 <div className="bg-law-accent p-[8px] w-full cursor-pointer hover:bg-[#7a9e10] transition-colors duration-300 group">
                   <div className="flex items-start gap-4">
                     <div className="bg-white p-[15px] mt-1 flex items-center justify-center">

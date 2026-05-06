@@ -94,6 +94,7 @@ export default function WcDniManager(): null {
       }
 
       mutationTimer = setTimeout(() => {
+        resetWcThrottle();
         refreshWhatConvertsDni("mutation");
         startDniFooterSync();
       }, 150);

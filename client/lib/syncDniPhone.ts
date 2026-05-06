@@ -13,9 +13,45 @@ let syncStartTime = 0;
 const MAX_SYNC_DURATION_MS = 12000;
 const POLL_INTERVAL_MS = 250;
 const PHONE_TEXT_REGEX = /(\+?1[-.\s]?)?(?:\(\d{3}\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}/;
+const DNI_PHONE_EVENT = "dni-phone-updated";
 
 let lastKnownDniHref: string | null = null;
 let lastKnownDniText: string | null = null;
+let lastBroadcastKey: string | null = null;
+
+function phoneHrefToDigits(href: string): string {
+  return href.replace(/^tel:/, "").replace(/\D/g, "");
+}
+
+function broadcastDniState(): void {
+  if (
+    typeof window === "undefined" ||
+    !lastKnownDniHref?.startsWith("tel:") ||
+    !lastKnownDniText
+  ) {
+    return;
+  }
+
+  const phoneNumber = phoneHrefToDigits(lastKnownDniHref);
+  if (!phoneNumber) {
+    return;
+  }
+
+  const nextKey = `${phoneNumber}|${lastKnownDniText}`;
+  if (nextKey === lastBroadcastKey) {
+    return;
+  }
+
+  lastBroadcastKey = nextKey;
+  window.dispatchEvent(
+    new CustomEvent(DNI_PHONE_EVENT, {
+      detail: {
+        phoneNumber,
+        phoneDisplay: lastKnownDniText,
+      },
+    }),
+  );
+}
 
 function extractPhoneText(element: Element | null): string | null {
   if (!element) return null;
@@ -35,16 +71,25 @@ function captureCurrentDniState(): void {
   for (const link of primaryLinks) {
     const href = link.getAttribute("href");
     const phoneText = extractPhoneText(link);
+    const originalHref = link.getAttribute("data-dni-original-href");
+    const originalText = link.getAttribute("data-dni-original-text")?.trim() || null;
+    const hasSwappedHref = !!href?.startsWith("tel:") && href !== originalHref;
+    const hasSwappedText = !!phoneText && !!originalText && phoneText !== originalText;
 
-    if (href?.startsWith("tel:")) {
+    if (!hasSwappedHref && !hasSwappedText) {
+      continue;
+    }
+
+    if (hasSwappedHref && href?.startsWith("tel:")) {
       lastKnownDniHref = href;
     }
 
-    if (phoneText) {
+    if (hasSwappedText && phoneText) {
       lastKnownDniText = phoneText;
     }
 
     if (lastKnownDniHref && lastKnownDniText) {
+      broadcastDniState();
       return;
     }
   }
@@ -114,6 +159,7 @@ export function startDniFooterSync(): void {
   function poll(): void {
     try {
       captureCurrentDniState();
+      broadcastDniState();
       applyStoredDniState();
     } catch (_) {
       // Ignore and keep polling

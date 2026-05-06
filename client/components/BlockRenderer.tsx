@@ -188,7 +188,13 @@ function HeroBlock({
 
             {block.showCTA && (
               <div className="shrink-0 w-full md:w-auto md:max-w-[380px]">
-                <a href={telHref} data-dni-phone="primary" className="block">
+                <a
+                  href={telHref}
+                  data-dni-phone="primary"
+                  data-dni-original-href={telHref}
+                  data-dni-original-text={phoneDisplay}
+                  className="block"
+                >
                   <div className="bg-law-accent p-[8px] w-full cursor-pointer border-2 border-transparent hover:border-white transition-all duration-300 group">
                     <div className="flex items-start gap-4">
                       <div className="bg-white p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
@@ -240,7 +246,13 @@ function HeroBlock({
 
           {block.showCTA && (
             <div className="shrink-0 w-full md:w-auto md:max-w-[380px]">
-              <a href={telHref} data-dni-phone="primary" className="block">
+              <a
+                href={telHref}
+                data-dni-phone="primary"
+                data-dni-original-href={telHref}
+                data-dni-original-text={phoneDisplay}
+                className="block"
+              >
                 <div className="bg-white p-[8px] w-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
                   <div className="flex items-start gap-4">
                     <div className="bg-law-accent p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
@@ -346,6 +358,8 @@ function CTABlock({
           <a
             href={`tel:${phoneDisplay.replace(/\D/g, "")}`}
             data-dni-phone="primary"
+            data-dni-original-href={`tel:${phoneDisplay.replace(/\D/g, "")}`}
+            data-dni-original-text={phoneDisplay}
             className="block w-full"
           >
             <div className="bg-white p-[8px] w-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">

@@ -139,7 +139,7 @@ function LocationColumn({
 }
 
 export default function Footer() {
-  const { phoneDisplay, phoneLabel } = useGlobalPhone();
+  const { phoneNumber, phoneDisplay, phoneLabel } = useGlobalPhone();
   const { settings } = useSiteSettings();
 
   const enabledSocials = settings.socialLinks.filter((s) => s.enabled && s.url);
@@ -159,8 +159,10 @@ export default function Footer() {
         {/* Right: Call Us Box */}
         <div className="lg:w-[25%]">
           <a
-            href={`tel:${settings.phoneNumber || phoneToTel(phoneDisplay)}`}
+            href={`tel:${phoneNumber || phoneToTel(phoneDisplay)}`}
             data-dni-phone="footer"
+            data-dni-original-href={`tel:${phoneNumber || phoneToTel(phoneDisplay)}`}
+            data-dni-original-text={phoneDisplay}
             className="block bg-law-accent p-[8px] w-full ml-auto cursor-pointer transition-all duration-300 hover:bg-law-accent-dark group no-underline"
           >
             <div className="table w-full mx-auto max-w-full flex-row-reverse">
