@@ -4,20 +4,43 @@
  */
 
 let lastRefreshTime = 0;
-const THROTTLE_MS = 2000;
+const THROTTLE_MS = 1500;
 
 /**
- * Refresh WhatConverts DNI to handle phone number swaps in SPA
- * Uses three strategies in order:
- * 1. Official WC SPA API: window._wcq.push({event: 'pageview', path: location.pathname})
- * 2. Internal WC re-scan: window._wci.run() or WhatConverts.track()
- * 3. Fallback: re-insert the original WC script tag (clone and append)
+ * Find the WhatConverts script element in the DOM.
+ * Checks both static script tags and dynamically injected ones.
+ */
+function findWcScript(): HTMLScriptElement | null {
+  const scripts = document.querySelectorAll<HTMLScriptElement>("script[src]");
+  for (const script of scripts) {
+    const src = script.src || "";
+    if (src.includes("whatconverts") || src.includes("_wc.js")) {
+      return script;
+    }
+  }
+  return null;
+}
+
+/**
+ * Refresh WhatConverts DNI to handle phone number swaps in SPA navigation.
+ *
+ * Strategy order:
+ * 1. Notify WC via official SPA API (_wcq / _wci / WhatConverts) — fast path for analytics
+ * 2. Always re-insert the WC script tag — this is the only reliable way to trigger
+ *    a full DNI re-scan in WhatConverts' current SDK.
+ *
+ * Note: We do NOT short-circuit after strategy 1 because the API calls only update
+ * WC's analytics state; they do not reliably re-scan and swap phone numbers in the DOM.
  */
 export function refreshWhatConvertsDni(
   reason: string,
   opts?: { force?: boolean }
 ): void {
   try {
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      return;
+    }
+
     const now = Date.now();
     const timeSinceLastRefresh = now - lastRefreshTime;
 
@@ -28,92 +51,63 @@ export function refreshWhatConvertsDni(
 
     lastRefreshTime = now;
 
-    // Strategy 1: Official WC SPA API
-    if (
-      typeof window !== "undefined" &&
-      (window as any)._wcq &&
-      typeof (window as any)._wcq.push === "function"
-    ) {
-      try {
+    // Strategy 1: Notify WC via official SPA event API (analytics / partial update)
+    // We do this but do NOT return early — it alone doesn't guarantee DNI re-scan.
+    try {
+      if ((window as any)._wcq && typeof (window as any)._wcq.push === "function") {
         (window as any)._wcq.push({
           event: "pageview",
-          path: location.pathname,
+          path: window.location.pathname,
         });
-        return;
-      } catch (e) {
-        // Fall through to strategy 2
       }
+    } catch (_) {
+      // Ignore — ad blockers or missing WC init
     }
 
-    // Strategy 2: Internal WC re-scan
-    if (typeof window !== "undefined") {
-      // Try _wci.run()
-      if (
-        (window as any)._wci &&
-        typeof (window as any)._wci.run === "function"
-      ) {
-        try {
-          (window as any)._wci.run();
-          return;
-        } catch (e) {
-          // Fall through to strategy 3
-        }
+    try {
+      if ((window as any)._wci && typeof (window as any)._wci.run === "function") {
+        (window as any)._wci.run();
       }
+    } catch (_) {
+      // Ignore
+    }
 
-      // Try WhatConverts.track()
+    try {
       if (
         (window as any).WhatConverts &&
         typeof (window as any).WhatConverts.track === "function"
       ) {
-        try {
-          (window as any).WhatConverts.track();
-          return;
-        } catch (e) {
-          // Fall through to strategy 3
-        }
+        (window as any).WhatConverts.track();
       }
+    } catch (_) {
+      // Ignore
     }
 
-    // Strategy 3: Fallback - re-insert WC script
-    if (typeof window !== "undefined" && typeof document !== "undefined") {
-      // Find the original WC script tag
-      const scripts = document.querySelectorAll("script");
-      let wcScript: HTMLScriptElement | null = null;
+    // Strategy 2: Re-insert the WC script tag to guarantee a full DNI re-scan.
+    // WhatConverts DNI works by scanning the DOM when the script runs.
+    // Re-inserting triggers that scan fresh on the current page content.
+    const wcScript = findWcScript();
 
-      for (const script of scripts) {
-        if (
-          script.src &&
-          (script.src.includes("whatconverts") ||
-            script.src.includes("_wc.js"))
-        ) {
-          wcScript = script;
-          break;
-        }
-      }
+    if (wcScript && wcScript.src) {
+      // Remove any previously re-inserted DNI copies first
+      document
+        .querySelectorAll('script[data-wc="dni"]')
+        .forEach((el) => el.remove());
 
-      if (wcScript && wcScript.src) {
-        // Remove any previously re-inserted copies
-        const oldCopies = document.querySelectorAll(
-          'script[data-wc="dni"]'
-        );
-        oldCopies.forEach((copy) => copy.remove());
-
-        // Clone and re-append the original script
-        const newScript = document.createElement("script");
-        newScript.src = wcScript.src;
-        newScript.setAttribute("data-wc", "dni");
-        newScript.async = true;
-        document.body.appendChild(newScript);
-      }
+      const newScript = document.createElement("script");
+      newScript.src = wcScript.src;
+      newScript.setAttribute("data-wc", "dni");
+      newScript.async = true;
+      document.body.appendChild(newScript);
     }
   } catch (err) {
-    // Silently catch all errors to never break the page
-    // WhatConverts might be blocked by ad blockers
+    // Silently catch all errors — WC may be blocked by ad blockers
   }
 }
 
 /**
- * Clear the throttle timer (useful for testing)
+ * Reset the throttle so the next call is not skipped.
+ * Call this before intentional refreshes (e.g. route changes).
  */
 export function resetWcThrottle(): void {
   lastRefreshTime = 0;

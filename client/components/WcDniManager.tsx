@@ -31,9 +31,31 @@ export default function WcDniManager(): null {
   }, []);
 
   // On route change: refresh for the new page
+  // IMPORTANT: reset throttle first so navigation always triggers a fresh scan
   useEffect(() => {
+    // Always reset throttle on route change so every navigation triggers a fresh scan
+    resetWcThrottle();
     refreshWhatConvertsDni("route");
     startDniFooterSync();
+
+    // Second pass after React has had time to paint the new page content
+    // (data-dni-phone elements may not exist yet at the time of the first call)
+    const earlyTimer = setTimeout(() => {
+      resetWcThrottle();
+      refreshWhatConvertsDni("route-early");
+      startDniFooterSync();
+    }, 300);
+
+    const lateTimer = setTimeout(() => {
+      resetWcThrottle();
+      refreshWhatConvertsDni("route-late");
+      startDniFooterSync();
+    }, 1200);
+
+    return () => {
+      clearTimeout(earlyTimer);
+      clearTimeout(lateTimer);
+    };
   }, [location.pathname]);
 
   // Optional: Use MutationObserver to detect DOM changes with phone markup
