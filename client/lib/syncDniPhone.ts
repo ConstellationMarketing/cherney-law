@@ -1,83 +1,139 @@
-import {
-  refreshWhatConvertsDni,
-  resetWcThrottle,
-} from "@site/lib/whatconvertsRefresh";
+import { refreshWhatConvertsDni } from "@site/lib/whatconvertsRefresh";
 
-const PHONE_TEXT_REGEX = /(\+?1[-.\s]?)?(?:\(\d{3}\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}/;
-const DNI_SELECTOR = "a[data-dni-phone]";
+const PHONE_REGEX = /(\+?1[-.\s]?)?(?:\(\d{3}\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}/;
+const PHONE_GLOBAL_REGEX = /(\+?1[-.\s]?)?(?:\(\d{3}\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}/g;
+const TEL_SELECTOR = 'a[href^="tel:"]';
+const POLL_INTERVAL_MS = 250;
+const MAX_POLL_DURATION_MS = 15_000;
 
-const MAX_POLL_DURATION_MS = 10000;
-const POLL_INTERVAL_MS = 150;
-const FALLBACK_REFRESH_DELAY_MS = 750;
+const SKIP_TAGS = new Set([
+  "SCRIPT",
+  "STYLE",
+  "TEXTAREA",
+  "INPUT",
+  "SELECT",
+  "NOSCRIPT",
+  "IFRAME",
+  "SVG",
+]);
 
 interface DniPhoneCapture {
   href: string | null;
-  text: string | null;
+  display: string | null;
+  key: string | null;
   updatedAt: number;
 }
 
 interface AnchorSnapshot {
   href: string | null;
+  hrefKey: string | null;
   text: string | null;
+  textKey: string | null;
 }
 
 declare global {
   interface Window {
-    __WC_DNI_CAPTURE__?: Partial<DniPhoneCapture>;
+    __WC_DNI_CAPTURE__?: Partial<DniPhoneCapture> & { text?: string | null };
     __WC_DNI_CAPTURE_GUARD__?: boolean;
   }
 }
 
-let pollTimeoutId: ReturnType<typeof setTimeout> | null = null;
-let fallbackTimeoutId: ReturnType<typeof setTimeout> | null = null;
-let observer: MutationObserver | null = null;
-let pollStartTime = 0;
+let syncTimer: ReturnType<typeof setInterval> | null = null;
+let syncStopTimer: ReturnType<typeof setTimeout> | null = null;
 let latestCapture: DniPhoneCapture | null = null;
 let originalAnchors = new WeakMap<HTMLAnchorElement, AnchorSnapshot>();
+let originalPhoneKeys = new Set<string>();
+let originalPhoneTexts = new Map<string, Set<string>>();
 
-function extractPhoneText(element: Element | null): string | null {
-  const text = element?.textContent?.trim() || "";
-  const matches = text.match(PHONE_TEXT_REGEX);
-  return matches?.[0] || null;
-}
-
-function replacePhoneText(anchor: HTMLAnchorElement, nextPhoneText: string): void {
-  const walker = document.createTreeWalker(anchor, NodeFilter.SHOW_TEXT);
-  const textNodes: Text[] = [];
-
-  while (walker.nextNode()) {
-    const node = walker.currentNode as Text;
-    const value = node.nodeValue || "";
-    if (PHONE_TEXT_REGEX.test(value)) {
-      textNodes.push(node);
-    }
+function normalizePhone(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
   }
 
-  textNodes.forEach((node) => {
-    node.nodeValue = (node.nodeValue || "").replace(
-      PHONE_TEXT_REGEX,
-      nextPhoneText,
-    );
-  });
+  let digits = value.replace(/\D/g, "");
+
+  if (digits.length === 11 && digits.startsWith("1")) {
+    digits = digits.slice(1);
+  }
+
+  return digits.length === 10 ? digits : null;
+}
+
+function extractPhoneText(element: Element | null): string | null {
+  const match = element?.textContent?.match(PHONE_REGEX);
+  return match?.[0] || null;
+}
+
+function getTelHrefKey(href: string | null | undefined): string | null {
+  if (!href?.startsWith("tel:")) {
+    return null;
+  }
+
+  return normalizePhone(href);
+}
+
+function formatPhoneDisplay(key: string): string {
+  return `(${key.slice(0, 3)}) ${key.slice(3, 6)}-${key.slice(6)}`;
 }
 
 function normalizeCapture(
-  capture: Partial<DniPhoneCapture> | null | undefined,
+  capture: Partial<DniPhoneCapture> & { text?: string | null } | null | undefined,
 ): DniPhoneCapture | null {
   const href = capture?.href?.startsWith("tel:") ? capture.href : null;
-  const text = capture?.text && PHONE_TEXT_REGEX.test(capture.text)
-    ? capture.text
-    : null;
+  const display = capture?.display || capture?.text || null;
+  const key = capture?.key || getTelHrefKey(href) || normalizePhone(display);
 
-  if (!href && !text) {
+  if (!key || originalPhoneKeys.has(key)) {
     return null;
   }
 
   return {
-    href,
-    text,
+    href: href || `tel:${key}`,
+    display: display && PHONE_REGEX.test(display) ? display : formatPhoneDisplay(key),
+    key,
     updatedAt: typeof capture?.updatedAt === "number" ? capture.updatedAt : Date.now(),
   };
+}
+
+function rememberOriginalPhone(key: string | null, text?: string | null): void {
+  if (!key || key === latestCapture?.key) {
+    return;
+  }
+
+  originalPhoneKeys.add(key);
+
+  if (text && PHONE_REGEX.test(text)) {
+    const texts = originalPhoneTexts.get(key) || new Set<string>();
+    texts.add(text);
+    originalPhoneTexts.set(key, texts);
+  }
+}
+
+function rememberAnchor(anchor: HTMLAnchorElement): void {
+  const href = anchor.getAttribute("href");
+  const hrefKey = getTelHrefKey(href);
+  const text = extractPhoneText(anchor);
+  const textKey = normalizePhone(text);
+
+  if (!originalAnchors.has(anchor)) {
+    originalAnchors.set(anchor, {
+      href,
+      hrefKey,
+      text,
+      textKey,
+    });
+  }
+
+  rememberOriginalPhone(hrefKey, text);
+  rememberOriginalPhone(textKey, text);
+}
+
+function rememberAnchors(root: ParentNode | Element | Document = document): void {
+  if (root instanceof HTMLAnchorElement && root.matches(TEL_SELECTOR)) {
+    rememberAnchor(root);
+  }
+
+  root.querySelectorAll?.<HTMLAnchorElement>(TEL_SELECTOR).forEach(rememberAnchor);
 }
 
 function getGuardCapture(): DniPhoneCapture | null {
@@ -85,8 +141,10 @@ function getGuardCapture(): DniPhoneCapture | null {
 }
 
 function setLatestCapture(capture: DniPhoneCapture): void {
-  latestCapture = capture;
-  window.__WC_DNI_CAPTURE__ = capture;
+  if (!latestCapture || capture.updatedAt >= latestCapture.updatedAt) {
+    latestCapture = capture;
+    window.__WC_DNI_CAPTURE__ = capture;
+  }
 }
 
 function captureFromGuard(): boolean {
@@ -95,183 +153,167 @@ function captureFromGuard(): boolean {
     return false;
   }
 
-  if (!latestCapture || capture.updatedAt >= latestCapture.updatedAt) {
-    setLatestCapture(capture);
-  }
-
+  setLatestCapture(capture);
   return true;
 }
 
-function rememberAnchor(anchor: HTMLAnchorElement): void {
-  if (originalAnchors.has(anchor)) {
-    return;
-  }
-
-  originalAnchors.set(anchor, {
-    href: anchor.getAttribute("href"),
-    text: extractPhoneText(anchor),
-  });
-}
-
-function rememberAnchors(root: ParentNode | Element | Document = document): void {
-  if (root instanceof HTMLAnchorElement && root.matches(DNI_SELECTOR)) {
-    rememberAnchor(root);
-  }
-
-  root.querySelectorAll?.<HTMLAnchorElement>(DNI_SELECTOR).forEach(rememberAnchor);
-}
-
-function getAnchorFromMutationTarget(target: Node): HTMLAnchorElement | null {
-  if (target instanceof HTMLAnchorElement && target.matches(DNI_SELECTOR)) {
-    return target;
-  }
-
-  if (target instanceof Element) {
-    return target.closest<HTMLAnchorElement>(DNI_SELECTOR);
-  }
-
-  return target.parentElement?.closest<HTMLAnchorElement>(DNI_SELECTOR) || null;
-}
-
-function captureChangedAnchor(anchor: HTMLAnchorElement): boolean {
+function captureFromAnchor(anchor: HTMLAnchorElement): boolean {
   rememberAnchor(anchor);
 
-  const original = originalAnchors.get(anchor);
-  if (!original) {
+  const href = anchor.getAttribute("href");
+  const hrefKey = getTelHrefKey(href);
+  const text = extractPhoneText(anchor);
+  const textKey = normalizePhone(text);
+  const snapshot = originalAnchors.get(anchor);
+
+  const changedFromSnapshot =
+    (!!hrefKey && !!snapshot?.hrefKey && hrefKey !== snapshot.hrefKey) ||
+    (!!textKey && !!snapshot?.textKey && textKey !== snapshot.textKey);
+  const nonOriginalHref = !!hrefKey && !originalPhoneKeys.has(hrefKey);
+  const nonOriginalText = !!textKey && !originalPhoneKeys.has(textKey);
+
+  if (!changedFromSnapshot && !nonOriginalHref && !nonOriginalText) {
     return false;
   }
 
-  const href = anchor.getAttribute("href");
-  const text = extractPhoneText(anchor);
-  const changedHref = !!href && href.startsWith("tel:") && href !== original.href;
-  const changedText = !!text && text !== original.text;
-
-  if (!changedHref && !changedText) {
+  const key = nonOriginalHref || changedFromSnapshot ? hrefKey : textKey;
+  if (!key || originalPhoneKeys.has(key)) {
     return false;
   }
 
   setLatestCapture({
-    href: href?.startsWith("tel:") ? href : latestCapture?.href || null,
-    text: text || latestCapture?.text || null,
+    href: hrefKey === key && href?.startsWith("tel:") ? href : `tel:${key}`,
+    display: textKey === key && text ? text : formatPhoneDisplay(key),
+    key,
     updatedAt: Date.now(),
   });
 
   return true;
 }
 
+function updateElementPhoneText(root: Element, display: string): boolean {
+  let changed = false;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parent = node.parentElement;
+
+      if (!parent || SKIP_TAGS.has(parent.tagName) || parent.closest("[data-builder-editor]")) {
+        return NodeFilter.FILTER_REJECT;
+      }
+
+      return PHONE_REGEX.test(node.nodeValue || "")
+        ? NodeFilter.FILTER_ACCEPT
+        : NodeFilter.FILTER_REJECT;
+    },
+  });
+
+  const nodes: Text[] = [];
+  while (walker.nextNode()) {
+    nodes.push(walker.currentNode as Text);
+  }
+
+  nodes.forEach((node) => {
+    const current = node.nodeValue || "";
+    const next = current.replace(PHONE_GLOBAL_REGEX, (match) => {
+      const key = normalizePhone(match);
+      return key && originalPhoneKeys.has(key) ? display : match;
+    });
+
+    if (next !== current) {
+      node.nodeValue = next;
+      changed = true;
+    }
+  });
+
+  return changed;
+}
+
 function applyCapturedDniPhone(): boolean {
   const capture = latestCapture || getGuardCapture();
-  if (!capture) {
+  if (!capture?.key) {
     return false;
   }
 
-  let applied = false;
+  setLatestCapture(capture);
 
-  document.querySelectorAll<HTMLAnchorElement>(DNI_SELECTOR).forEach((anchor) => {
+  let applied = false;
+  const display = capture.display || formatPhoneDisplay(capture.key);
+  const href = capture.href || `tel:${capture.key}`;
+
+  document.querySelectorAll<HTMLAnchorElement>(TEL_SELECTOR).forEach((anchor) => {
     rememberAnchor(anchor);
 
-    if (capture.href && anchor.getAttribute("href") !== capture.href) {
-      anchor.setAttribute("href", capture.href);
+    const hrefKey = getTelHrefKey(anchor.getAttribute("href"));
+    const textKey = normalizePhone(extractPhoneText(anchor));
+    const shouldSyncHref = !!hrefKey && originalPhoneKeys.has(hrefKey);
+    const shouldSyncText = !!textKey && originalPhoneKeys.has(textKey);
+
+    if (shouldSyncHref && anchor.getAttribute("href") !== href) {
+      anchor.setAttribute("href", href);
       applied = true;
     }
 
-    if (capture.text && extractPhoneText(anchor) !== capture.text) {
-      replacePhoneText(anchor, capture.text);
-      applied = true;
+    if (shouldSyncText) {
+      applied = updateElementPhoneText(anchor, display) || applied;
     }
   });
+
+  if (document.body) {
+    applied = updateElementPhoneText(document.body, display) || applied;
+  }
 
   return applied;
 }
 
-function handleMutations(mutations: MutationRecord[]): void {
-  mutations.forEach((mutation) => {
-    if (mutation.type === "childList") {
-      mutation.addedNodes.forEach((node) => {
-        if (node instanceof Element) {
-          rememberAnchors(node);
-        }
-      });
-    }
-
-    const anchor = getAnchorFromMutationTarget(mutation.target);
-    if (anchor) {
-      captureChangedAnchor(anchor);
-    }
-  });
-
-  captureFromGuard();
-  applyCapturedDniPhone();
-}
-
-function pollForDniCapture(): void {
-  captureFromGuard();
-  document
-    .querySelectorAll<HTMLAnchorElement>(DNI_SELECTOR)
-    .forEach(captureChangedAnchor);
-  applyCapturedDniPhone();
-
-  if (Date.now() - pollStartTime < MAX_POLL_DURATION_MS) {
-    pollTimeoutId = setTimeout(pollForDniCapture, POLL_INTERVAL_MS);
-  } else {
-    pollTimeoutId = null;
+export function syncPhoneNumbersNow(): boolean {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return false;
   }
+
+  rememberAnchors();
+  captureFromGuard();
+  document.querySelectorAll<HTMLAnchorElement>(TEL_SELECTOR).forEach(captureFromAnchor);
+  return applyCapturedDniPhone();
 }
 
-function scheduleWhatConvertsFallback(): void {
-  fallbackTimeoutId = setTimeout(() => {
-    fallbackTimeoutId = null;
-
-    if (latestCapture || getGuardCapture()) {
-      return;
-    }
-
-    rememberAnchors();
-    resetWcThrottle();
-    refreshWhatConvertsDni("dni-stabilizer-fallback", { force: true });
-  }, FALLBACK_REFRESH_DELAY_MS);
-}
-
-export function startDniPhoneStabilizer(): void {
+export function startUniversalPhoneSync(): void {
   if (typeof window === "undefined" || typeof document === "undefined") {
     return;
   }
 
-  stopDniPhoneStabilizer();
+  if (syncTimer) {
+    clearInterval(syncTimer);
+    syncTimer = null;
+  }
 
-  originalAnchors = new WeakMap<HTMLAnchorElement, AnchorSnapshot>();
-  pollStartTime = Date.now();
+  if (syncStopTimer) {
+    clearTimeout(syncStopTimer);
+    syncStopTimer = null;
+  }
 
-  captureFromGuard();
-  rememberAnchors();
-  applyCapturedDniPhone();
+  syncPhoneNumbersNow();
 
-  observer = new MutationObserver(handleMutations);
-  observer.observe(document.documentElement, {
-    subtree: true,
-    childList: true,
-    characterData: true,
-    attributes: true,
-    attributeFilter: ["href"],
-  });
-
-  pollForDniCapture();
-  scheduleWhatConvertsFallback();
+  syncTimer = setInterval(syncPhoneNumbersNow, POLL_INTERVAL_MS);
+  syncStopTimer = setTimeout(() => {
+    if (syncTimer) {
+      clearInterval(syncTimer);
+      syncTimer = null;
+    }
+    syncStopTimer = null;
+  }, MAX_POLL_DURATION_MS);
 }
 
-export function stopDniPhoneStabilizer(): void {
-  if (pollTimeoutId) {
-    clearTimeout(pollTimeoutId);
-    pollTimeoutId = null;
+export function stopUniversalPhoneSync(): void {
+  if (syncTimer) {
+    clearInterval(syncTimer);
+    syncTimer = null;
   }
 
-  if (fallbackTimeoutId) {
-    clearTimeout(fallbackTimeoutId);
-    fallbackTimeoutId = null;
-  }
-
-  if (observer) {
-    observer.disconnect();
-    observer = null;
+  if (syncStopTimer) {
+    clearTimeout(syncStopTimer);
+    syncStopTimer = null;
   }
 }
+
+export const startDniPhoneStabilizer = startUniversalPhoneSync;
+export const stopDniPhoneStabilizer = stopUniversalPhoneSync;
