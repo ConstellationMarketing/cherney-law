@@ -1,23 +1,110 @@
 /**
- * Sync footer phone number with primary when WhatConverts swaps the primary
- * Polls for up to 10 seconds to detect and copy swapped phone number
+ * Keep DNI-swapped phone numbers stable across React rerenders.
+ *
+ * WhatConverts mutates the DOM directly. On SPA navigation, React can later
+ * rerender the same anchors with the original phone values, which overwrites
+ * the swapped number. This module watches the current swapped primary phone,
+ * stores it, and reapplies it to all DNI phone anchors for a short period
+ * after route changes / DOM updates.
  */
 
-let syncTimeoutId: NodeJS.Timeout | null = null;
+let syncTimeoutId: ReturnType<typeof setTimeout> | null = null;
 let syncStartTime = 0;
-const MAX_SYNC_DURATION_MS = 10000;
+const MAX_SYNC_DURATION_MS = 12000;
 const POLL_INTERVAL_MS = 250;
+const PHONE_TEXT_REGEX = /(\+?1[-.\s]?)?(?:\(\d{3}\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}/;
+
+let lastKnownDniHref: string | null = null;
+let lastKnownDniText: string | null = null;
+
+function extractPhoneText(element: Element | null): string | null {
+  if (!element) return null;
+
+  const text = element.textContent?.trim() || "";
+  if (!text) return null;
+
+  const matches = text.match(PHONE_TEXT_REGEX);
+  return matches?.[0] || null;
+}
+
+function captureCurrentDniState(): void {
+  const primaryLinks = document.querySelectorAll<HTMLAnchorElement>(
+    'a[data-dni-phone="primary"]'
+  );
+
+  for (const link of primaryLinks) {
+    const href = link.getAttribute("href");
+    const phoneText = extractPhoneText(link);
+
+    if (href?.startsWith("tel:")) {
+      lastKnownDniHref = href;
+    }
+
+    if (phoneText) {
+      lastKnownDniText = phoneText;
+    }
+
+    if (lastKnownDniHref && lastKnownDniText) {
+      return;
+    }
+  }
+}
+
+function replacePhoneText(anchor: HTMLAnchorElement, nextPhoneText: string): void {
+  const walker = document.createTreeWalker(anchor, NodeFilter.SHOW_TEXT);
+  const textNodes: Text[] = [];
+
+  while (walker.nextNode()) {
+    const node = walker.currentNode as Text;
+    const value = node.nodeValue || "";
+    if (PHONE_TEXT_REGEX.test(value)) {
+      textNodes.push(node);
+    }
+  }
+
+  if (textNodes.length > 0) {
+    textNodes.forEach((node) => {
+      node.nodeValue = (node.nodeValue || "").replace(PHONE_TEXT_REGEX, nextPhoneText);
+    });
+    return;
+  }
+
+  const leafElements = Array.from(anchor.querySelectorAll("*")).filter(
+    (element) => element.children.length === 0 && PHONE_TEXT_REGEX.test(element.textContent || "")
+  );
+
+  leafElements.forEach((element) => {
+    element.textContent = nextPhoneText;
+  });
+}
+
+function applyStoredDniState(): void {
+  if (typeof document === "undefined" || (!lastKnownDniHref && !lastKnownDniText)) {
+    return;
+  }
+
+  const allDniLinks = document.querySelectorAll<HTMLAnchorElement>("a[data-dni-phone]");
+
+  allDniLinks.forEach((link) => {
+    if (lastKnownDniHref?.startsWith("tel:") && link.getAttribute("href") !== lastKnownDniHref) {
+      link.setAttribute("href", lastKnownDniHref);
+    }
+
+    if (lastKnownDniText) {
+      replacePhoneText(link, lastKnownDniText);
+    }
+  });
+}
 
 /**
- * Start polling to sync footer phone with primary when WC swaps primary phone
- * Expected footer phone structure:
- * <a data-dni-phone="footer" href="tel:...">
- *   <span>Label</span>
- *   <span>NUMBER</span>
- * </a>
+ * Start short-lived polling after route changes / DOM updates so DNI changes
+ * survive later React rerenders.
  */
 export function startDniFooterSync(): void {
-  // Clear any existing timeout
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return;
+  }
+
   if (syncTimeoutId) {
     clearTimeout(syncTimeoutId);
   }
@@ -26,80 +113,23 @@ export function startDniFooterSync(): void {
 
   function poll(): void {
     try {
-      const primaryLink = document.querySelector(
-        'a[data-dni-phone="primary"]'
-      ) as HTMLAnchorElement | null;
-      const footerLink = document.querySelector(
-        'a[data-dni-phone="footer"]'
-      ) as HTMLAnchorElement | null;
-
-      if (!primaryLink || !footerLink) {
-        // Links not found yet, reschedule poll
-        scheduleNextPoll();
-        return;
-      }
-
-      // Extract phone from primary link
-      const primaryHref = primaryLink.getAttribute("href");
-      const primaryText = primaryLink.textContent?.trim() || "";
-
-      // Extract phone from footer link
-      const footerHref = footerLink.getAttribute("href");
-
-      // Check if there's a mismatch (WC has swapped primary but not footer)
-      if (primaryHref && primaryHref !== footerHref && primaryHref.startsWith("tel:")) {
-        // Copy primary href to footer
-        footerLink.setAttribute("href", primaryHref);
-
-        // Try to sync the display text too (look for NUMBER span)
-        const footerSpans = footerLink.querySelectorAll("span");
-        if (footerSpans.length >= 2) {
-          // Last span is usually the number
-          const numberSpan = footerSpans[footerSpans.length - 1];
-          const primaryNumber = primaryText
-            .split("\n")
-            .map((s) => s.trim())
-            .filter((s) => /[\d\-\(\)]/.test(s))
-            .pop();
-
-          if (primaryNumber && numberSpan) {
-            numberSpan.textContent = primaryNumber;
-          }
-        }
-
-        // Sync complete, stop polling
-        if (syncTimeoutId) {
-          clearTimeout(syncTimeoutId);
-          syncTimeoutId = null;
-        }
-        return;
-      }
-
-      // No mismatch, reschedule poll
-      scheduleNextPoll();
-    } catch (err) {
-      // Silently catch errors
-      scheduleNextPoll();
+      captureCurrentDniState();
+      applyStoredDniState();
+    } catch (_) {
+      // Ignore and keep polling
     }
-  }
 
-  function scheduleNextPoll(): void {
     const elapsed = Date.now() - syncStartTime;
     if (elapsed < MAX_SYNC_DURATION_MS) {
       syncTimeoutId = setTimeout(poll, POLL_INTERVAL_MS);
     } else {
-      // Max duration reached, stop polling
       syncTimeoutId = null;
     }
   }
 
-  // Start polling
   poll();
 }
 
-/**
- * Stop the footer sync polling
- */
 export function stopDniFooterSync(): void {
   if (syncTimeoutId) {
     clearTimeout(syncTimeoutId);

@@ -15,12 +15,38 @@ import {
   stopDniFooterSync,
 } from "@site/lib/syncDniPhone";
 
+function mutationTouchesDniPhone(mutation: MutationRecord): boolean {
+  if (mutation.type === "childList") {
+    for (const node of mutation.addedNodes) {
+      if (node.nodeType !== Node.ELEMENT_NODE) continue;
+
+      const element = node as Element;
+      if (element.matches("[data-dni-phone]") || element.querySelector("[data-dni-phone]")) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  const target = mutation.target;
+
+  if (target.nodeType === Node.TEXT_NODE) {
+    return !!target.parentElement?.closest("[data-dni-phone]");
+  }
+
+  if (target.nodeType === Node.ELEMENT_NODE) {
+    return !!(target as Element).closest("[data-dni-phone]");
+  }
+
+  return false;
+}
+
 export default function WcDniManager(): null {
   const location = useLocation();
 
   // On mount: initial refresh and footer sync
   useEffect(() => {
-    // Reset throttle to allow immediate initial refresh
     resetWcThrottle();
     refreshWhatConvertsDni("initial");
     startDniFooterSync();
@@ -30,80 +56,64 @@ export default function WcDniManager(): null {
     };
   }, []);
 
-  // On route change: refresh for the new page
-  // IMPORTANT: reset throttle first so navigation always triggers a fresh scan
+  // On route change: refresh for the new page and keep stabilizing DNI
   useEffect(() => {
-    // Always reset throttle on route change so every navigation triggers a fresh scan
     resetWcThrottle();
     refreshWhatConvertsDni("route");
     startDniFooterSync();
 
-    // Second pass after React has had time to paint the new page content
-    // (data-dni-phone elements may not exist yet at the time of the first call)
-    const earlyTimer = setTimeout(() => {
-      resetWcThrottle();
-      refreshWhatConvertsDni("route-early");
-      startDniFooterSync();
-    }, 300);
-
-    const lateTimer = setTimeout(() => {
-      resetWcThrottle();
-      refreshWhatConvertsDni("route-late");
-      startDniFooterSync();
-    }, 1200);
+    const timers = [300, 1200, 2500, 5000].map((delay, index) =>
+      setTimeout(() => {
+        resetWcThrottle();
+        refreshWhatConvertsDni(`route-${index + 1}`);
+        startDniFooterSync();
+      }, delay)
+    );
 
     return () => {
-      clearTimeout(earlyTimer);
-      clearTimeout(lateTimer);
+      timers.forEach((timer) => clearTimeout(timer));
     };
   }, [location.pathname]);
 
-  // Optional: Use MutationObserver to detect DOM changes with phone markup
+  // Watch for later React rerenders that overwrite WC's DOM mutation.
   useEffect(() => {
     if (typeof window === "undefined" || typeof document === "undefined") {
       return;
     }
 
+    let mutationTimer: ReturnType<typeof setTimeout> | null = null;
+
     const observer = new MutationObserver((mutations) => {
-      // Check if any mutations contain data-dni-phone elements
-      let hasDniPhone = false;
-      for (const mutation of mutations) {
-        if (mutation.type === "childList") {
-          for (const node of mutation.addedNodes) {
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              const element = node as Element;
-              if (
-                element.hasAttribute("data-dni-phone") ||
-                element.querySelector("[data-dni-phone]")
-              ) {
-                hasDniPhone = true;
-                break;
-              }
-            }
-          }
-        }
+      const shouldRefresh = mutations.some(mutationTouchesDniPhone);
+      if (!shouldRefresh) {
+        return;
       }
 
-      if (hasDniPhone) {
-        // Delay slightly to allow DOM to settle
-        setTimeout(() => {
-          refreshWhatConvertsDni("mutation");
-          startDniFooterSync();
-        }, 100);
+      if (mutationTimer) {
+        clearTimeout(mutationTimer);
       }
+
+      mutationTimer = setTimeout(() => {
+        refreshWhatConvertsDni("mutation");
+        startDniFooterSync();
+      }, 150);
     });
 
-    // Observe the whole document for changes
     observer.observe(document.body, {
       childList: true,
       subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ["href"],
     });
 
     return () => {
+      if (mutationTimer) {
+        clearTimeout(mutationTimer);
+      }
       observer.disconnect();
     };
   }, []);
 
-  // This component doesn't render anything
   return null;
 }
