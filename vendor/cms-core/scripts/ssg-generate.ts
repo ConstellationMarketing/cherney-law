@@ -78,6 +78,8 @@ function stripPlaceholderSeo(template: string) {
     .replace(/\s*<meta name="twitter:description" content="">/, "");
 }
 
+const WC_DNI_CAPTURE_GUARD = `<script>(function(){if(typeof window==="undefined"||typeof document==="undefined"||window.__WC_DNI_CAPTURE_GUARD__)return;window.__WC_DNI_CAPTURE_GUARD__=true;var phoneRegex=/(\\+?1[-.\\s]?)?(?:\\(\\d{3}\\)|\\d{3})[-.\\s]?\\d{3}[-.\\s]?\\d{4}/;var originals=new WeakMap();var state=window.__WC_DNI_CAPTURE__=window.__WC_DNI_CAPTURE__||{href:null,text:null,updatedAt:0};function phoneText(el){var text=el&&el.textContent?el.textContent.trim():"";var match=text.match(phoneRegex);return match?match[0]:null}function remember(anchor){if(!anchor||originals.has(anchor))return;originals.set(anchor,{href:anchor.getAttribute("href"),text:phoneText(anchor)})}function rememberAll(root){if(!root)return;if(root.nodeType===1&&root.matches&&root.matches("a[data-dni-phone]"))remember(root);if(root.querySelectorAll)root.querySelectorAll("a[data-dni-phone]").forEach(remember)}function capture(anchor){if(!anchor)return;remember(anchor);var original=originals.get(anchor)||{};var href=anchor.getAttribute("href");var text=phoneText(anchor);var changedHref=!!(href&&href.indexOf("tel:")===0&&href!==original.href);var changedText=!!(text&&text!==original.text);if(!changedHref&&!changedText)return;if(href&&href.indexOf("tel:")===0)state.href=href;if(text)state.text=text;state.updatedAt=Date.now()}function anchorFromNode(node){if(!node)return null;if(node.nodeType===1){if(node.matches&&node.matches("a[data-dni-phone]"))return node;if(node.closest)return node.closest("a[data-dni-phone]")}if(node.parentElement&&node.parentElement.closest)return node.parentElement.closest("a[data-dni-phone]");return null}rememberAll(document);new MutationObserver(function(mutations){mutations.forEach(function(mutation){if(mutation.type==="childList")mutation.addedNodes.forEach(rememberAll);capture(anchorFromNode(mutation.target))})}).observe(document.documentElement,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:["href"]});})();</script>`;
+
 function injectRenderedHtml(
   template: string,
   pathname: string,
@@ -95,6 +97,7 @@ function injectRenderedHtml(
     helmet?.meta?.toString() || "",
     helmet?.link?.toString() || "",
     helmet?.script?.toString() || "",
+    WC_DNI_CAPTURE_GUARD,
     preloadedSiteSettings.headScripts
       ? '<meta name="cms-prerendered-head-scripts" content="true">'
       : "",

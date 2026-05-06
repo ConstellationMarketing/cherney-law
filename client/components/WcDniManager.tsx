@@ -1,15 +1,15 @@
 import { useEffect } from "react";
 import {
-  startDniFooterSync,
-  stopDniFooterSync,
+  startDniPhoneStabilizer,
+  stopDniPhoneStabilizer,
 } from "@site/lib/syncDniPhone";
 
 export default function WcDniManager(): null {
   useEffect(() => {
-    startDniFooterSync();
+    startDniPhoneStabilizer();
 
     return () => {
-      stopDniFooterSync();
+      stopDniPhoneStabilizer();
     };
   }, []);
 

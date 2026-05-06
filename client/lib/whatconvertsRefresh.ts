@@ -14,11 +14,33 @@ function findWcScript(): HTMLScriptElement | null {
   const scripts = document.querySelectorAll<HTMLScriptElement>("script[src]");
   for (const script of scripts) {
     const src = script.src || "";
-    if (src.includes("whatconverts") || src.includes("_wc.js")) {
+    if (
+      src.includes("whatconverts") ||
+      src.includes("_wc.js") ||
+      src.includes("ksrndkehqnwntyxlhgto.com") ||
+      /\/103496\.js(?:[?#]|$)/.test(src)
+    ) {
       return script;
     }
   }
   return null;
+}
+
+function refreshWcLeadDocument(): void {
+  const wcWindow = window as any;
+  const clone = (value: string) => JSON.parse(JSON.stringify(value));
+
+  wcWindow.$wc_load = typeof wcWindow.$wc_load === "function"
+    ? wcWindow.$wc_load
+    : clone;
+
+  wcWindow.$wc_leads = wcWindow.$wc_leads || {};
+  wcWindow.$wc_leads.doc = {
+    url: clone(document.URL),
+    ref: clone(document.referrer),
+    search: clone(location.search),
+    hash: clone(location.hash),
+  };
 }
 
 /**
@@ -89,6 +111,8 @@ export function refreshWhatConvertsDni(
     const wcScript = findWcScript();
 
     if (wcScript && wcScript.src) {
+      refreshWcLeadDocument();
+
       // Remove any previously re-inserted DNI copies first
       document
         .querySelectorAll('script[data-wc="dni"]')
