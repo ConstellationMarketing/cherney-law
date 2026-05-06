@@ -85,13 +85,13 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center flex-1 justify-end">
-              <ul className="flex flex-wrap justify-end -mx-[11px]">
+              <ul className="flex flex-nowrap justify-end -mx-[5px] lg:-mx-[8px] xl:-mx-[11px]">
                 {(() => {
                   // Shared class for both link and trigger to ensure identical alignment
                   const navItemClass =
-                    "font-outfit text-[20px] text-white py-[31px] whitespace-nowrap hover:opacity-80 transition-opacity duration-400 inline-flex items-center gap-1";
+                    "font-outfit text-[14px] lg:text-[16px] xl:text-[20px] text-white py-[31px] whitespace-nowrap hover:opacity-80 transition-opacity duration-400 inline-flex items-center gap-1";
                   const navParentLinkClass =
-                    "font-outfit text-[20px] text-white py-[31px] whitespace-nowrap hover:opacity-80 transition-opacity duration-400 inline-flex items-center";
+                    "font-outfit text-[14px] lg:text-[16px] xl:text-[20px] text-white py-[31px] whitespace-nowrap hover:opacity-80 transition-opacity duration-400 inline-flex items-center";
 
                   return navItems.map((item) => {
                     const childColumns = item.children?.length
@@ -166,7 +166,7 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                     return (
                     <li
                       key={item.id || item.href}
-                      className={item.children?.length ? "px-[11px] relative" : "px-[11px]"}
+                      className={item.children?.length ? "px-[5px] lg:px-[8px] xl:px-[11px] relative" : "px-[5px] lg:px-[8px] xl:px-[11px]"}
                       onMouseEnter={() => item.children?.length && setOpenDropdown(item.id || item.href || item.label)}
                       onMouseLeave={() => {
                         setOpenDropdown(null);
