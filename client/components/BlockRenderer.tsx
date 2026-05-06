@@ -10,6 +10,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
 import {
   Car,
@@ -488,6 +489,8 @@ function ContactFormBlock({
 }: {
   block: Extract<ContentBlock, { type: "contact-form" }>;
 }) {
+  const navigate = useNavigate();
+
   const {
     register,
     handleSubmit,
@@ -534,8 +537,7 @@ function ContactFormBlock({
         throw new Error("Netlify form submission failed");
       }
 
-      toast.success("Thank you! We will contact you soon.");
-      reset();
+      navigate("/thank-you/");
     } catch (error) {
       console.error("Error submitting form:", error);
       toast.error("Something went wrong. Please try again.");

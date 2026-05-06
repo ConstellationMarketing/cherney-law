@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Scale } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import type { ContactContent } from "@site/lib/cms/homePageTypes";
 
 const contactFormSchema = z.object({
@@ -47,6 +48,7 @@ const defaultContent: ContactContent = {
 
 export default function ContactUsSection({ content }: ContactUsSectionProps) {
   const data = content || defaultContent;
+  const navigate = useNavigate();
 
   const {
     register,
@@ -94,8 +96,7 @@ export default function ContactUsSection({ content }: ContactUsSectionProps) {
         throw new Error("Netlify form submission failed");
       }
 
-      toast.success("Thank you! We will contact you soon.");
-      reset();
+      navigate("/thank-you/");
     } catch (error) {
       console.error("Error submitting form:", error);
       toast.error("Something went wrong. Please try again.");
