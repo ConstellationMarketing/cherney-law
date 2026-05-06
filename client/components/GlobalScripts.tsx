@@ -7,7 +7,6 @@
 import { useEffect } from "react";
 import { Helmet } from "@site/lib/helmet";
 import { useSiteSettings } from "@site/contexts/SiteSettingsContext";
-import { refreshWhatConvertsDni } from "@site/lib/whatconvertsRefresh";
 
 export default function GlobalScripts(): JSX.Element {
   const { settings } = useSiteSettings();
@@ -89,12 +88,6 @@ export default function GlobalScripts(): JSX.Element {
         });
       }
 
-      // Refresh WC after injecting scripts
-      if (settings.headScripts || settings.footerScripts) {
-        setTimeout(() => {
-          refreshWhatConvertsDni("head-scripts", { force: true });
-        }, 100);
-      }
     }
   }, [settings.headScripts, settings.footerScripts]);
 

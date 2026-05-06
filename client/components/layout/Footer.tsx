@@ -161,8 +161,6 @@ export default function Footer() {
           <a
             href={`tel:${phoneNumber || phoneToTel(phoneDisplay)}`}
             data-dni-phone="footer"
-            data-dni-original-href={`tel:${phoneNumber || phoneToTel(phoneDisplay)}`}
-            data-dni-original-text={phoneDisplay}
             className="block bg-law-accent p-[8px] w-full ml-auto cursor-pointer transition-all duration-300 hover:bg-law-accent-dark group no-underline"
           >
             <div className="table w-full mx-auto max-w-full flex-row-reverse">

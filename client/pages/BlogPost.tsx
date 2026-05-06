@@ -108,8 +108,6 @@ export default function BlogPost({ slugOverride }: { slugOverride?: string }) {
               <a
                 href={`tel:${phoneDisplay.replace(/[^0-9]/g, "")}`}
                 data-dni-phone="primary"
-                data-dni-original-href={`tel:${phoneDisplay.replace(/[^0-9]/g, "")}`}
-                data-dni-original-text={phoneDisplay}
                 className="block"
               >
                 <div className="bg-law-accent p-[8px] w-full cursor-pointer hover:bg-[#7a9e10] transition-colors duration-300 group">

@@ -6,7 +6,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 import type { ContactFormSettings } from "@site/lib/cms/contactPageTypes";
 
 const contactFormSchema = z.object({
@@ -33,8 +32,6 @@ interface ContactFormNewProps {
 }
 
 export default function ContactFormNew({ settings }: ContactFormNewProps) {
-  const navigate = useNavigate();
-
   const {
     register,
     handleSubmit,
@@ -81,7 +78,7 @@ export default function ContactFormNew({ settings }: ContactFormNewProps) {
         throw new Error("Netlify form submission failed");
       }
 
-      navigate("/thank-you/");
+      window.location.assign("/thank-you/");
     } catch (error) {
       console.error("Error submitting form:", error);
       toast.error("Something went wrong. Please try again.");

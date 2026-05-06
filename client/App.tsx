@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SiteSettingsProvider } from "./contexts/SiteSettingsContext";
 import WcDniManager from "./components/WcDniManager";
 import GlobalScripts from "./components/GlobalScripts";
+import PublicFullDocumentNavigation from "./components/PublicFullDocumentNavigation";
 import DynamicCmsPage from "./pages/DynamicCmsPage";
 import AdminRoutes from "./pages/AdminRoutes";
 import ScrollToTop from "./components/ScrollToTop";
@@ -86,6 +87,7 @@ export function AppShell() {
   return (
     <>
       {!isAdminRoute && <GlobalScripts />}
+      {!isAdminRoute && <PublicFullDocumentNavigation />}
       {!isAdminRoute && <WcDniManager />}
       <ScrollToTop />
       <Routes>

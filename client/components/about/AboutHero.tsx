@@ -27,8 +27,6 @@ export default function AboutHero({ content, phoneDisplay, phoneLabel }: AboutHe
             <a
               href={`tel:${phoneDisplay.replace(/[^0-9]/g, "")}`}
               data-dni-phone="primary"
-              data-dni-original-href={`tel:${phoneDisplay.replace(/[^0-9]/g, "")}`}
-              data-dni-original-text={phoneDisplay}
               className="block"
             >
               <div className="bg-white p-[8px] w-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">

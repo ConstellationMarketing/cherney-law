@@ -10,7 +10,6 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
 import {
   Car,
@@ -191,8 +190,6 @@ function HeroBlock({
                 <a
                   href={telHref}
                   data-dni-phone="primary"
-                  data-dni-original-href={telHref}
-                  data-dni-original-text={phoneDisplay}
                   className="block"
                 >
                   <div className="bg-law-accent p-[8px] w-full cursor-pointer border-2 border-transparent hover:border-white transition-all duration-300 group">
@@ -249,8 +246,6 @@ function HeroBlock({
               <a
                 href={telHref}
                 data-dni-phone="primary"
-                data-dni-original-href={telHref}
-                data-dni-original-text={phoneDisplay}
                 className="block"
               >
                 <div className="bg-white p-[8px] w-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
@@ -358,8 +353,6 @@ function CTABlock({
           <a
             href={`tel:${phoneDisplay.replace(/\D/g, "")}`}
             data-dni-phone="primary"
-            data-dni-original-href={`tel:${phoneDisplay.replace(/\D/g, "")}`}
-            data-dni-original-text={phoneDisplay}
             className="block w-full"
           >
             <div className="bg-white p-[8px] w-full cursor-pointer border-2 border-transparent hover:border-black transition-all duration-300 hover:bg-law-accent group">
@@ -503,8 +496,6 @@ function ContactFormBlock({
 }: {
   block: Extract<ContentBlock, { type: "contact-form" }>;
 }) {
-  const navigate = useNavigate();
-
   const {
     register,
     handleSubmit,
@@ -551,7 +542,7 @@ function ContactFormBlock({
         throw new Error("Netlify form submission failed");
       }
 
-      navigate("/thank-you/");
+      window.location.assign("/thank-you/");
     } catch (error) {
       console.error("Error submitting form:", error);
       toast.error("Something went wrong. Please try again.");

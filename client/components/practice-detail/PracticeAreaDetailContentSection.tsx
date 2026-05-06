@@ -32,8 +32,6 @@ export default function PracticeAreaDetailContentSection({ section, index }: Pro
       <a
         href={`tel:${phoneNumber}`}
         data-dni-phone="primary"
-        data-dni-original-href={`tel:${phoneNumber}`}
-        data-dni-original-text={phoneDisplay}
         className="block"
       >
         <CallBox
