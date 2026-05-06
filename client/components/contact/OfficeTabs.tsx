@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { MapPin, Phone, Navigation } from "lucide-react";
+import { triggerDniRefreshAfterReveal } from "@site/components/WcDniManager";
 import type { OfficeTab } from "@site/lib/cms/contactPageTypes";
 
 interface OfficeTabsProps {
@@ -21,7 +22,10 @@ export default function OfficeTabs({ offices }: OfficeTabsProps) {
           <button
             key={index}
             type="button"
-            onClick={() => setActiveIndex(index)}
+            onClick={() => {
+              setActiveIndex(index);
+              triggerDniRefreshAfterReveal();
+            }}
             className={`font-outfit text-[14px] md:text-[16px] px-[16px] md:px-[24px] py-[12px] md:py-[16px] transition-all duration-300 border-b-3 -mb-[2px] whitespace-nowrap ${
               activeIndex === index
                 ? "border-law-accent text-black font-semibold bg-law-accent/5"
@@ -109,7 +113,14 @@ function OfficeDirections({ directions }: { directions: string }) {
     <div className="border border-gray-200">
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          const nextOpen = !isOpen;
+          setIsOpen(nextOpen);
+
+          if (nextOpen) {
+            triggerDniRefreshAfterReveal();
+          }
+        }}
         className="w-full flex items-center justify-between gap-3 p-[16px] md:p-[20px] bg-gray-50 hover:bg-gray-100 transition-colors"
       >
         <div className="flex items-center gap-3">

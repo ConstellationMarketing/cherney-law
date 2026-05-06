@@ -270,8 +270,8 @@ export function syncPhoneNumbersNow(): boolean {
     return false;
   }
 
-  rememberAnchors();
   captureFromGuard();
+  rememberAnchors();
   document.querySelectorAll<HTMLAnchorElement>(TEL_SELECTOR).forEach(captureFromAnchor);
   return applyCapturedDniPhone();
 }

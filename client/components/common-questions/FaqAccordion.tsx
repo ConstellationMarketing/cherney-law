@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { triggerDniRefreshAfterReveal } from "@site/components/WcDniManager";
 import type { FaqItem } from "@site/lib/cms/commonQuestionsPageTypes";
 
 interface FaqAccordionProps {
@@ -10,7 +11,12 @@ export default function FaqAccordion({ items }: FaqAccordionProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   const toggle = (index: number) => {
-    setOpenIndex(openIndex === index ? null : index);
+    const nextIndex = openIndex === index ? null : index;
+    setOpenIndex(nextIndex);
+
+    if (nextIndex !== null) {
+      triggerDniRefreshAfterReveal();
+    }
   };
 
   if (!items.length) return null;

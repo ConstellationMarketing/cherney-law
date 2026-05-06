@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { triggerDniRefreshAfterReveal } from "@site/components/WcDniManager";
 import type { PracticeAreasFAQContent } from "@site/lib/cms/practiceAreasPageTypes";
 
 interface PracticeAreasFAQProps {
@@ -10,7 +11,12 @@ export default function PracticeAreasFAQ({ content }: PracticeAreasFAQProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   const toggle = (index: number) => {
-    setOpenIndex(openIndex === index ? null : index);
+    const nextIndex = openIndex === index ? null : index;
+    setOpenIndex(nextIndex);
+
+    if (nextIndex !== null) {
+      triggerDniRefreshAfterReveal();
+    }
   };
 
   if (!content.items.length) return null;

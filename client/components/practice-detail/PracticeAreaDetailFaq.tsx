@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { PracticeAreaFaqContent } from "@site/lib/cms/practiceAreaDetailPageTypes";
 import DynamicHeading from "@site/components/shared/DynamicHeading";
+import { triggerDniRefreshAfterReveal } from "@site/components/WcDniManager";
 import { ChevronDown } from "lucide-react";
 
 interface Props {
@@ -41,7 +42,14 @@ export default function PracticeAreaDetailFaq({ content, headingTag }: Props) {
                 className={`border-b border-gray-200 last:border-b-0 ${isOpen ? "bg-[#1a1a2e]" : "bg-white"}`}
               >
                 <button
-                  onClick={() => setOpenIndex(isOpen ? -1 : i)}
+                  onClick={() => {
+                    const nextIndex = isOpen ? -1 : i;
+                    setOpenIndex(nextIndex);
+
+                    if (nextIndex !== -1) {
+                      triggerDniRefreshAfterReveal();
+                    }
+                  }}
                   className={`w-full flex items-center justify-between p-5 md:p-6 text-left transition-colors duration-200 ${isOpen ? "text-white" : "text-black hover:bg-gray-50"}`}
                 >
                   <span className="font-outfit text-[16px] md:text-[18px] font-medium pr-4">

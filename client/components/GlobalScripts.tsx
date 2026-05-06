@@ -7,6 +7,8 @@
 import { useEffect } from "react";
 import { Helmet } from "@site/lib/helmet";
 import { useSiteSettings } from "@site/contexts/SiteSettingsContext";
+import { refreshWhatConvertsDni } from "@site/lib/whatconvertsRefresh";
+import { startUniversalPhoneSync } from "@site/lib/syncDniPhone";
 
 export default function GlobalScripts(): JSX.Element {
   const { settings } = useSiteSettings();
@@ -58,6 +60,9 @@ export default function GlobalScripts(): JSX.Element {
           });
           document.head.appendChild(newLink);
         });
+
+        refreshWhatConvertsDni("head-scripts", { force: true });
+        startUniversalPhoneSync();
       }
 
       // Footer scripts

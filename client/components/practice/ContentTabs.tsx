@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { triggerDniRefreshAfterReveal } from "@site/components/WcDniManager";
 import type { ContentTab } from "@site/lib/cms/practiceAreasPageTypes";
 
 interface ContentTabsProps {
@@ -19,7 +20,10 @@ export default function ContentTabs({ tabs }: ContentTabsProps) {
             <button
               key={index}
               type="button"
-              onClick={() => setActiveIndex(index)}
+              onClick={() => {
+                setActiveIndex(index);
+                triggerDniRefreshAfterReveal();
+              }}
               className={`font-outfit text-[14px] md:text-[16px] px-[16px] md:px-[24px] py-[12px] md:py-[16px] transition-all duration-300 border-b-3 -mb-[2px] whitespace-nowrap ${
                 activeIndex === index
                   ? "border-law-accent text-black font-semibold bg-law-accent/5"
