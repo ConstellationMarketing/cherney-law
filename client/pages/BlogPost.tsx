@@ -7,6 +7,7 @@ import { resolveSeo } from "@site/utils/resolveSeo";
 import { getSiteUrlFallback } from "@site/lib/runtime-env";
 import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
 import BlogSidebar from "@site/components/blog/BlogSidebar";
+import ClientQuestionnaireForm from "@site/components/blog/ClientQuestionnaireForm";
 import RecentPosts from "@site/components/blog/RecentPosts";
 import NotFound from "./NotFound";
 import { Phone, Calendar } from "lucide-react";
@@ -48,6 +49,8 @@ export default function BlogPost({ slugOverride }: { slugOverride?: string }) {
   if (notFound || !post) {
     return <NotFound />;
   }
+
+  const isClientQuestionnaire = slug.replace(/^\/+|\/+$/g, "") === "client-questionnaire";
 
   const seo = resolveSeo(
     {
@@ -154,10 +157,14 @@ export default function BlogPost({ slugOverride }: { slugOverride?: string }) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
             {/* Article */}
             <article className="lg:col-span-2">
-              <div
-                className="font-outfit text-[16px] md:text-[18px] leading-[28px] md:leading-[32px] text-black prose prose-lg max-w-none [&_a]:text-law-accent [&_a]:underline [&_h2]:font-playfair [&_h2]:text-[28px] [&_h2]:md:text-[36px] [&_h2]:leading-tight [&_h2]:mt-8 [&_h2]:mb-4 [&_h3]:font-playfair [&_h3]:text-[22px] [&_h3]:md:text-[28px] [&_h3]:leading-tight [&_h3]:mt-6 [&_h3]:mb-3 [&_p]:mb-5 [&_ul]:mb-5 [&_ol]:mb-5 [&_li]:mb-1 [&_img]:rounded [&_img]:my-6"
-                dangerouslySetInnerHTML={{ __html: post.body || "" }}
-              />
+              {isClientQuestionnaire ? (
+                <ClientQuestionnaireForm />
+              ) : (
+                <div
+                  className="font-outfit text-[16px] md:text-[18px] leading-[28px] md:leading-[32px] text-black prose prose-lg max-w-none [&_a]:text-law-accent [&_a]:underline [&_h2]:font-playfair [&_h2]:text-[28px] [&_h2]:md:text-[36px] [&_h2]:leading-tight [&_h2]:mt-8 [&_h2]:mb-4 [&_h3]:font-playfair [&_h3]:text-[22px] [&_h3]:md:text-[28px] [&_h3]:leading-tight [&_h3]:mt-6 [&_h3]:mb-3 [&_p]:mb-5 [&_ul]:mb-5 [&_ol]:mb-5 [&_li]:mb-1 [&_img]:rounded [&_img]:my-6"
+                  dangerouslySetInnerHTML={{ __html: post.body || "" }}
+                />
+              )}
             </article>
 
             {/* Sidebar */}
