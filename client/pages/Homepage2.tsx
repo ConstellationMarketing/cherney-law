@@ -231,9 +231,9 @@ export default function Homepage2() {
                       </svg>
                     </div>
                   </div>
-                  <h3 className="font-outfit text-[16px] md:text-[18px] text-white font-normal leading-tight">
+                  <p className="font-outfit text-[16px] md:text-[18px] text-white font-normal leading-tight">
                     {item.title}
-                  </h3>
+                  </p>
                 </div>
               ))}
             </div>
