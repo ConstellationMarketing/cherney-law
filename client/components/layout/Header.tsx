@@ -53,6 +53,37 @@ function chunkMenuItems<T>(items: T[], chunkSize: number): T[][] {
   return chunks;
 }
 
+function renderCrawlerNavigationLinks(items?: NavigationItem[]): JSX.Element | null {
+  if (!items?.length) return null;
+
+  return (
+    <ul className="sr-only" aria-hidden="true">
+      {items.map((item) => {
+        const href = item.href
+          ? normalizeInternalHref(item.href, item.external || item.openInNewTab)
+          : null;
+        const opensNewTab = item.external || item.openInNewTab;
+
+        return (
+          <li key={item.id || item.href || item.label}>
+            {href && (
+              <a
+                href={href}
+                tabIndex={-1}
+                target={opensNewTab ? "_blank" : undefined}
+                rel={opensNewTab ? "noopener noreferrer" : undefined}
+              >
+                {item.label}
+              </a>
+            )}
+            {renderCrawlerNavigationLinks(item.children)}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export default function Header({ transparentTopBar = false }: HeaderProps) {
   const { settings } = useSiteSettings();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -231,6 +262,7 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                               ))}
                             </div>
                           </DropdownMenuContent>
+                          {renderCrawlerNavigationLinks(item.children)}
                         </DropdownMenu>
                       ) : (
                         // Simple link (no dropdown)
