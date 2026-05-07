@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 const FORM_NAME = "client-questionnaire";
 
@@ -208,6 +208,17 @@ export default function ClientQuestionnaireForm() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState("");
   const [incomeError, setIncomeError] = useState("");
+  const successRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isSuccess) return;
+
+    successRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+    successRef.current?.focus({ preventScroll: true });
+  }, [isSuccess]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -251,6 +262,18 @@ export default function ClientQuestionnaireForm() {
     }
   }
 
+  if (isSuccess) {
+    return (
+      <div
+        ref={successRef}
+        tabIndex={-1}
+        className="not-prose border border-green-200 bg-green-50 px-5 py-4 font-outfit text-[16px] text-green-800 outline-none"
+      >
+        Thank you. Your questionnaire has been submitted successfully.
+      </div>
+    );
+  }
+
   return (
     <form
       name={FORM_NAME}
@@ -261,12 +284,6 @@ export default function ClientQuestionnaireForm() {
       className="not-prose space-y-6"
     >
       <input type="hidden" name="form-name" value={FORM_NAME} />
-
-      {isSuccess && (
-        <div className="border border-green-200 bg-green-50 px-4 py-3 font-outfit text-[16px] text-green-800">
-          Thank you. Your questionnaire has been submitted successfully.
-        </div>
-      )}
 
       {error && (
         <div className="border border-red-200 bg-red-50 px-4 py-3 font-outfit text-[16px] text-red-700">
