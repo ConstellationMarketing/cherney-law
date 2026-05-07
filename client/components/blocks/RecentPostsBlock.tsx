@@ -21,6 +21,14 @@ interface RecentPostsPageEntry {
 
 const recentPostsBlockCache = new Map<string, RecentPostsPageEntry>();
 
+function isFormCategoryPost(post: PostWithCategory) {
+  const category = post.post_categories;
+  return (
+    category?.slug?.trim().toLowerCase() === "form" ||
+    category?.name?.trim().toLowerCase() === "form"
+  );
+}
+
 function getRecentPostsBlockCacheKey(postsPerPage: number, offset: number) {
   return `${postsPerPage}:${offset}`;
 }
@@ -40,15 +48,17 @@ export async function loadRecentPostsBlockPage(
     return cached;
   }
 
-  const limit = postsPerPage + 1;
+  const limit = offset + postsPerPage + 2;
 
   try {
     const data = await fetchSupabaseJson<PostWithCategory[]>(
-      `/rest/v1/posts?status=eq.published&select=*,post_categories(name,slug)&order=published_at.desc&limit=${limit}&offset=${offset}`,
+      `/rest/v1/posts?status=eq.published&select=*,post_categories(name,slug)&order=published_at.desc&limit=${limit}`,
     );
-    const hasMore = data.length > postsPerPage;
+    const visiblePosts = data.filter((post) => !isFormCategoryPost(post));
+    const pagePosts = visiblePosts.slice(offset, offset + postsPerPage);
+    const hasMore = visiblePosts.length > offset + postsPerPage;
     const entry: RecentPostsPageEntry = {
-      posts: hasMore ? data.slice(0, postsPerPage) : data,
+      posts: pagePosts,
       hasMore,
     };
 

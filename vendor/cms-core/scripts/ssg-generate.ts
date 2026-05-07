@@ -51,6 +51,7 @@ interface BlogPostRoute {
   og_image: string | null;
   noindex: boolean;
   updated_at: string;
+  post_categories?: { name: string; slug: string } | null;
 }
 
 interface Redirect {
@@ -75,6 +76,14 @@ function normalizeOutputPath(urlPath: string) {
 
 function normalizeRoutePath(urlPath: string) {
   return urlPath.endsWith("/") ? urlPath : `${urlPath}/`;
+}
+
+function isFormCategoryPost(post: BlogPostRoute) {
+  const category = post.post_categories;
+  return (
+    category?.slug?.trim().toLowerCase() === "form" ||
+    category?.name?.trim().toLowerCase() === "form"
+  );
 }
 
 function getBlogPostsPerPage(blogPage: PageRoute | null | undefined) {
@@ -206,7 +215,7 @@ async function generateSSG() {
   const { data: blogPosts, error: postsError } = await supabase
     .from("posts")
     .select(
-      "id, title, slug, meta_title, meta_description, canonical_url, og_title, og_description, og_image, noindex, updated_at",
+      "id, title, slug, meta_title, meta_description, canonical_url, og_title, og_description, og_image, noindex, updated_at, post_categories(name,slug)",
     )
     .eq("status", "published");
 
@@ -234,7 +243,10 @@ async function generateSSG() {
     (page) => normalizeRoutePath(page.url_path) === BLOG_LISTING_PATH,
   );
   const blogPostsPerPage = getBlogPostsPerPage(blogPage);
-  const totalBlogPages = Math.ceil((blogPosts || []).length / blogPostsPerPage);
+  const blogListingPosts = (blogPosts || []).filter(
+    (post) => !isFormCategoryPost(post as BlogPostRoute),
+  );
+  const totalBlogPages = Math.ceil(blogListingPosts.length / blogPostsPerPage);
   const blogPaginationPages: PageRoute[] = [];
 
   if (blogPage && totalBlogPages > 1) {

@@ -16,6 +16,14 @@ interface RecentPostsCacheEntry {
 
 const recentPostsCache = new Map<string, RecentPostsCacheEntry>();
 
+function isFormCategoryPost(post: PostWithCategory) {
+  const category = post.post_categories;
+  return (
+    category?.slug?.trim().toLowerCase() === "form" ||
+    category?.name?.trim().toLowerCase() === "form"
+  );
+}
+
 function getCacheKey(limit: number, excludePostId?: string) {
   return `${limit}:${excludePostId || ""}`;
 }
@@ -35,12 +43,12 @@ export async function loadRecentPosts(
 
   try {
     const data = await fetchSupabaseJson<PostWithCategory[]>(
-      `/rest/v1/posts?status=eq.published&select=*,post_categories(name,slug)&order=published_at.desc&limit=${limit + 1}`,
+      `/rest/v1/posts?status=eq.published&select=*,post_categories(name,slug)&order=published_at.desc&limit=${limit + 6}`,
     );
 
-    const filtered = excludePostId
-      ? data.filter((post) => post.id !== excludePostId).slice(0, limit)
-      : data.slice(0, limit);
+    const filtered = data
+      .filter((post) => post.id !== excludePostId && !isFormCategoryPost(post))
+      .slice(0, limit);
 
     const entry: RecentPostsCacheEntry = { posts: filtered, limit, excludePostId };
     recentPostsCache.set(getCacheKey(limit, excludePostId), entry);

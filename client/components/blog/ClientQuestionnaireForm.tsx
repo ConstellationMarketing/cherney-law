@@ -66,6 +66,14 @@ const INCOME_SOURCES = [
   "Other",
 ];
 
+function RequiredAsterisk() {
+  return (
+    <span className="text-red-600" aria-label="required">
+      *
+    </span>
+  );
+}
+
 const YES_NO_QUESTIONS = [
   {
     name: "lived_exclusively_in_georgia_two_years",
@@ -150,7 +158,7 @@ function TextField({
   return (
     <label className="block">
       <span className="block font-outfit text-[15px] font-medium text-black mb-2">
-        {label}
+        {label} <RequiredAsterisk />
       </span>
       <input
         type={type}
@@ -175,7 +183,7 @@ function RadioGroup({
   return (
     <fieldset className="border border-gray-200 p-4">
       <legend className="px-1 font-outfit text-[15px] font-medium text-black">
-        {legend}
+        {legend} <RequiredAsterisk />
       </legend>
       <div className="mt-3 flex flex-wrap gap-x-6 gap-y-3">
         {options.map((option, index) => (
@@ -277,7 +285,7 @@ export default function ClientQuestionnaireForm() {
         <TextField label="City" name="city" autoComplete="address-level2" />
         <label className="block">
           <span className="block font-outfit text-[15px] font-medium text-black mb-2">
-            State
+            State <RequiredAsterisk />
           </span>
           <select
             name="state"
@@ -356,7 +364,7 @@ export default function ClientQuestionnaireForm() {
 
       <label className="block">
         <span className="block font-outfit text-[15px] font-medium text-black mb-2">
-          Please provide a brief explanation as to why you reached out to Cherney Law Firm
+          Please provide a brief explanation as to why you reached out to Cherney Law Firm <RequiredAsterisk />
         </span>
         <textarea
           name="reason_for_contact"
