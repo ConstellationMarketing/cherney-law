@@ -303,8 +303,13 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
             {/* Mobile Menu */}
             <Sheet>
               <SheetTrigger asChild className="md:hidden">
-                <Button variant="ghost" size="icon" className="text-white">
-                  <Menu className="h-6 w-6" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white"
+                  aria-label="Open navigation menu"
+                >
+                  <Menu className="h-6 w-6" aria-hidden="true" />
                 </Button>
               </SheetTrigger>
               <SheetContent

@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Scale } from "lucide-react";
 import { toast } from "sonner";
 import type { ContactContent } from "@site/lib/cms/homePageTypes";
+import { getOptimizedBackgroundImage, getOptimizedImageUrl } from "@site/lib/imageOptimizer";
 
 const contactFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -135,7 +136,10 @@ export default function ContactUsSection({ content }: ContactUsSectionProps) {
           <div
             className="relative w-full flex flex-col sm:flex-row pr-0 sm:pr-[20px]"
             style={{
-              backgroundImage: "url(/images/backgrounds/contact-us-bg.jpg)",
+              backgroundImage: getOptimizedBackgroundImage(
+                "/images/backgrounds/contact-us-bg.jpg",
+                { width: 900, quality: 75, resize: "cover" },
+              ),
               backgroundPosition: "50% 50%",
               backgroundRepeat: "no-repeat",
               backgroundSize: "cover",
@@ -145,7 +149,10 @@ export default function ContactUsSection({ content }: ContactUsSectionProps) {
             <div className="sm:w-[45.758%] sm:mr-[8.483%] relative ml-auto text-right self-end">
               <div className="relative inline-block">
                 <img
-                  src={data.attorneyImage || "/images/team/attorney-2.png"}
+                  src={getOptimizedImageUrl(
+                    data.attorneyImage || "/images/team/attorney-2.png",
+                    { width: 420, quality: 75, resize: "contain" },
+                  )}
                   alt={data.attorneyImageAlt || "Contact Us"}
                   width={338}
                   height={462}
@@ -180,9 +187,9 @@ export default function ContactUsSection({ content }: ContactUsSectionProps) {
               <div className="relative">
                 <div className="mx-auto max-w-full w-full text-center">
                   <div className="text-left">
-                    <h4 className="font-playfair text-[22px] md:text-[28px] leading-tight md:leading-[36.4px] text-white pb-[10px]">
+                    <h3 className="font-playfair text-[22px] md:text-[28px] leading-tight md:leading-[36.4px] text-white pb-[10px]">
                       {data.formHeading}
-                    </h4>
+                    </h3>
                     <div>
                       <p className="font-outfit text-[16px] md:text-[18px] leading-[24px] md:leading-[28px] text-white font-light">
                         Our intake team is available 24 hours a day, seven days

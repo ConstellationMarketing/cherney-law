@@ -15,6 +15,7 @@ import { useHomeContent } from "@site/hooks/useHomeContent";
 import { useGlobalPhone, useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { resolveSeo } from "@site/utils/resolveSeo";
 import { getSiteUrlFallback } from "@site/lib/runtime-env";
+import { getOptimizedBackgroundImage, getOptimizedImageUrl } from "@site/lib/imageOptimizer";
 
 export default function Index() {
   const { pathname } = useLocation();
@@ -55,7 +56,16 @@ export default function Index() {
       {/* Hero Section */}
       <div
         className="relative -mt-[144px] pt-[171px] pb-[27px] w-full bg-law-accent bg-cover bg-center bg-no-repeat"
-        style={(heroContent as any).heroBgImage ? { backgroundImage: `url(${(heroContent as any).heroBgImage})` } : {}}
+        style={
+          (heroContent as any).heroBgImage
+            ? {
+                backgroundImage: getOptimizedBackgroundImage(
+                  (heroContent as any).heroBgImage,
+                  { width: 1920, quality: 75, resize: "cover" },
+                ),
+              }
+            : {}
+        }
       >
         <div className="relative z-10 max-w-[2560px] mx-auto w-[95%] flex flex-col lg:flex-row lg:items-end gap-8 lg:gap-[3%]">
           {/* Left Side: Headline and Call Box */}
@@ -102,9 +112,9 @@ export default function Index() {
                     <Phone className="w-8 h-8 text-black group-hover:text-white transition-colors duration-300" strokeWidth={1.5} />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] font-normal group-hover:text-white transition-colors duration-300">
+                    <p className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] font-normal group-hover:text-white transition-colors duration-300">
                       {phoneLabel}
-                    </h4>
+                    </p>
                     <p className="font-outfit text-[clamp(1.75rem,5vw,40px)] text-black leading-tight group-hover:text-white transition-colors duration-300">
                       {phoneDisplay}
                     </p>
@@ -161,7 +171,11 @@ export default function Index() {
           <div className="lg:w-[31.3333%] flex items-end justify-center">
             {(heroContent as any).heroImage && (
               <img
-                src={(heroContent as any).heroImage}
+                src={getOptimizedImageUrl((heroContent as any).heroImage, {
+                  width: 700,
+                  quality: 75,
+                  resize: "contain",
+                })}
                 alt="Attorney"
                 className="max-w-full w-auto h-auto object-contain max-h-[480px]"
                 style={{

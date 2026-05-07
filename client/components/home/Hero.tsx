@@ -29,9 +29,9 @@ export default function Hero() {
                 />
               </div>
               <div className="flex-1">
-                <h4 className="font-outfit text-[18px] leading-[18px] text-black pb-[10px] font-normal group-hover:text-white transition-colors duration-300">
+                <p className="font-outfit text-[18px] leading-[18px] text-black pb-[10px] font-normal group-hover:text-white transition-colors duration-300">
                   {phoneLabel}
-                </h4>
+                </p>
                 <p className="font-outfit text-[clamp(1.5rem,4vw,40px)] text-black leading-tight group-hover:text-white transition-colors duration-300">
                   {phoneDisplay}
                 </p>

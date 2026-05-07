@@ -1,5 +1,6 @@
 import { Phone } from "lucide-react";
 import { Link } from "react-router-dom";
+import { getOptimizedImageUrl } from "@site/lib/imageOptimizer";
 import type { AboutContent } from "@site/lib/cms/homePageTypes";
 import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
 
@@ -91,9 +92,9 @@ export default function AboutSection({ content, syndicationsLabel }: AboutSectio
                   />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] group-hover:text-white transition-colors duration-300">
+                  <p className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] group-hover:text-white transition-colors duration-300">
                     {phoneLabel}
-                  </h4>
+                  </p>
                   <p className="font-outfit text-[28px] md:text-[40px] text-black leading-none group-hover:text-white transition-colors duration-300">
                     {phoneDisplay}
                   </p>
@@ -119,9 +120,9 @@ export default function AboutSection({ content, syndicationsLabel }: AboutSectio
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] group-hover:text-white transition-colors duration-300">
+                  <p className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] group-hover:text-white transition-colors duration-300">
                     {data.contactLabel}
-                  </h4>
+                  </p>
                   <p className="font-outfit text-[18px] md:text-[24px] text-black leading-none group-hover:text-white transition-colors duration-300">
                     {data.contactText}
                   </p>
@@ -139,7 +140,11 @@ export default function AboutSection({ content, syndicationsLabel }: AboutSectio
             )}
             <div className="relative">
               <img
-                src={data.attorneyImage}
+                src={getOptimizedImageUrl(data.attorneyImage, {
+                  width: 650,
+                  quality: 75,
+                  resize: "contain",
+                })}
                 alt={data.attorneyImageAlt}
                 className="max-w-full w-auto h-auto object-contain"
                 width={462}
@@ -189,9 +194,9 @@ export default function AboutSection({ content, syndicationsLabel }: AboutSectio
           {stats.map((stat, index) => (
             <div key={index} className="text-center">
               <div className="max-w-[550px] mx-auto">
-                <h4 className="font-[Crimson_Pro,Georgia,Times_New_Roman,serif] text-[40px] md:text-[60px] leading-tight md:leading-[60px] text-black pb-[10px]">
+                <p className="font-[Crimson_Pro,Georgia,Times_New_Roman,serif] text-[40px] md:text-[60px] leading-tight md:leading-[60px] text-black pb-[10px]">
                   {stat.value}
-                </h4>
+                </p>
                 <div className="font-outfit text-[16px] md:text-[20px] font-light text-black text-center">
                   {stat.label}
                 </div>

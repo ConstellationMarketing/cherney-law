@@ -15,6 +15,7 @@ import { useHomepage2Content } from "@site/hooks/useHomepage2Content";
 import { useGlobalPhone, useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { resolveSeo } from "@site/utils/resolveSeo";
 import { getSiteUrlFallback } from "@site/lib/runtime-env";
+import { getOptimizedBackgroundImage, getOptimizedImageUrl } from "@site/lib/imageOptimizer";
 
 const DEFAULT_HERO_BG =
   "https://cdn.builder.io/api/v1/image/assets%2F50bd0f2438824f8ea1271cf7dd2c508e%2F1e4bfebf4b62496e9f4b00ad011729ba?format=webp&width=800&height=1200";
@@ -61,7 +62,12 @@ export default function Homepage2() {
           pt-[141px] = 114px header height + 27px original top padding */}
       <div
         className="relative -mt-[144px] pt-[171px] pb-[27px] w-full bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${(heroContent as any).heroBgImage || DEFAULT_HERO_BG})` }}
+        style={{
+          backgroundImage: getOptimizedBackgroundImage(
+            (heroContent as any).heroBgImage || DEFAULT_HERO_BG,
+            { width: 1920, quality: 75, resize: "cover" },
+          ),
+        }}
       >
         <div className="relative z-10 max-w-[2560px] mx-auto w-[95%] flex flex-col lg:flex-row lg:items-end gap-8 lg:gap-[3%]">
           {/* Left Side: Headline and Call Box */}
@@ -118,9 +124,9 @@ export default function Homepage2() {
                     />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] font-normal group-hover:text-white transition-colors duration-300">
+                    <p className="font-outfit text-[16px] md:text-[18px] leading-tight text-black pb-[10px] font-normal group-hover:text-white transition-colors duration-300">
                       {phoneLabel}
-                    </h4>
+                    </p>
                     <p className="font-outfit text-[clamp(1.75rem,5vw,40px)] text-black leading-tight group-hover:text-white transition-colors duration-300">
                       {phoneDisplay}
                     </p>
@@ -182,7 +188,10 @@ export default function Homepage2() {
           <div className="lg:w-[31.3333%] flex items-end justify-center">
             {((heroContent as any).heroImage || DEFAULT_HERO_IMAGE) && (
               <img
-                src={(heroContent as any).heroImage || DEFAULT_HERO_IMAGE}
+                src={getOptimizedImageUrl(
+                  (heroContent as any).heroImage || DEFAULT_HERO_IMAGE,
+                  { width: 700, quality: 75, resize: "contain" },
+                )}
                 alt="Attorney"
                 className="max-w-full w-auto h-auto object-contain max-h-[480px]"
                 style={{

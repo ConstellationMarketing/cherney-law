@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { PracticeAreaItem } from "@site/lib/cms/homePageTypes";
+import { getOptimizedBackgroundImage } from "@site/lib/imageOptimizer";
 
 interface PracticeAreasGridProps {
   areas?: PracticeAreaItem[];
@@ -45,7 +46,11 @@ export default function PracticeAreasGrid({ areas }: PracticeAreasGridProps) {
               to={area.link}
               className="relative min-h-[400px] lg:min-h-[500px] overflow-hidden group"
               style={{
-                backgroundImage: `url(${area.image})`,
+                backgroundImage: getOptimizedBackgroundImage(area.image, {
+                  width: 700,
+                  quality: 75,
+                  resize: "cover",
+                }),
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}

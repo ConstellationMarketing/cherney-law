@@ -66,3 +66,49 @@ export async function optimizeImage(file: File): Promise<File> {
     return file;
   }
 }
+
+interface OptimizedImageUrlOptions {
+  width?: number;
+  height?: number;
+  quality?: number;
+  resize?: "cover" | "contain" | "fill";
+}
+
+const RASTER_IMAGE_EXTENSION = /\.(?:jpe?g|png)(?:$|[?#])/i;
+
+export function getOptimizedImageUrl(
+  src: string | null | undefined,
+  options: OptimizedImageUrlOptions = {},
+): string {
+  if (!src || !RASTER_IMAGE_EXTENSION.test(src)) {
+    return src || "";
+  }
+
+  if (src.includes("/storage/v1/object/public/")) {
+    try {
+      const url = new URL(src);
+      url.pathname = url.pathname.replace(
+        "/storage/v1/object/public/",
+        "/storage/v1/render/image/public/",
+      );
+      url.searchParams.set("format", "webp");
+      url.searchParams.set("quality", String(options.quality ?? 75));
+      if (options.width) url.searchParams.set("width", String(options.width));
+      if (options.height) url.searchParams.set("height", String(options.height));
+      if (options.resize) url.searchParams.set("resize", options.resize);
+      return url.toString();
+    } catch {
+      return src;
+    }
+  }
+
+  return src;
+}
+
+export function getOptimizedBackgroundImage(
+  src: string | null | undefined,
+  options?: OptimizedImageUrlOptions,
+): string | undefined {
+  const optimizedSrc = getOptimizedImageUrl(src, options);
+  return optimizedSrc ? `url(${optimizedSrc})` : undefined;
+}

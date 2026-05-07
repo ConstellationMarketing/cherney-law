@@ -1,5 +1,4 @@
 import { Helmet } from "@site/lib/helmet";
-import { isProductionRuntime } from "@site/lib/runtime-env";
 
 interface SeoProps {
   title: string;
@@ -26,15 +25,6 @@ export default function Seo({
   schemaData,
   pageContent,
 }: SeoProps) {
-  const isProduction = isProductionRuntime();
-  const hasPrerenderedMeta =
-    typeof document !== "undefined" &&
-    document.querySelector('meta[name="description"]')?.getAttribute("content");
-
-  if (isProduction && hasPrerenderedMeta) {
-    return null;
-  }
-
   const resolvedOgTitle = ogTitle || title;
   const resolvedOgDescription = ogDescription || description;
 

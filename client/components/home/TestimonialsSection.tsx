@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { TestimonialsContent, TestimonialItem } from "@site/lib/cms/homePageTypes";
+import { getOptimizedImageUrl } from "@site/lib/imageOptimizer";
 
 interface TestimonialsSectionProps {
   content?: TestimonialsContent & { headingLevel?: 1 | 2 | 3 | 4 };
@@ -76,7 +77,11 @@ export default function TestimonialsSection({
         {/* Left Side - Image */}
         <div className="lg:w-[48.5%] flex items-center justify-center">
           <img
-            src={data.backgroundImage}
+            src={getOptimizedImageUrl(data.backgroundImage, {
+              width: 700,
+              quality: 75,
+              resize: "contain",
+            })}
             alt="Testimonials"
             width={609}
             height={530}
@@ -105,7 +110,11 @@ export default function TestimonialsSection({
                       </p>
                       <div className="font-outfit text-[24px] font-semibold text-black text-left">
                         <img
-                          src={testimonial.ratingImage}
+                          src={getOptimizedImageUrl(testimonial.ratingImage, {
+                            width: 200,
+                            quality: 80,
+                            resize: "contain",
+                          })}
                           alt="Rating"
                           width={186}
                           height={34}
@@ -139,16 +148,21 @@ export default function TestimonialsSection({
           </button>
 
           {/* Pagination Dots */}
-          <div className="absolute bottom-[20px] left-0 w-full text-center z-10">
+          <div className="absolute bottom-[10px] left-0 w-full text-center z-10 flex justify-center gap-2">
             {testimonials.map((_, index) => (
               <button
                 key={index}
                 onClick={() => goToSlide(index)}
-                className={`inline-block w-[7px] h-[7px] bg-law-accent-dark border border-law-accent ${
-                  index === activeSlide ? "opacity-100" : "opacity-50"
-                } ${index < testimonials.length - 1 ? "mr-[10px]" : ""} cursor-pointer transition-opacity hover:opacity-100`}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center cursor-pointer"
                 aria-label={`Go to testimonial ${index + 1}`}
-              />
+              >
+                <span
+                  className={`block w-2.5 h-2.5 bg-law-accent-dark border border-law-accent transition-opacity ${
+                    index === activeSlide ? "opacity-100" : "opacity-50"
+                  } hover:opacity-100`}
+                  aria-hidden="true"
+                />
+              </button>
             ))}
           </div>
         </div>

@@ -1,4 +1,5 @@
 import type { AttorneyInfoContent } from "@site/lib/cms/homePageTypes";
+import { getOptimizedImageUrl } from "@site/lib/imageOptimizer";
 
 interface AttorneyInfoSectionProps {
   content?: AttorneyInfoContent;
@@ -25,7 +26,11 @@ export default function AttorneyInfoSection({
           {content.image && (
             <div className="md:w-[35%] flex-shrink-0">
               <img
-                src={content.image}
+                src={getOptimizedImageUrl(content.image, {
+                  width: 600,
+                  quality: 75,
+                  resize: "cover",
+                })}
                 alt={content.imageAlt || ""}
                 className="w-full h-full object-cover"
                 loading="lazy"
@@ -64,7 +69,11 @@ export default function AttorneyInfoSection({
                 {content.stayInformedImage && (
                   <div className="flex-shrink-0">
                     <img
-                      src={content.stayInformedImage}
+                      src={getOptimizedImageUrl(content.stayInformedImage, {
+                        width: 420,
+                        quality: 75,
+                        resize: "contain",
+                      })}
                       alt={content.stayInformedImageAlt || ""}
                       className="w-[280px] md:w-[340px] h-auto"
                       loading="lazy"
