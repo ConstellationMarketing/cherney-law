@@ -21,6 +21,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     outDir: "dist/spa",
+    sourcemap: true,
   },
   optimizeDeps: {
     // Explicitly listing core deps ensures the configHash (and therefore
