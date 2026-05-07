@@ -1,5 +1,6 @@
 import { loadSiteSettings } from "@site/contexts/SiteSettingsContext";
 import {
+  getBlogListingPaginationInfo,
   inferStructuredTemplateType,
   loadDynamicCmsRoute,
   normalizeCmsPath,
@@ -20,12 +21,13 @@ import { loadBlogSidebarSettings } from "@site/components/blog/BlogSidebar";
 import { loadRecentPosts } from "@site/components/blog/RecentPosts";
 import { loadRecentPostsBlockPage } from "@site/components/blocks/RecentPostsBlock";
 
-async function collectRecentPostsBlocks(pageContent: unknown) {
+async function collectRecentPostsBlocks(pageContent: unknown, pathname: string) {
   if (!Array.isArray(pageContent)) {
     return [] as CmsPreloadedState["routeData"]["recentPostsBlocks"];
   }
 
   const uniquePostsPerPage = new Set<number>();
+  const blogPagination = getBlogListingPaginationInfo(pathname);
 
   for (const block of pageContent as Array<Record<string, unknown>>) {
     if (block?.type === "recent-posts") {
@@ -37,11 +39,12 @@ async function collectRecentPostsBlocks(pageContent: unknown) {
 
   const entries = await Promise.all(
     Array.from(uniquePostsPerPage).map(async (postsPerPage) => {
-      const result = await loadRecentPostsBlockPage(postsPerPage, 0);
+      const offset = blogPagination ? (blogPagination.page - 1) * postsPerPage : 0;
+      const result = await loadRecentPostsBlockPage(postsPerPage, offset);
       return {
-        key: `${postsPerPage}:0`,
+        key: `${postsPerPage}:${offset}`,
         postsPerPage,
-        offset: 0,
+        offset,
         posts: result.posts,
         hasMore: result.hasMore,
       };
@@ -190,6 +193,7 @@ export async function preparePrerenderState(
 
   state.routeData.recentPostsBlocks = await collectRecentPostsBlocks(
     dynamicCms.page.content,
+    pathname,
   );
 
   return state;

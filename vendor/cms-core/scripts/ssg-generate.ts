@@ -3,6 +3,10 @@ import path from "path";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../client/lib/database.types";
 import { renderAppToString } from "../../../client/entry-server.tsx";
+import {
+  BLOG_LISTING_PATH,
+  getBlogListingPathForPage,
+} from "../../../client/lib/cms/dynamicRoute.ts";
 import { preparePrerenderState } from "../../../client/lib/prerender/preparePrerenderState.ts";
 import { serializePreloadedState } from "../../../client/lib/prerender/preloadedState.ts";
 import { splitWhatConvertsScripts } from "../../../client/lib/whatconvertsScripts.ts";
@@ -24,6 +28,7 @@ interface PageRoute {
   id: string;
   title: string;
   url_path: string;
+  content?: unknown;
   meta_title: string | null;
   meta_description: string | null;
   canonical_url: string | null;
@@ -66,6 +71,27 @@ function normalizeOutputPath(urlPath: string) {
 
   const pagePath = urlPath.startsWith("/") ? urlPath.slice(1) : urlPath;
   return path.join(process.cwd(), "dist/spa", pagePath, "index.html");
+}
+
+function normalizeRoutePath(urlPath: string) {
+  return urlPath.endsWith("/") ? urlPath : `${urlPath}/`;
+}
+
+function getBlogPostsPerPage(blogPage: PageRoute | null | undefined) {
+  if (!Array.isArray(blogPage?.content)) {
+    return 6;
+  }
+
+  const recentPostsBlock = blogPage.content.find(
+    (block): block is { type: string; postsPerPage?: unknown } =>
+      Boolean(block) &&
+      typeof block === "object" &&
+      (block as { type?: unknown }).type === "recent-posts",
+  );
+
+  return typeof recentPostsBlock?.postsPerPage === "number"
+    ? recentPostsBlock.postsPerPage
+    : 6;
 }
 
 function stripPlaceholderSeo(template: string) {
@@ -168,7 +194,7 @@ async function generateSSG() {
   const { data: pages, error: pagesError } = await supabase
     .from("pages")
     .select(
-      "id, title, url_path, meta_title, meta_description, canonical_url, og_title, og_description, og_image, noindex, updated_at",
+      "id, title, url_path, content, meta_title, meta_description, canonical_url, og_title, og_description, og_image, noindex, updated_at",
     )
     .eq("status", "published");
 
@@ -204,6 +230,31 @@ async function generateSSG() {
     console.log(`Generated: ${page.url_path}`);
   }
 
+  const blogPage = (pages || []).find(
+    (page) => normalizeRoutePath(page.url_path) === BLOG_LISTING_PATH,
+  );
+  const blogPostsPerPage = getBlogPostsPerPage(blogPage);
+  const totalBlogPages = Math.ceil((blogPosts || []).length / blogPostsPerPage);
+  const blogPaginationPages: PageRoute[] = [];
+
+  if (blogPage && totalBlogPages > 1) {
+    for (let pageNumber = 2; pageNumber <= totalBlogPages; pageNumber += 1) {
+      const pagePath = getBlogListingPathForPage(pageNumber);
+      const html = await renderRoute(template, pagePath);
+      const outputPath = normalizeOutputPath(pagePath);
+      fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+      fs.writeFileSync(outputPath, html);
+      blogPaginationPages.push({
+        ...blogPage,
+        id: `${blogPage.id}-page-${pageNumber}`,
+        title: `${blogPage.title} - Page ${pageNumber}`,
+        url_path: pagePath,
+        canonical_url: pagePath,
+      });
+      console.log(`Generated: ${pagePath}`);
+    }
+  }
+
   for (const post of blogPosts || []) {
     const postSlug = post.slug.endsWith("/") ? post.slug : `${post.slug}/`;
     const postUrlPath = `/${postSlug}`;
@@ -223,6 +274,14 @@ async function generateSSG() {
     .map((post) => {
       const postSlug = post.slug.endsWith("/") ? post.slug : `${post.slug}/`;
       const withSlash = `/${postSlug}`;
+      const withoutSlash = withSlash.slice(0, -1);
+      return `${withoutSlash} ${withSlash} 301`;
+    })
+    .join("\n");
+
+  const blogPaginationTrailingSlashRules = blogPaginationPages
+    .map((page) => {
+      const withSlash = page.url_path;
       const withoutSlash = withSlash.slice(0, -1);
       return `${withoutSlash} ${withSlash} 301`;
     })
@@ -254,6 +313,9 @@ async function generateSSG() {
     blogTrailingSlashRules
       ? `\n# Blog trailing-slash enforcement\n${blogTrailingSlashRules}`
       : "",
+    blogPaginationTrailingSlashRules
+      ? `\n# Blog pagination trailing-slash enforcement\n${blogPaginationTrailingSlashRules}`
+      : "",
     userRedirects ? `\n# Custom redirects\n${userRedirects}` : "",
     "\n/* /index.html 200",
   ]
@@ -272,6 +334,7 @@ async function generateSSG() {
   if (!siteSettings.site_noindex) {
     const allPages: PageRoute[] = [
       ...(pages || []),
+      ...blogPaginationPages,
       ...((blogPosts || []).map((post) => ({
         id: post.id,
         title: post.title,

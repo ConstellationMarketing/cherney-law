@@ -32,11 +32,45 @@ export interface DynamicCmsRouteResult {
   isBlogPost: boolean;
 }
 
+export interface BlogListingPaginationInfo {
+  page: number;
+}
+
+export const BLOG_LISTING_PATH = "/blog/";
+
+const BLOG_PAGE_PATTERN = /^\/blog\/page\/(\d+)\/$/;
+
 const cmsPageCache = new Map<string, CmsPage | null>();
 const blogSlugCache = new Map<string, boolean>();
 
 export function normalizeCmsPath(pathname: string): string {
   return pathname.endsWith("/") ? pathname : `${pathname}/`;
+}
+
+export function getBlogListingPaginationInfo(
+  pathname: string,
+): BlogListingPaginationInfo | null {
+  const normalizedPath = normalizeCmsPath(pathname);
+
+  if (normalizedPath === BLOG_LISTING_PATH) {
+    return { page: 1 };
+  }
+
+  const match = normalizedPath.match(BLOG_PAGE_PATTERN);
+  if (!match) {
+    return null;
+  }
+
+  const page = Number(match[1]);
+  if (!Number.isInteger(page) || page < 2) {
+    return null;
+  }
+
+  return { page };
+}
+
+export function getBlogListingPathForPage(page: number): string {
+  return page <= 1 ? BLOG_LISTING_PATH : `/blog/page/${page}/`;
 }
 
 export function inferStructuredTemplateType(
@@ -138,9 +172,11 @@ export async function loadDynamicCmsRoute(
   }
 
   const normalizedPath = normalizeCmsPath(pathname);
-  const paths = [normalizedPath];
-  if (normalizedPath.endsWith("/")) {
-    paths.push(normalizedPath.slice(0, -1));
+  const blogPagination = getBlogListingPaginationInfo(normalizedPath);
+  const pageLookupPath = blogPagination ? BLOG_LISTING_PATH : normalizedPath;
+  const paths = [pageLookupPath];
+  if (pageLookupPath.endsWith("/")) {
+    paths.push(pageLookupPath.slice(0, -1));
   }
 
   const orFilter = paths.map((entry) => `url_path.eq.${entry}`).join(",");

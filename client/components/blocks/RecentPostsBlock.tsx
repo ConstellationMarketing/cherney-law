@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import type { PostWithCategory } from "@site/lib/cms/blogTypes";
 import BlogPostCard from "@site/components/blog/BlogPostCard";
 import { fetchSupabaseJson } from "@site/lib/cms/api";
+import {
+  getBlogListingPaginationInfo,
+  getBlogListingPathForPage,
+} from "@site/lib/cms/dynamicRoute";
 
 interface RecentPostsBlockProps {
   heading?: string;
@@ -74,7 +79,12 @@ export default function RecentPostsBlock({
   postsPerPage = 6,
   showLoadMore = true,
 }: RecentPostsBlockProps) {
-  const initialEntry = getCachedRecentPostsPage(postsPerPage, 0);
+  const { pathname } = useLocation();
+  const blogPagination = getBlogListingPaginationInfo(pathname);
+  const isBlogListing = Boolean(blogPagination);
+  const currentPage = blogPagination?.page ?? 1;
+  const currentOffset = isBlogListing ? (currentPage - 1) * postsPerPage : 0;
+  const initialEntry = getCachedRecentPostsPage(postsPerPage, currentOffset);
   const [posts, setPosts] = useState<PostWithCategory[]>(initialEntry?.posts ?? []);
   const [isLoading, setIsLoading] = useState(!initialEntry);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -86,7 +96,7 @@ export default function RecentPostsBlock({
   );
 
   useEffect(() => {
-    const cached = getCachedRecentPostsPage(postsPerPage, 0);
+    const cached = getCachedRecentPostsPage(postsPerPage, currentOffset);
     if (cached) {
       setPosts(cached.posts);
       setHasMore(cached.hasMore);
@@ -96,9 +106,13 @@ export default function RecentPostsBlock({
 
     let cancelled = false;
 
+    setIsLoading(true);
+    setPosts([]);
+    setHasMore(false);
+
     async function load() {
       try {
-        const result = await fetchPosts(0);
+        const result = await fetchPosts(currentOffset);
         if (!cancelled) {
           setPosts(result.posts);
           setHasMore(result.hasMore);
@@ -112,7 +126,7 @@ export default function RecentPostsBlock({
     return () => {
       cancelled = true;
     };
-  }, [fetchPosts, postsPerPage]);
+  }, [currentOffset, fetchPosts, postsPerPage]);
 
   const handleLoadMore = async () => {
     setIsLoadingMore(true);
@@ -152,7 +166,31 @@ export default function RecentPostsBlock({
               ))}
             </div>
 
-            {showLoadMore && hasMore && (
+            {showLoadMore && isBlogListing && (currentPage > 1 || hasMore) && (
+              <nav
+                aria-label="Blog pagination"
+                className="flex flex-wrap items-center justify-center gap-4 mt-[40px]"
+              >
+                {currentPage > 1 && (
+                  <Link
+                    to={getBlogListingPathForPage(currentPage - 1)}
+                    className="font-outfit text-[16px] font-semibold text-black bg-gray-100 px-8 py-4 hover:bg-gray-200 transition-colors duration-300"
+                  >
+                    Newer Blog Posts
+                  </Link>
+                )}
+                {hasMore && (
+                  <Link
+                    to={getBlogListingPathForPage(currentPage + 1)}
+                    className="font-outfit text-[16px] font-semibold text-black bg-law-accent px-8 py-4 hover:bg-law-accent/80 transition-colors duration-300"
+                  >
+                    See More Blog Posts
+                  </Link>
+                )}
+              </nav>
+            )}
+
+            {showLoadMore && !isBlogListing && hasMore && (
               <div className="flex justify-center mt-[40px]">
                 <button
                   onClick={handleLoadMore}

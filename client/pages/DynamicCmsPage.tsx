@@ -11,6 +11,8 @@ import { useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { resolveSeo } from "@site/utils/resolveSeo";
 import type { ContentBlock } from "@site/lib/blocks";
 import {
+  getBlogListingPaginationInfo,
+  getBlogListingPathForPage,
   getCachedDynamicCmsRoute,
   inferStructuredTemplateType,
   loadDynamicCmsRoute,
@@ -117,7 +119,17 @@ export default function DynamicCmsPage() {
     }
   }
 
-  const seo = resolveSeo(page, siteSettings.settings, pathname, siteUrl);
+  const blogPagination = getBlogListingPaginationInfo(pathname);
+  const seoPath = blogPagination
+    ? getBlogListingPathForPage(blogPagination.page)
+    : pathname;
+  const seo = resolveSeo(page, siteSettings.settings, seoPath, siteUrl);
+  if (blogPagination && blogPagination.page > 1) {
+    seo.title = `${seo.title} - Page ${blogPagination.page}`;
+    seo.canonical = siteUrl
+      ? new URL(seoPath, siteUrl.endsWith("/") ? siteUrl : `${siteUrl}/`).toString()
+      : seo.canonical;
+  }
 
   const firstBlock =
     Array.isArray(page.content) && page.content.length > 0
