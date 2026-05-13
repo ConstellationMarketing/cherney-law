@@ -14,7 +14,7 @@ export default function HomeFaqSection({ content }: HomeFaqSectionProps) {
     (item) => item.question?.trim() && item.answer?.trim(),
   );
 
-  if (!heading && items.length === 0) {
+  if (items.length === 0) {
     return null;
   }
 
