@@ -10,6 +10,7 @@ import PracticeAreasGrid from "@site/components/home/PracticeAreasGrid";
 import AwardsSection from "@site/components/home/AwardsSection";
 import TestimonialsSection from "@site/components/home/TestimonialsSection";
 import AttorneyInfoSection from "@site/components/home/AttorneyInfoSection";
+import HomeFaqSection from "@site/components/home/HomeFaqSection";
 import ContactUsSection from "@site/components/home/ContactUsSection";
 import { useHomepage2Content } from "@site/hooks/useHomepage2Content";
 import { useGlobalPhone, useSiteSettings } from "@site/contexts/SiteSettingsContext";
@@ -264,6 +265,9 @@ export default function Homepage2() {
 
       {/* Attorney Info Section */}
       <AttorneyInfoSection content={content.attorneyInfo} />
+
+      {/* FAQ Section */}
+      <HomeFaqSection content={content.faq} />
 
       {/* Contact Us Section */}
       <ContactUsSection content={content.contact} />

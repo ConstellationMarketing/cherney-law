@@ -2,8 +2,10 @@
 
 // Common types
 export interface Button {
-  text: string;
+  text?: string;
+  label?: string;
   href: string;
+  icon?: string;
 }
 
 export interface FeatureBox {
@@ -33,6 +35,7 @@ export interface PracticeAreaItem {
   description: string;
   icon?: string;
   href?: string;
+  image?: string;
 }
 
 export interface Badge {
@@ -103,6 +106,10 @@ export interface HomePageContent {
     headingLevel?: 1 | 2 | 3 | 4;
     backgroundImage: string;
     items: TestimonialItem[];
+  };
+  faq: {
+    heading: string;
+    items: FAQItem[];
   };
   contact: {
     sectionLabel: string;

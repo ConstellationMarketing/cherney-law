@@ -70,6 +70,13 @@ function mergeWithDefaults(
     },
     awardsCTA: { ...defaults.awardsCTA, ...cmsContent.awardsCTA },
     attorneyInfo: { ...defaults.attorneyInfo, ...cmsContent.attorneyInfo },
+    faq: {
+      ...defaults.faq,
+      ...cmsContent.faq,
+      items: cmsContent.faq?.items?.length
+        ? cmsContent.faq.items
+        : defaults.faq.items,
+    },
   };
 }
 

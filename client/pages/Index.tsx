@@ -10,6 +10,7 @@ import PracticeAreasGrid from "@site/components/home/PracticeAreasGrid";
 import AwardsSection from "@site/components/home/AwardsSection";
 import TestimonialsSection from "@site/components/home/TestimonialsSection";
 import AttorneyInfoSection from "@site/components/home/AttorneyInfoSection";
+import HomeFaqSection from "@site/components/home/HomeFaqSection";
 import ContactUsSection from "@site/components/home/ContactUsSection";
 import { useHomeContent } from "@site/hooks/useHomeContent";
 import { useGlobalPhone, useSiteSettings } from "@site/contexts/SiteSettingsContext";
@@ -243,6 +244,9 @@ export default function Index() {
 
       {/* Attorney Info Section */}
       <AttorneyInfoSection content={content.attorneyInfo} />
+
+      {/* FAQ Section */}
+      <HomeFaqSection content={content.faq} />
 
       {/* Contact Us Section */}
       <ContactUsSection content={content.contact} />

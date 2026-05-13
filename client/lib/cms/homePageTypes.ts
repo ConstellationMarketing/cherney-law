@@ -77,6 +77,16 @@ export interface TestimonialsContent {
   items: TestimonialItem[];
 }
 
+export interface HomeFaqItem {
+  question: string;
+  answer: string;
+}
+
+export interface HomeFaqContent {
+  heading: string;
+  items: HomeFaqItem[];
+}
+
 export interface ContactContent {
   sectionLabel: string;
   heading: string;
@@ -128,6 +138,7 @@ export interface HomePageContent {
   firmDescription: FirmDescriptionContent;
   awardsCTA: AwardsCTAContent;
   attorneyInfo: AttorneyInfoContent;
+  faq: HomeFaqContent;
 }
 
 // Default content - minimal placeholders as structural fallback
@@ -199,5 +210,9 @@ export const defaultHomeContent: HomePageContent = {
     stayInformedImage: "",
     stayInformedImageAlt: "",
     stayInformedCaption: "",
+  },
+  faq: {
+    heading: "",
+    items: [],
   },
 };

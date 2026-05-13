@@ -160,6 +160,18 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
     set("testimonials", { items });
   };
 
+  // --- FAQ ---
+  const faq = content.faq || { heading: "", items: [] };
+  const setFaq = (k: string, v: unknown) => set("faq", { [k]: v } as any);
+  const addFaqItem = () =>
+    set("faq", { items: [...faq.items, { question: "", answer: "" }] });
+  const removeFaqItem = (i: number) =>
+    set("faq", { items: faq.items.filter((_, idx) => idx !== i) });
+  const updateFaqItem = (i: number, k: string, v: string) => {
+    const items = faq.items.map((item, idx) => (idx === i ? { ...item, [k]: v } : item));
+    set("faq", { items });
+  };
+
   return (
     <Accordion type="multiple" defaultValue={["hero"]} className="space-y-2">
 
@@ -510,6 +522,34 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
           <Field label="Stay Informed Caption">
             <Input value={content.attorneyInfo.stayInformedCaption} onChange={e => set("attorneyInfo", { stayInformedCaption: e.target.value })} />
           </Field>
+        </AccordionContent>
+      </AccordionItem>
+
+      {/* ── FAQ ── */}
+      <AccordionItem value="faq" className="border rounded-lg px-4">
+        <AccordionTrigger className="text-sm font-semibold">FAQ Section</AccordionTrigger>
+        <AccordionContent className="space-y-4 pb-4">
+          <Field label="Section Title" hint="Centered title shown above the FAQ accordions">
+            <Input value={faq.heading} onChange={e => setFaq("heading", e.target.value)} placeholder="Frequently Asked Questions" />
+          </Field>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Questions & Answers</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addFaqItem}>
+                <Plus className="w-3 h-3 mr-1" /> Add FAQ
+              </Button>
+            </div>
+            {faq.items.map((item, i) => (
+              <ArrayCard key={i} onRemove={() => removeFaqItem(i)}>
+                <Field label="Question">
+                  <Input value={item.question} onChange={e => updateFaqItem(i, "question", e.target.value)} />
+                </Field>
+                <Field label="Answer">
+                  <RichTextEditor value={item.answer} onChange={v => updateFaqItem(i, "answer", v)} minHeight="120px" />
+                </Field>
+              </ArrayCard>
+            ))}
+          </div>
         </AccordionContent>
       </AccordionItem>
 

@@ -79,6 +79,10 @@ export function normalizeHomePageContent(content: unknown): HomePageContent {
       backgroundImage: str(c.testimonials?.backgroundImage),
       items: ensureArray(c.testimonials?.items, { quote: '', author: '', location: '' }),
     }),
+    faq: ensureObject(c.faq, {
+      heading: str(c.faq?.heading),
+      items: ensureArray(c.faq?.items, { question: '', answer: '' }),
+    }),
     contact: ensureObject(c.contact, {
       sectionLabel: str(c.contact?.sectionLabel),
       heading: str(c.contact?.heading),
