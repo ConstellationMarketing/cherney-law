@@ -116,7 +116,11 @@ export default function Homepage2() {
             {/* Hero Buttons Row */}
             <div className="flex flex-col sm:flex-row gap-4 w-full max-w-[820px]">
               {/* Call Box - always uses global phone */}
-              <div className="bg-law-accent p-[8px] w-full sm:w-1/2 cursor-pointer transition-all duration-300 hover:bg-law-accent-dark group">
+              <a
+                href={`tel:${phoneDisplay.replace(/[^0-9]/g, "")}`}
+                data-dni-phone="primary"
+                className="bg-law-accent p-[8px] w-full sm:w-1/2 cursor-pointer transition-all duration-300 hover:bg-law-accent-dark group block"
+              >
                 <div className="flex items-start gap-4">
                   <div className="bg-white p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
                     <Phone
@@ -133,7 +137,7 @@ export default function Homepage2() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </a>
 
               {/* Dynamic hero buttons from CMS */}
               {heroButtons.length > 0 ? (

@@ -83,7 +83,11 @@ export default function AboutSection({ content, syndicationsLabel }: AboutSectio
             </div>
 
             {/* Call Us 24/7 Box */}
-            <div className="bg-law-accent p-[8px] w-full max-w-[400px] mb-[9.27%] cursor-pointer transition-all duration-300 hover:bg-law-accent-dark group">
+            <a
+              href={`tel:${phoneDisplay.replace(/[^0-9]/g, "")}`}
+              data-dni-phone="primary"
+              className="bg-law-accent p-[8px] w-full max-w-[400px] mb-[9.27%] cursor-pointer transition-all duration-300 hover:bg-law-accent-dark group block"
+            >
               <div className="flex items-start gap-4">
                 <div className="bg-white p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
                   <Phone
@@ -100,7 +104,7 @@ export default function AboutSection({ content, syndicationsLabel }: AboutSectio
                   </p>
                 </div>
               </div>
-            </div>
+            </a>
 
             {/* Contact Us Box */}
             <Link to="/contact/" className="bg-law-accent p-[8px] w-full max-w-[400px] cursor-pointer transition-all duration-300 hover:bg-law-accent-dark group block">

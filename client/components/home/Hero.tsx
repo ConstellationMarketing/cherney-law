@@ -20,7 +20,11 @@ export default function Hero() {
           </div>
 
           {/* Call Box */}
-          <div className="bg-law-accent p-[8px] w-full max-w-[400px] cursor-pointer transition-all duration-300 hover:bg-law-accent-dark group">
+          <a
+            href={`tel:${phoneDisplay.replace(/[^0-9]/g, "")}`}
+            data-dni-phone="primary"
+            className="bg-law-accent p-[8px] w-full max-w-[400px] cursor-pointer transition-all duration-300 hover:bg-law-accent-dark group block"
+          >
             <div className="flex items-start gap-4">
               <div className="bg-white p-[15px] mt-1 flex items-center justify-center group-hover:bg-black transition-colors duration-300">
                 <Phone
@@ -37,7 +41,7 @@ export default function Hero() {
                 </p>
               </div>
             </div>
-          </div>
+          </a>
         </div>
 
         {/* Spacer for form (will be added separately) */}
