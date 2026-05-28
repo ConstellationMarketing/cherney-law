@@ -88,6 +88,7 @@ export default function ContactForm() {
         action="/"
         data-netlify="true"
         netlify-honeypot="honeypot"
+        noValidate
         onSubmit={handleSubmit(onSubmit)}
         className="space-y-[25px]"
       >

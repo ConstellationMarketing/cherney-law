@@ -57,6 +57,7 @@ const US_STATES = [
 ];
 
 const INCOME_SOURCES = [
+  "No other income",
   "Social Security",
   "Pension",
   "Retirement",
@@ -66,13 +67,15 @@ const INCOME_SOURCES = [
   "Other",
 ];
 
-function RequiredAsterisk() {
-  return (
-    <span className="text-red-600" aria-label="required">
-      *
-    </span>
-  );
-}
+const TEXT_FIELDS = [
+  { label: "First Name", name: "first_name", autoComplete: "given-name" },
+  { label: "Last Name", name: "last_name", autoComplete: "family-name" },
+  { label: "Street Address", name: "street_address", autoComplete: "street-address" },
+  { label: "City", name: "city", autoComplete: "address-level2" },
+  { label: "Zip/Postal Code", name: "zip_postal_code", autoComplete: "postal-code" },
+  { label: "Email Address", name: "email", type: "email", autoComplete: "email" },
+  { label: "Phone Number", name: "phone", type: "tel", autoComplete: "tel" },
+];
 
 const YES_NO_QUESTIONS = [
   {
@@ -144,17 +147,54 @@ const YES_NO_QUESTIONS = [
   },
 ];
 
+const REQUIRED_FIELD_LABELS = [
+  ...TEXT_FIELDS.map(({ name, label }) => ({ name, label })),
+  { name: "state", label: "State" },
+  ...YES_NO_QUESTIONS,
+  { name: "current_employment_places", label: "How many places are you currently employed at?" },
+  { name: "other_income_sources", label: "Do you have any other sources of income?" },
+  { name: "bank_account_type", label: "Do you currently own a bank account?" },
+  {
+    name: "reason_for_contact",
+    label: "Please provide a brief explanation as to why you reached out to Cherney Law Firm",
+  },
+];
+
+type FieldErrors = Record<string, string>;
+
+function RequiredAsterisk() {
+  return (
+    <span className="text-red-600" aria-label="required">
+      *
+    </span>
+  );
+}
+
+function FieldError({ id, error }: { id: string; error?: string }) {
+  if (!error) return null;
+
+  return (
+    <p id={id} className="mt-2 font-outfit text-[14px] text-red-700">
+      {error}
+    </p>
+  );
+}
+
 function TextField({
   label,
   name,
   type = "text",
   autoComplete,
+  error,
 }: {
   label: string;
   name: string;
   type?: string;
   autoComplete?: string;
+  error?: string;
 }) {
+  const errorId = `${name}-error`;
+
   return (
     <label className="block">
       <span className="block font-outfit text-[15px] font-medium text-black mb-2">
@@ -163,10 +203,12 @@ function TextField({
       <input
         type={type}
         name={name}
-        required
         autoComplete={autoComplete}
-        className="w-full border border-gray-300 bg-white px-4 py-3 font-outfit text-[16px] text-black outline-none focus:border-law-accent"
+        aria-invalid={error ? "true" : "false"}
+        aria-describedby={error ? errorId : undefined}
+        className="w-full border border-gray-300 bg-white px-4 py-3 font-outfit text-[16px] text-black outline-none focus:border-law-accent aria-[invalid=true]:border-red-600"
       />
+      <FieldError id={errorId} error={error} />
     </label>
   );
 }
@@ -175,40 +217,82 @@ function RadioGroup({
   legend,
   name,
   options,
+  error,
 }: {
   legend: string;
   name: string;
   options: string[];
+  error?: string;
 }) {
+  const errorId = `${name}-error`;
+
   return (
-    <fieldset className="border border-gray-200 p-4">
+    <fieldset
+      className="border border-gray-200 p-4"
+      aria-invalid={error ? "true" : "false"}
+      aria-describedby={error ? errorId : undefined}
+    >
       <legend className="px-1 font-outfit text-[15px] font-medium text-black">
         {legend} <RequiredAsterisk />
       </legend>
       <div className="mt-3 flex flex-wrap gap-x-6 gap-y-3">
-        {options.map((option, index) => (
+        {options.map((option) => (
           <label key={option} className="inline-flex items-center gap-2 font-outfit text-[15px] text-black">
             <input
               type="radio"
               name={name}
               value={option}
-              required={index === 0}
               className="h-4 w-4 accent-law-accent"
             />
             {option}
           </label>
         ))}
       </div>
+      <FieldError id={errorId} error={error} />
     </fieldset>
   );
+}
+
+function getRequiredFieldErrors(formData: FormData) {
+  const errors: FieldErrors = {};
+
+  REQUIRED_FIELD_LABELS.forEach(({ name, label }) => {
+    if (name === "other_income_sources") {
+      if (formData.getAll(name).length === 0) {
+        errors[name] = `Please answer: ${label}`;
+      }
+      return;
+    }
+
+    const value = formData.get(name);
+    if (!value || String(value).trim() === "") {
+      errors[name] = `Please answer: ${label}`;
+    }
+  });
+
+  const email = String(formData.get("email") || "").trim();
+  if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+    errors.email = "Please enter a valid email address.";
+  }
+
+  return errors;
+}
+
+function scrollToField(form: HTMLFormElement, fieldName: string) {
+  requestAnimationFrame(() => {
+    const field = form.querySelector<HTMLElement>(`[name="${fieldName}"]`);
+    field?.scrollIntoView({ behavior: "smooth", block: "center" });
+    field?.focus({ preventScroll: true });
+  });
 }
 
 export default function ClientQuestionnaireForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState("");
-  const [incomeError, setIncomeError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const successRef = useRef<HTMLDivElement | null>(null);
+  const errorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!isSuccess) return;
@@ -220,17 +304,25 @@ export default function ClientQuestionnaireForm() {
     successRef.current?.focus({ preventScroll: true });
   }, [isSuccess]);
 
+  function scrollToSubmitError() {
+    requestAnimationFrame(() => {
+      errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      errorRef.current?.focus({ preventScroll: true });
+    });
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
-    const incomeSources = formData.getAll("other_income_sources");
+    const validationErrors = getRequiredFieldErrors(formData);
 
     setError("");
-    setIncomeError("");
+    setFieldErrors(validationErrors);
 
-    if (incomeSources.length === 0) {
-      setIncomeError("Please select at least one source of income.");
+    const firstErrorField = Object.keys(validationErrors)[0];
+    if (firstErrorField) {
+      scrollToField(form, firstErrorField);
       return;
     }
 
@@ -256,7 +348,8 @@ export default function ClientQuestionnaireForm() {
       setIsSuccess(true);
     } catch (err) {
       console.error("Client questionnaire submission error:", err);
-      setError("Something went wrong. Please try again.");
+      setError("Something went wrong. Please try again. If the issue continues, call us so we can help complete the questionnaire.");
+      scrollToSubmitError();
     } finally {
       setIsSubmitting(false);
     }
@@ -280,36 +373,49 @@ export default function ClientQuestionnaireForm() {
       method="POST"
       action="/"
       data-netlify="true"
+      noValidate
       onSubmit={handleSubmit}
       className="not-prose space-y-6"
     >
       <input type="hidden" name="form-name" value={FORM_NAME} />
 
-      {error && (
+      {Object.keys(fieldErrors).length > 0 && (
         <div className="border border-red-200 bg-red-50 px-4 py-3 font-outfit text-[16px] text-red-700">
+          Please complete the highlighted required fields before submitting.
+        </div>
+      )}
+
+      {error && (
+        <div
+          ref={errorRef}
+          tabIndex={-1}
+          className="border border-red-200 bg-red-50 px-4 py-3 font-outfit text-[16px] text-red-700 outline-none"
+        >
           {error}
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <TextField label="First Name" name="first_name" autoComplete="given-name" />
-        <TextField label="Last Name" name="last_name" autoComplete="family-name" />
+        {TEXT_FIELDS.slice(0, 2).map((field) => (
+          <TextField key={field.name} {...field} error={fieldErrors[field.name]} />
+        ))}
       </div>
 
-      <TextField label="Street Address" name="street_address" autoComplete="street-address" />
+      <TextField {...TEXT_FIELDS[2]} error={fieldErrors.street_address} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <TextField label="City" name="city" autoComplete="address-level2" />
+        <TextField {...TEXT_FIELDS[3]} error={fieldErrors.city} />
         <label className="block">
           <span className="block font-outfit text-[15px] font-medium text-black mb-2">
             State <RequiredAsterisk />
           </span>
           <select
             name="state"
-            required
             autoComplete="address-level1"
             defaultValue=""
-            className="w-full border border-gray-300 bg-white px-4 py-3 font-outfit text-[16px] text-black outline-none focus:border-law-accent"
+            aria-invalid={fieldErrors.state ? "true" : "false"}
+            aria-describedby={fieldErrors.state ? "state-error" : undefined}
+            className="w-full border border-gray-300 bg-white px-4 py-3 font-outfit text-[16px] text-black outline-none focus:border-law-accent aria-[invalid=true]:border-red-600"
           >
             <option value="" disabled>
               Select a state
@@ -320,31 +426,39 @@ export default function ClientQuestionnaireForm() {
               </option>
             ))}
           </select>
+          <FieldError id="state-error" error={fieldErrors.state} />
         </label>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <TextField label="Zip/Postal Code" name="zip_postal_code" autoComplete="postal-code" />
-        <TextField label="Email Address" name="email" type="email" autoComplete="email" />
+        {TEXT_FIELDS.slice(4, 6).map((field) => (
+          <TextField key={field.name} {...field} error={fieldErrors[field.name]} />
+        ))}
       </div>
 
-      <TextField label="Phone Number" name="phone" type="tel" autoComplete="tel" />
+      <TextField {...TEXT_FIELDS[6]} error={fieldErrors.phone} />
 
       <RadioGroup
         legend="Have you lived exclusively in Georgia for the last two (2) years?"
         name="lived_exclusively_in_georgia_two_years"
         options={["Yes", "No"]}
+        error={fieldErrors.lived_exclusively_in_georgia_two_years}
       />
 
       <RadioGroup
         legend="How many places are you currently employed at?"
         name="current_employment_places"
         options={["0", "1", "2", "3"]}
+        error={fieldErrors.current_employment_places}
       />
 
-      <fieldset className="border border-gray-200 p-4">
+      <fieldset
+        className="border border-gray-200 p-4"
+        aria-invalid={fieldErrors.other_income_sources ? "true" : "false"}
+        aria-describedby={fieldErrors.other_income_sources ? "other_income_sources-error" : undefined}
+      >
         <legend className="px-1 font-outfit text-[15px] font-medium text-black">
-          Do you have any other sources of income?
+          Do you have any other sources of income? <RequiredAsterisk />
         </legend>
         <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
           {INCOME_SOURCES.map((source) => (
@@ -359,15 +473,14 @@ export default function ClientQuestionnaireForm() {
             </label>
           ))}
         </div>
-        {incomeError && (
-          <p className="mt-3 font-outfit text-[14px] text-red-700">{incomeError}</p>
-        )}
+        <FieldError id="other_income_sources-error" error={fieldErrors.other_income_sources} />
       </fieldset>
 
       <RadioGroup
         legend="Do you currently own a bank account?"
         name="bank_account_type"
-        options={["Checking", "Savings"]}
+        options={["Checking", "Savings", "No"]}
+        error={fieldErrors.bank_account_type}
       />
 
       {YES_NO_QUESTIONS.slice(1).map((question) => (
@@ -376,6 +489,7 @@ export default function ClientQuestionnaireForm() {
           legend={question.label}
           name={question.name}
           options={["Yes", "No"]}
+          error={fieldErrors[question.name]}
         />
       ))}
 
@@ -385,11 +499,19 @@ export default function ClientQuestionnaireForm() {
         </span>
         <textarea
           name="reason_for_contact"
-          required
           rows={6}
-          className="w-full border border-gray-300 bg-white px-4 py-3 font-outfit text-[16px] text-black outline-none focus:border-law-accent"
+          aria-invalid={fieldErrors.reason_for_contact ? "true" : "false"}
+          aria-describedby={fieldErrors.reason_for_contact ? "reason_for_contact-error" : undefined}
+          className="w-full border border-gray-300 bg-white px-4 py-3 font-outfit text-[16px] text-black outline-none focus:border-law-accent aria-[invalid=true]:border-red-600"
         />
+        <FieldError id="reason_for_contact-error" error={fieldErrors.reason_for_contact} />
       </label>
+
+      {error && (
+        <div className="border border-red-200 bg-red-50 px-4 py-3 font-outfit text-[16px] text-red-700">
+          {error}
+        </div>
+      )}
 
       <button
         type="submit"

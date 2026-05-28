@@ -103,6 +103,7 @@ export default function ContactFormNew({ settings }: ContactFormNewProps) {
         action="/"
         data-netlify="true"
         netlify-honeypot="honeypot"
+        noValidate
         onSubmit={handleSubmit(onSubmit)}
         className="space-y-[18px]"
       >

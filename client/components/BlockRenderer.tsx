@@ -558,6 +558,7 @@ function ContactFormBlock({
         action="/"
         data-netlify="true"
         netlify-honeypot="honeypot"
+        noValidate
         onSubmit={handleSubmit(onSubmit)}
         className="space-y-4"
       >

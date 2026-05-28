@@ -220,6 +220,7 @@ export default function ContactUsSection({ content }: ContactUsSectionProps) {
               action="/"
               data-netlify="true"
               netlify-honeypot="honeypot"
+              noValidate
               onSubmit={handleSubmit(onSubmit)}
               className="p-[5px] mx-auto"
             >
