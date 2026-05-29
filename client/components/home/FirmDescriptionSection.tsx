@@ -94,7 +94,7 @@ export default function FirmDescriptionSection({
                     {content.trustReasons.map((reason, index) => (
                       <div
                         key={`${reason}-${index}`}
-                        className="flex w-full max-w-[360px] items-start gap-3 rounded-[18px] border border-[#161715]/10 bg-white/45 px-4 py-4 backdrop-blur-sm sm:w-[calc(50%-0.5rem)] xl:w-[calc(25%-0.75rem)]"
+                        className="flex w-full max-w-[360px] items-start gap-3 border border-[#161715]/10 bg-white/45 px-4 py-4 backdrop-blur-sm sm:w-[calc(50%-0.5rem)] xl:w-[calc(25%-0.75rem)]"
                       >
                         <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#161715] text-white">
                           <Check className="h-4 w-4" strokeWidth={2.5} />
