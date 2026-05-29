@@ -42,7 +42,7 @@ export default function FirmDescriptionSection({
                 <div className="mt-8">
                   <a
                     href={content.ctaLink}
-                    className="inline-flex items-center justify-center bg-[#161715] px-7 py-4 font-outfit text-[15px] font-semibold uppercase tracking-[0.08em] text-white transition-colors duration-300 hover:bg-black"
+                    className="inline-flex items-center justify-center border border-transparent bg-[#161715] px-7 py-4 font-outfit text-[15px] font-semibold uppercase tracking-[0.08em] text-white shadow-[0_10px_25px_rgba(22,23,21,0.15)] transition-all duration-300 hover:-translate-y-1 hover:border-[#161715] hover:bg-black hover:shadow-[0_16px_35px_rgba(22,23,21,0.28)]"
                   >
                     {content.ctaText}
                   </a>

@@ -54,8 +54,11 @@ export interface AboutContent {
 
 export interface PracticeAreaItem {
   title: string;
+  description?: string;
   image: string;
-  link: string;
+  href?: string;
+  link?: string;
+  icon?: string;
 }
 
 export interface PracticeAreasIntroContent {
