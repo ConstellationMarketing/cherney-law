@@ -357,6 +357,29 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
           <Field label="Body">
             <RichTextEditor value={content.firmDescription.body} onChange={v => set("firmDescription", { body: v })} />
           </Field>
+          <Field label="Image" hint="Moved from the testimonials section and displayed on the right side of this block">
+            <ImageUploader
+              value={content.firmDescription.image || content.testimonials.backgroundImage || ""}
+              onChange={v => set("firmDescription", { image: v })}
+              folder="backgrounds"
+            />
+          </Field>
+          <SectionGrid>
+            <Field label="CTA Button Text">
+              <Input
+                value={content.firmDescription.ctaText || ""}
+                onChange={e => set("firmDescription", { ctaText: e.target.value })}
+                placeholder="Schedule a consultation"
+              />
+            </Field>
+            <Field label="CTA Link">
+              <Input
+                value={content.firmDescription.ctaLink || ""}
+                onChange={e => set("firmDescription", { ctaLink: e.target.value })}
+                placeholder="/contact"
+              />
+            </Field>
+          </SectionGrid>
         </AccordionContent>
       </AccordionItem>
 
@@ -457,9 +480,6 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
           />
           <Field label="Section Text" hint="Displayed as paragraph text below the heading">
             <Input value={content.testimonials.heading} onChange={e => set("testimonials", { heading: e.target.value })} />
-          </Field>
-          <Field label="Background Image">
-            <ImageUploader value={content.testimonials.backgroundImage} onChange={v => set("testimonials", { backgroundImage: v })} folder="backgrounds" />
           </Field>
           <div className="space-y-2">
             <div className="flex items-center justify-between">

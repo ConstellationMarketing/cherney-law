@@ -67,6 +67,10 @@ function mergeWithDefaults(
     firmDescription: {
       ...defaults.firmDescription,
       ...cmsContent.firmDescription,
+      image:
+        cmsContent.firmDescription?.image ||
+        cmsContent.testimonials?.backgroundImage ||
+        defaults.firmDescription.image,
     },
     awardsCTA: { ...defaults.awardsCTA, ...cmsContent.awardsCTA },
     attorneyInfo: { ...defaults.attorneyInfo, ...cmsContent.attorneyInfo },

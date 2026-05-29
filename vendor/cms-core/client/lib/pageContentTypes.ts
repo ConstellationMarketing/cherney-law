@@ -104,7 +104,7 @@ export interface HomePageContent {
     sectionLabel: string;
     heading: string;
     headingLevel?: 1 | 2 | 3 | 4;
-    backgroundImage: string;
+    backgroundImage?: string;
     items: TestimonialItem[];
   };
   faq: {
@@ -127,6 +127,9 @@ export interface HomePageContent {
     heading: string;
     headingLevel?: 1 | 2 | 3 | 4;
     body: string;
+    image?: string;
+    ctaText?: string;
+    ctaLink?: string;
   };
   awardsCTA: {
     sectionLabel: string;

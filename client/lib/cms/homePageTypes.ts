@@ -65,15 +65,17 @@ export interface PracticeAreasIntroContent {
 }
 
 export interface TestimonialItem {
-  text: string;
+  text?: string;
+  quote?: string;
   author: string;
-  ratingImage: string;
+  location?: string;
+  ratingImage?: string;
 }
 
 export interface TestimonialsContent {
   sectionLabel: string;
   heading: string;
-  backgroundImage: string;
+  backgroundImage?: string;
   items: TestimonialItem[];
 }
 
@@ -103,6 +105,9 @@ export interface ContactContent {
 export interface FirmDescriptionContent {
   heading: string;
   body: string; // rich text HTML
+  image?: string;
+  ctaText?: string;
+  ctaLink?: string;
 }
 
 // Awards CTA section (gray box with "What Are Your Options?")
@@ -192,6 +197,9 @@ export const defaultHomeContent: HomePageContent = {
   firmDescription: {
     heading: "",
     body: "",
+    image: "",
+    ctaText: "",
+    ctaLink: "",
   },
   awardsCTA: {
     sectionLabel: "",
