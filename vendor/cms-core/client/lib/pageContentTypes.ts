@@ -154,6 +154,9 @@ export interface HomePageContent {
     stayInformedImage: string;
     stayInformedImageAlt: string;
     stayInformedCaption: string;
+    featuredInHeading?: string;
+    featuredInHeadingLevel?: 1 | 2 | 3 | 4;
+    featuredLogos?: { image: string; alt: string }[];
   };
 }
 

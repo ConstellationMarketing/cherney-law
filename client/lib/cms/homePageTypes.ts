@@ -127,6 +127,11 @@ export interface AwardsCTAContent {
 }
 
 // Attorney Info section
+export interface AttorneyInfoFeaturedLogo {
+  image: string;
+  alt: string;
+}
+
 export interface AttorneyInfoContent {
   heading: string;
   image: string;
@@ -137,6 +142,9 @@ export interface AttorneyInfoContent {
   stayInformedImage: string;
   stayInformedImageAlt: string;
   stayInformedCaption: string;
+  featuredInHeading?: string;
+  featuredInHeadingLevel?: 1 | 2 | 3 | 4;
+  featuredLogos?: AttorneyInfoFeaturedLogo[];
 }
 
 // Complete homepage content structure
@@ -227,6 +235,8 @@ export const defaultHomeContent: HomePageContent = {
     stayInformedImage: "",
     stayInformedImageAlt: "",
     stayInformedCaption: "",
+    featuredInHeading: "",
+    featuredLogos: [],
   },
   faq: {
     heading: "",

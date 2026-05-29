@@ -177,6 +177,23 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
     set("testimonials", { items });
   };
 
+  // --- Attorney Info ---
+  const attorneyInfo = content.attorneyInfo;
+  const addFeaturedLogo = () =>
+    set("attorneyInfo", {
+      featuredLogos: [...(attorneyInfo.featuredLogos || []), { image: "", alt: "" }],
+    });
+  const removeFeaturedLogo = (i: number) =>
+    set("attorneyInfo", {
+      featuredLogos: (attorneyInfo.featuredLogos || []).filter((_, idx) => idx !== i),
+    });
+  const updateFeaturedLogo = (i: number, k: "image" | "alt", v: string) => {
+    const featuredLogos = (attorneyInfo.featuredLogos || []).map((logo, idx) =>
+      idx === i ? { ...logo, [k]: v } : logo,
+    );
+    set("attorneyInfo", { featuredLogos });
+  };
+
   // --- FAQ ---
   const faq = content.faq || { heading: "", items: [] };
   const setFaq = (k: string, v: unknown) => set("faq", { [k]: v } as any);
@@ -556,36 +573,72 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
         <AccordionTrigger className="text-sm font-semibold">Attorney Info Section</AccordionTrigger>
         <AccordionContent className="space-y-4 pb-4">
           <Field label="Heading">
-            <Input value={content.attorneyInfo.heading} onChange={e => set("attorneyInfo", { heading: e.target.value })} />
+            <Input value={attorneyInfo.heading} onChange={e => set("attorneyInfo", { heading: e.target.value })} />
           </Field>
           <SectionGrid>
             <Field label="Attorney Image">
-              <ImageUploader value={content.attorneyInfo.image} onChange={v => set("attorneyInfo", { image: v })} folder="attorney" />
+              <ImageUploader value={attorneyInfo.image} onChange={v => set("attorneyInfo", { image: v })} folder="attorney" />
             </Field>
             <Field label="Stay Informed Image">
-              <ImageUploader value={content.attorneyInfo.stayInformedImage} onChange={v => set("attorneyInfo", { stayInformedImage: v })} folder="general" />
+              <ImageUploader value={attorneyInfo.stayInformedImage} onChange={v => set("attorneyInfo", { stayInformedImage: v })} folder="general" />
             </Field>
           </SectionGrid>
           <SectionGrid>
             <Field label="Image Alt Text">
-              <Input value={content.attorneyInfo.imageAlt} onChange={e => set("attorneyInfo", { imageAlt: e.target.value })} />
+              <Input value={attorneyInfo.imageAlt} onChange={e => set("attorneyInfo", { imageAlt: e.target.value })} />
             </Field>
             <Field label="Stay Informed Image Alt">
-              <Input value={content.attorneyInfo.stayInformedImageAlt} onChange={e => set("attorneyInfo", { stayInformedImageAlt: e.target.value })} />
+              <Input value={attorneyInfo.stayInformedImageAlt} onChange={e => set("attorneyInfo", { stayInformedImageAlt: e.target.value })} />
             </Field>
           </SectionGrid>
           <Field label="Body">
-            <RichTextEditor value={content.attorneyInfo.body} onChange={v => set("attorneyInfo", { body: v })} minHeight="150px" />
+            <RichTextEditor value={attorneyInfo.body} onChange={v => set("attorneyInfo", { body: v })} minHeight="150px" />
           </Field>
           <Field label="Stay Informed Heading">
-            <Input value={content.attorneyInfo.stayInformedHeading} onChange={e => set("attorneyInfo", { stayInformedHeading: e.target.value })} />
+            <Input value={attorneyInfo.stayInformedHeading} onChange={e => set("attorneyInfo", { stayInformedHeading: e.target.value })} />
           </Field>
           <Field label="Stay Informed Text">
-            <RichTextEditor value={content.attorneyInfo.stayInformedText} onChange={v => set("attorneyInfo", { stayInformedText: v })} />
+            <RichTextEditor value={attorneyInfo.stayInformedText} onChange={v => set("attorneyInfo", { stayInformedText: v })} />
           </Field>
           <Field label="Stay Informed Caption">
-            <Input value={content.attorneyInfo.stayInformedCaption} onChange={e => set("attorneyInfo", { stayInformedCaption: e.target.value })} />
+            <Input value={attorneyInfo.stayInformedCaption} onChange={e => set("attorneyInfo", { stayInformedCaption: e.target.value })} />
           </Field>
+          <HeadingField
+            label="Featured In Heading"
+            hint="Centered title shown above the logo slider at the bottom of this section"
+            value={attorneyInfo.featuredInHeading || ""}
+            level={String(attorneyInfo.featuredInHeadingLevel || 3)}
+            onTextChange={v => set("attorneyInfo", { featuredInHeading: v })}
+            onLevelChange={v => set("attorneyInfo", { featuredInHeadingLevel: Number(v) as 1 | 2 | 3 | 4 })}
+          />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Featured Logos</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addFeaturedLogo}>
+                <Plus className="w-3 h-3 mr-1" /> Add Logo
+              </Button>
+            </div>
+            {(attorneyInfo.featuredLogos || []).map((logo, i) => (
+              <ArrayCard key={i} onRemove={() => removeFeaturedLogo(i)}>
+                <SectionGrid>
+                  <Field label="Logo Image">
+                    <ImageUploader
+                      value={logo.image}
+                      onChange={v => updateFeaturedLogo(i, "image", v)}
+                      folder="logos"
+                    />
+                  </Field>
+                  <Field label="Logo Alt Text">
+                    <Input
+                      value={logo.alt}
+                      onChange={e => updateFeaturedLogo(i, "alt", e.target.value)}
+                      placeholder="Featured publication name"
+                    />
+                  </Field>
+                </SectionGrid>
+              </ArrayCard>
+            ))}
+          </div>
         </AccordionContent>
       </AccordionItem>
 

@@ -198,3 +198,22 @@
   float: left;
   height: 0;
 }
+
+@keyframes featured-logo-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(calc(-50% - 1rem));
+  }
+}
+
+.featured-logo-marquee {
+  animation: featured-logo-marquee 24s linear infinite;
+  will-change: transform;
+}
+
+.featured-logo-marquee:hover {
+  animation-play-state: paused;
+}

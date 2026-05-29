@@ -10,19 +10,21 @@ export default function AttorneyInfoSection({
 }: AttorneyInfoSectionProps) {
   if (!content?.heading && !content?.body) return null;
 
+  const featuredLogos = content.featuredLogos?.filter((logo) => logo.image) || [];
+  const hasFeaturedSection = Boolean(content.featuredInHeading || featuredLogos.length);
+  const FeaturedHeadingTag = `h${content.featuredInHeadingLevel || 3}` as keyof JSX.IntrinsicElements;
+  const slidingLogos = featuredLogos.length > 1 ? [...featuredLogos, ...featuredLogos] : featuredLogos;
+
   return (
     <div className="bg-white py-[40px] md:py-[60px]">
       <div className="max-w-[1100px] mx-auto w-[90%] md:w-[85%]">
-        {/* Centered Title */}
         {content.heading && (
           <h2 className="font-playfair text-[32px] md:text-[42px] lg:text-[48px] leading-[1.2] text-black text-center mb-[30px] md:mb-[40px]">
             {content.heading}
           </h2>
         )}
 
-        {/* Two Column Layout: Image (narrower) + Text (wider) */}
         <div className="flex flex-col md:flex-row gap-[25px] md:gap-[35px] mb-[40px] md:mb-[60px]">
-          {/* Left Column - City Image */}
           {content.image && (
             <div className="md:w-[35%] flex-shrink-0">
               <img
@@ -38,7 +40,6 @@ export default function AttorneyInfoSection({
             </div>
           )}
 
-          {/* Right Column - Text Content */}
           {content.body && (
             <div className={content.image ? "md:w-[65%]" : "w-full"}>
               <div
@@ -49,7 +50,6 @@ export default function AttorneyInfoSection({
           )}
         </div>
 
-        {/* Green Box - Stay Informed */}
         {(content.stayInformedHeading || content.stayInformedText) && (
           <div className="bg-law-accent px-[25px] md:px-[40px] lg:px-[50px] py-[30px] md:py-[40px]">
             {content.stayInformedHeading && (
@@ -63,7 +63,6 @@ export default function AttorneyInfoSection({
               </p>
             )}
 
-            {/* Radio Network Feature */}
             {(content.stayInformedImage || content.stayInformedCaption) && (
               <div className="flex flex-col sm:flex-row items-center gap-[20px] md:gap-[25px]">
                 {content.stayInformedImage && (
@@ -85,6 +84,57 @@ export default function AttorneyInfoSection({
                     <h4 className="font-playfair text-[18px] md:text-[22px] leading-[1.3] text-black font-bold">
                       {content.stayInformedCaption}
                     </h4>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {hasFeaturedSection && (
+          <div className="mt-[40px] md:mt-[56px]">
+            {content.featuredInHeading && (
+              <FeaturedHeadingTag className="font-playfair text-[24px] md:text-[30px] leading-[1.2] text-black text-center mb-[24px] md:mb-[30px]">
+                {content.featuredInHeading}
+              </FeaturedHeadingTag>
+            )}
+
+            {featuredLogos.length > 0 && (
+              <div className="mx-auto max-w-[940px] overflow-hidden">
+                {featuredLogos.length === 1 ? (
+                  <div className="flex justify-center">
+                    <div className="flex h-[96px] w-[220px] items-center justify-center px-6 py-4">
+                      <img
+                        src={getOptimizedImageUrl(featuredLogos[0].image, {
+                          width: 320,
+                          quality: 85,
+                          resize: "contain",
+                        })}
+                        alt={featuredLogos[0].alt || "Featured logo"}
+                        className="max-h-[56px] w-full object-contain"
+                        loading="lazy"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="featured-logo-marquee flex w-max items-center gap-8 py-2">
+                    {slidingLogos.map((logo, index) => (
+                      <div
+                        key={`${logo.image}-${index}`}
+                        className="flex h-[96px] w-[220px] shrink-0 items-center justify-center border border-black/10 bg-[#f8f8f4] px-6 py-4"
+                      >
+                        <img
+                          src={getOptimizedImageUrl(logo.image, {
+                            width: 320,
+                            quality: 85,
+                            resize: "contain",
+                          })}
+                          alt={logo.alt || "Featured logo"}
+                          className="max-h-[56px] w-full object-contain"
+                          loading="lazy"
+                        />
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
