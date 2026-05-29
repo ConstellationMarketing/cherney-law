@@ -107,10 +107,14 @@ export interface ContactContent {
 // Firm Description section (green box)
 export interface FirmDescriptionContent {
   heading: string;
+  headingLevel?: 1 | 2 | 3 | 4;
   body: string; // rich text HTML
   image?: string;
   ctaText?: string;
   ctaLink?: string;
+  trustHeading?: string;
+  trustHeadingLevel?: 1 | 2 | 3 | 4;
+  trustReasons?: string[];
 }
 
 // Awards CTA section (gray box with "What Are Your Options?")
@@ -203,6 +207,8 @@ export const defaultHomeContent: HomePageContent = {
     image: "",
     ctaText: "",
     ctaLink: "",
+    trustHeading: "",
+    trustReasons: [],
   },
   awardsCTA: {
     sectionLabel: "",

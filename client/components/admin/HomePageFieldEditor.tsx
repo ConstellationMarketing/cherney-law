@@ -140,6 +140,23 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
     set("about", { stats });
   };
 
+  // --- Firm Description ---
+  const firmDescription = content.firmDescription;
+  const addTrustReason = () =>
+    set("firmDescription", {
+      trustReasons: [...(firmDescription.trustReasons || []), ""],
+    });
+  const removeTrustReason = (i: number) =>
+    set("firmDescription", {
+      trustReasons: (firmDescription.trustReasons || []).filter((_, idx) => idx !== i),
+    });
+  const updateTrustReason = (i: number, value: string) => {
+    const trustReasons = (firmDescription.trustReasons || []).map((reason, idx) =>
+      idx === i ? value : reason,
+    );
+    set("firmDescription", { trustReasons });
+  };
+
   // --- Practice Areas ---
   const addArea = () =>
     onChange({ ...content, practiceAreas: [...content.practiceAreas, { title: "", description: "", icon: "", href: "" }] });
@@ -349,17 +366,17 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
         <AccordionContent className="space-y-4 pb-4">
           <HeadingField
             label="Heading"
-            value={content.firmDescription.heading}
-            level={String(content.firmDescription.headingLevel || 2)}
+            value={firmDescription.heading}
+            level={String(firmDescription.headingLevel || 2)}
             onTextChange={v => set("firmDescription", { heading: v })}
             onLevelChange={v => set("firmDescription", { headingLevel: Number(v) as 1 | 2 | 3 | 4 })}
           />
           <Field label="Body">
-            <RichTextEditor value={content.firmDescription.body} onChange={v => set("firmDescription", { body: v })} />
+            <RichTextEditor value={firmDescription.body} onChange={v => set("firmDescription", { body: v })} />
           </Field>
           <Field label="Image" hint="Moved from the testimonials section and displayed on the right side of this block">
             <ImageUploader
-              value={content.firmDescription.image || content.testimonials.backgroundImage || ""}
+              value={firmDescription.image || content.testimonials.backgroundImage || ""}
               onChange={v => set("firmDescription", { image: v })}
               folder="backgrounds"
             />
@@ -367,19 +384,46 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
           <SectionGrid>
             <Field label="CTA Button Text">
               <Input
-                value={content.firmDescription.ctaText || ""}
+                value={firmDescription.ctaText || ""}
                 onChange={e => set("firmDescription", { ctaText: e.target.value })}
                 placeholder="Schedule a consultation"
               />
             </Field>
             <Field label="CTA Link">
               <Input
-                value={content.firmDescription.ctaLink || ""}
+                value={firmDescription.ctaLink || ""}
                 onChange={e => set("firmDescription", { ctaLink: e.target.value })}
                 placeholder="/contact"
               />
             </Field>
           </SectionGrid>
+          <HeadingField
+            label="Trust Section Title"
+            hint="Centered heading shown above the trust blurbs at the bottom of this section"
+            value={firmDescription.trustHeading || ""}
+            level={String(firmDescription.trustHeadingLevel || 3)}
+            onTextChange={v => set("firmDescription", { trustHeading: v })}
+            onLevelChange={v => set("firmDescription", { trustHeadingLevel: Number(v) as 1 | 2 | 3 | 4 })}
+          />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Trust Reasons</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addTrustReason}>
+                <Plus className="w-3 h-3 mr-1" /> Add Reason
+              </Button>
+            </div>
+            {(firmDescription.trustReasons || []).map((reason, i) => (
+              <ArrayCard key={i} onRemove={() => removeTrustReason(i)}>
+                <Field label={`Reason ${i + 1}`} hint="Short blurb displayed with a check icon">
+                  <Input
+                    value={reason}
+                    onChange={e => updateTrustReason(i, e.target.value)}
+                    placeholder="Thousands of bankruptcy cases successfully handled"
+                  />
+                </Field>
+              </ArrayCard>
+            ))}
+          </div>
         </AccordionContent>
       </AccordionItem>
 

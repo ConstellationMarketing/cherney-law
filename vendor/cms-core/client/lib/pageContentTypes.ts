@@ -130,6 +130,9 @@ export interface HomePageContent {
     image?: string;
     ctaText?: string;
     ctaLink?: string;
+    trustHeading?: string;
+    trustHeadingLevel?: 1 | 2 | 3 | 4;
+    trustReasons?: string[];
   };
   awardsCTA: {
     sectionLabel: string;
