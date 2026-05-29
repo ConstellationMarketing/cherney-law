@@ -90,11 +90,11 @@ export default function FirmDescriptionSection({
                 )}
 
                 {content.trustReasons?.length ? (
-                  <div className="mx-auto mt-8 grid max-w-[1180px] grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="mx-auto mt-8 flex max-w-[1180px] flex-wrap justify-center gap-4">
                     {content.trustReasons.map((reason, index) => (
                       <div
                         key={`${reason}-${index}`}
-                        className="flex items-start gap-3 rounded-[18px] border border-[#161715]/10 bg-white/45 px-4 py-4 backdrop-blur-sm"
+                        className="flex w-full max-w-[360px] items-start gap-3 rounded-[18px] border border-[#161715]/10 bg-white/45 px-4 py-4 backdrop-blur-sm sm:w-[calc(50%-0.5rem)] xl:w-[calc(25%-0.75rem)]"
                       >
                         <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#161715] text-white">
                           <Check className="h-4 w-4" strokeWidth={2.5} />
