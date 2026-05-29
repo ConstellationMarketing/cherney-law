@@ -626,6 +626,8 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
                       value={logo.image}
                       onChange={v => updateFeaturedLogo(i, "image", v)}
                       folder="logos"
+                      compact
+                      placeholder="Upload logo"
                     />
                   </Field>
                   <Field label="Logo Alt Text">

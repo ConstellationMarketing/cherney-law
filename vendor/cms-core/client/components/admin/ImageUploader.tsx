@@ -16,6 +16,7 @@ interface ImageUploaderProps {
   folder?: string;
   className?: string;
   placeholder?: string;
+  compact?: boolean;
 }
 
 export default function ImageUploader({
@@ -26,6 +27,7 @@ export default function ImageUploader({
   folder = "uploads",
   className,
   placeholder = "Drop an image here or click to upload",
+  compact = false,
 }: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -174,7 +176,7 @@ try {
         <div className="relative group">
           <div className="relative rounded-lg overflow-hidden border bg-gray-50">
   {isPdfUrl(value) ? (
-    <div className="w-full h-48 flex flex-col items-center justify-center bg-gray-50">
+    <div className={cn("w-full flex flex-col items-center justify-center bg-gray-50", compact ? "h-28" : "h-48")}>
       <p className="text-sm text-gray-600 font-medium">PDF Uploaded</p>
       <a
         href={value}
@@ -186,7 +188,7 @@ try {
       </a>
     </div>
   ) : (
-    <img src={value} alt="Uploaded" className="w-full h-48 object-cover" />
+    <img src={value} alt="Uploaded" className={cn("w-full object-cover", compact ? "h-28" : "h-48")} />
   )}
 
   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -220,7 +222,8 @@ try {
           onDragOver={handleDrag}
           onDrop={handleDrop}
           className={cn(
-            "relative border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors",
+            "relative border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors",
+            compact ? "p-4" : "p-8",
             dragActive
               ? "border-blue-500 bg-blue-50"
               : "border-gray-300 hover:border-gray-400 hover:bg-gray-50",
@@ -229,15 +232,15 @@ try {
         >
           {uploading ? (
             <div className="flex flex-col items-center gap-2">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              <Loader2 className={cn("animate-spin text-gray-400", compact ? "h-6 w-6" : "h-8 w-8")} />
               <p className="text-sm text-gray-500">Uploading...</p>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2">
-              <div className="p-3 bg-gray-100 rounded-full">
-                <ImageIcon className="h-6 w-6 text-gray-400" />
+              <div className={cn("bg-gray-100 rounded-full", compact ? "p-2" : "p-3")}>
+                <ImageIcon className={cn("text-gray-400", compact ? "h-5 w-5" : "h-6 w-6")} />
               </div>
-              <p className="text-sm text-gray-500">{placeholder}</p>
+              <p className={cn("text-gray-500", compact ? "text-xs" : "text-sm")}>{placeholder}</p>
               <p className="text-xs text-gray-400">
                 PNG, JPG, GIF, WebP, PDF up to 10MB
               </p>
