@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Helmet } from "react-helmet-async";
+import { Helmet } from "@site/lib/helmet";
 import { ChevronLeft, ChevronRight, Star, User } from "lucide-react";
 import type { TestimonialsContent } from "@site/lib/cms/homePageTypes";
 

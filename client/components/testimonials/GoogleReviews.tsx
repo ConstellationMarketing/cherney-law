@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Helmet } from "react-helmet-async";
+import { Helmet } from "@site/lib/helmet";
 import { Star, ExternalLink, User } from "lucide-react";
 import type { GoogleReviewsContent } from "@site/lib/cms/testimonialsPageTypes";
 
