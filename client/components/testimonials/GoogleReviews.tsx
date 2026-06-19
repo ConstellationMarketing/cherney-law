@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { Helmet } from "react-helmet-async";
 import { Star, ExternalLink, User } from "lucide-react";
 import type { GoogleReviewsContent } from "@site/lib/cms/testimonialsPageTypes";
 
@@ -153,17 +154,61 @@ export default function GoogleReviews({ content }: GoogleReviewsProps) {
     fetchReviews();
   }, []);
 
+  const minimumRating = Number(content.minimumRating || 0);
+  const reviewStartIndex = Math.max(0, Number(content.reviewStartNumber || 1) - 1);
+  const showReviewerName = content.showReviewerName !== false;
+  const filteredReviews = useMemo(() => {
+    const reviews = reviewsData?.reviews || [];
+    const ratingFilteredReviews = minimumRating > 0
+      ? reviews.filter((review) => review.rating >= minimumRating)
+      : reviews;
+
+    return ratingFilteredReviews.slice(reviewStartIndex);
+  }, [minimumRating, reviewStartIndex, reviewsData?.reviews]);
+
   useEffect(() => {
     setVisibleReviewsCount(INITIAL_VISIBLE_REVIEWS);
-  }, [reviewsData?.reviews.length]);
+  }, [filteredReviews.length, minimumRating, reviewStartIndex]);
 
-  const displayedReviews = reviewsData?.reviews.slice(0, visibleReviewsCount) ?? [];
-  const canShowMoreReviews = Boolean(
-    reviewsData && reviewsData.reviews.length > visibleReviewsCount,
-  );
+  const displayedReviews = filteredReviews.slice(0, visibleReviewsCount);
+  const canShowMoreReviews = filteredReviews.length > visibleReviewsCount;
+  const reviewSchema =
+    reviewsData && reviewsData.averageRating > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "LegalService",
+          name: "Cherney Law Firm, LLC",
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: reviewsData.averageRating.toFixed(1),
+            reviewCount: reviewsData.totalReviews,
+            bestRating: 5,
+            worstRating: 1,
+          },
+          review: filteredReviews.slice(0, 6).map((review) => ({
+            "@type": "Review",
+            author: {
+              "@type": "Person",
+              name: review.authorName || "Google reviewer",
+            },
+            reviewRating: {
+              "@type": "Rating",
+              ratingValue: review.rating,
+              bestRating: 5,
+              worstRating: 1,
+            },
+            reviewBody: review.text,
+          })),
+        }
+      : null;
 
   return (
     <div className="bg-white py-[40px] md:py-[60px]">
+      {reviewSchema && (
+        <Helmet>
+          <script type="application/ld+json">{JSON.stringify(reviewSchema)}</script>
+        </Helmet>
+      )}
       <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%] lg:w-[85%]">
         {/* Section Header */}
         <div className="text-center mb-[30px] md:mb-[40px] max-w-[800px] mx-auto">
@@ -242,7 +287,7 @@ export default function GoogleReviews({ content }: GoogleReviewsProps) {
                 <ExternalLink className="w-4 h-4" />
               </a>
             </div>
-          ) : reviewsData && reviewsData.reviews.length > 0 ? (
+          ) : reviewsData && filteredReviews.length > 0 ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[25px] mb-[30px]">
                 {displayedReviews.map((review, index) => (
@@ -264,9 +309,11 @@ export default function GoogleReviews({ content }: GoogleReviewsProps) {
                       </div>
                     )}
                     <div className="flex-1">
-                      <h4 className="font-outfit text-[16px] font-semibold text-black">
-                        {review.authorName}
-                      </h4>
+                      {showReviewerName && (
+                        <h4 className="font-outfit text-[16px] font-semibold text-black">
+                          {review.authorName}
+                        </h4>
+                      )}
                       <StarRating rating={review.rating} />
                     </div>
                   </div>
@@ -301,7 +348,7 @@ export default function GoogleReviews({ content }: GoogleReviewsProps) {
           ) : (
             <div className="bg-gray-50 border-2 border-gray-200 p-[40px] text-center mb-[30px]">
               <p className="font-outfit text-[16px] text-gray-600 mb-[20px]">
-                No reviews available at this time.
+                No Google reviews match the current rating filter.
               </p>
               <a
                 href={googleReviewsUrl}

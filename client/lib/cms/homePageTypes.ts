@@ -78,7 +78,12 @@ export interface TestimonialItem {
 export interface TestimonialsContent {
   sectionLabel: string;
   heading: string;
+  headingLevel?: 1 | 2 | 3 | 4;
   backgroundImage?: string;
+  googlePlaceId?: string;
+  minimumRating?: number;
+  reviewStartNumber?: number;
+  showReviewerName?: boolean;
   items: TestimonialItem[];
 }
 
@@ -196,6 +201,10 @@ export const defaultHomeContent: HomePageContent = {
     sectionLabel: "",
     heading: "",
     backgroundImage: "",
+    googlePlaceId: "0x88f513c2103ad111:0xf0c853b13f4aa2fc",
+    minimumRating: 0,
+    reviewStartNumber: 1,
+    showReviewerName: true,
     items: [],
   },
   contact: {

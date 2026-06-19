@@ -9,6 +9,9 @@ export interface GoogleReviewsContent {
   placeId: string; // Google Place ID for reviews (used in direct link and API)
   heading: string; // Section heading above reviews
   subtext: string; // Optional description text
+  minimumRating?: number; // Optional minimum star rating filter
+  reviewStartNumber?: number; // Optional 1-based starting review number
+  showReviewerName?: boolean; // Toggle reviewer name display
 }
 
 export interface CTAContent {
@@ -39,6 +42,9 @@ export const defaultTestimonialsContent: TestimonialsPageContent = {
     heading: "Client Reviews",
     subtext:
       "Read what our clients have to say about their experience working with Cherney Law Firm.",
+    minimumRating: 0,
+    reviewStartNumber: 1,
+    showReviewerName: true,
   },
   cta: {
     heading: "Ready to Get Started?",

@@ -1,6 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { TestimonialsPageContent } from "@/lib/pageContentTypes";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 
@@ -59,6 +60,48 @@ export default function TestimonialsPageFieldEditor({ content, onChange }: Props
           <Field label="Subtext">
             <Input value={content.reviews.subtext} onChange={e => set("reviews", { subtext: e.target.value })} />
           </Field>
+          <SectionGrid>
+            <Field label="Minimum Star Rating" hint="Only show reviews with this many stars or higher.">
+              <Select
+                value={String(content.reviews.minimumRating ?? 0)}
+                onValueChange={v => set("reviews", { minimumRating: Number(v) })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">All reviews</SelectItem>
+                  <SelectItem value="5">5 stars only</SelectItem>
+                  <SelectItem value="4">4 stars and up</SelectItem>
+                  <SelectItem value="3">3 stars and up</SelectItem>
+                  <SelectItem value="2">2 stars and up</SelectItem>
+                  <SelectItem value="1">1 star and up</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Start Review Number" hint="Start the list from this 1-based review number after the rating filter is applied.">
+              <Input
+                type="number"
+                min="1"
+                value={content.reviews.reviewStartNumber || 1}
+                onChange={e => set("reviews", { reviewStartNumber: Number(e.target.value) || 1 })}
+              />
+            </Field>
+            <Field label="Reviewer Name Display" hint="Choose whether reviewer names are shown on review cards.">
+              <Select
+                value={content.reviews.showReviewerName === false ? "false" : "true"}
+                onValueChange={v => set("reviews", { showReviewerName: v === "true" })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Show names</SelectItem>
+                  <SelectItem value="false">Hide names</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          </SectionGrid>
         </AccordionContent>
       </AccordionItem>
 

@@ -167,16 +167,6 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
     onChange({ ...content, practiceAreas: areas });
   };
 
-  // --- Testimonials ---
-  const addTestimonial = () =>
-    set("testimonials", { items: [...content.testimonials.items, { quote: "", author: "", location: "" }] });
-  const removeTestimonial = (i: number) =>
-    set("testimonials", { items: content.testimonials.items.filter((_, idx) => idx !== i) });
-  const updateTestimonial = (i: number, k: string, v: string) => {
-    const items = content.testimonials.items.map((t, idx) => (idx === i ? { ...t, [k]: v } : t));
-    set("testimonials", { items });
-  };
-
   // --- Attorney Info ---
   const attorneyInfo = content.attorneyInfo;
   const addFeaturedLogo = () =>
@@ -542,29 +532,58 @@ export default function HomePageFieldEditor({ content, onChange }: Props) {
           <Field label="Section Text" hint="Displayed as paragraph text below the heading">
             <Input value={content.testimonials.heading} onChange={e => set("testimonials", { heading: e.target.value })} />
           </Field>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Testimonial Items</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addTestimonial}>
-                <Plus className="w-3 h-3 mr-1" /> Add Testimonial
-              </Button>
-            </div>
-            {content.testimonials.items.map((t, i) => (
-              <ArrayCard key={i} onRemove={() => removeTestimonial(i)}>
-                <Field label="Quote">
-                  <Textarea value={t.quote} onChange={e => updateTestimonial(i, "quote", e.target.value)} rows={3} />
-                </Field>
-                <SectionGrid>
-                  <Field label="Author Name">
-                    <Input value={t.author} onChange={e => updateTestimonial(i, "author", e.target.value)} />
-                  </Field>
-                  <Field label="Location">
-                    <Input value={t.location || ""} onChange={e => updateTestimonial(i, "location", e.target.value)} />
-                  </Field>
-                </SectionGrid>
-              </ArrayCard>
-            ))}
+          <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+            This section now uses dynamic Google reviews instead of manually entered CMS testimonials. The live section pulls the same Google reviews data used on the Testimonials page and outputs aggregate rating schema when reviews load.
           </div>
+          <SectionGrid>
+            <Field label="Google Place ID" hint="Used for the Google reviews link. Review data is loaded from the site's Google Reviews integration.">
+              <Input
+                value={content.testimonials.googlePlaceId || ""}
+                onChange={e => set("testimonials", { googlePlaceId: e.target.value })}
+                placeholder="0x88f513c2103ad111:0xf0c853b13f4aa2fc"
+              />
+            </Field>
+            <Field label="Minimum Star Rating" hint="Only show reviews with this many stars or higher.">
+              <Select
+                value={String(content.testimonials.minimumRating ?? 0)}
+                onValueChange={v => set("testimonials", { minimumRating: Number(v) })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">All reviews</SelectItem>
+                  <SelectItem value="5">5 stars only</SelectItem>
+                  <SelectItem value="4">4 stars and up</SelectItem>
+                  <SelectItem value="3">3 stars and up</SelectItem>
+                  <SelectItem value="2">2 stars and up</SelectItem>
+                  <SelectItem value="1">1 star and up</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Start Review Number" hint="Start the slider from this 1-based review number after the rating filter is applied.">
+              <Input
+                type="number"
+                min="1"
+                value={content.testimonials.reviewStartNumber || 1}
+                onChange={e => set("testimonials", { reviewStartNumber: Number(e.target.value) || 1 })}
+              />
+            </Field>
+            <Field label="Reviewer Name Display" hint="Choose whether reviewer names are shown on the homepage cards.">
+              <Select
+                value={content.testimonials.showReviewerName === false ? "false" : "true"}
+                onValueChange={v => set("testimonials", { showReviewerName: v === "true" })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Show names</SelectItem>
+                  <SelectItem value="false">Hide names</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          </SectionGrid>
         </AccordionContent>
       </AccordionItem>
 

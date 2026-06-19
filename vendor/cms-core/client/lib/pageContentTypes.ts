@@ -105,6 +105,10 @@ export interface HomePageContent {
     heading: string;
     headingLevel?: 1 | 2 | 3 | 4;
     backgroundImage?: string;
+    googlePlaceId?: string;
+    minimumRating?: number;
+    reviewStartNumber?: number;
+    showReviewerName?: boolean;
     items: TestimonialItem[];
   };
   faq: {
@@ -263,6 +267,9 @@ export interface TestimonialsPageContent {
     placeId: string;
     heading: string;
     subtext: string;
+    minimumRating?: number;
+    reviewStartNumber?: number;
+    showReviewerName?: boolean;
   };
   cta: {
     heading: string;
