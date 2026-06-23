@@ -30,6 +30,11 @@ interface ReviewsData {
   source?: ReviewsErrorSource;
 }
 
+type ReviewerNameDisplay = "full" | "firstName" | "initials" | "hidden";
+
+const REVIEWS_PER_SLIDE = 3;
+const REVIEW_PREVIEW_WORD_COUNT = 28;
+
 const defaultContent: TestimonialsContent = {
   sectionLabel: "– Testimonials",
   heading: "Inspiring client success stories that drive change.",
@@ -37,6 +42,7 @@ const defaultContent: TestimonialsContent = {
   minimumRating: 0,
   reviewStartNumber: 1,
   showReviewerName: true,
+  reviewerNameDisplay: "full",
   items: [],
 };
 
@@ -56,7 +62,7 @@ function StarRating({ rating }: { rating: number }) {
       {[...Array(5)].map((_, index) => (
         <Star
           key={index}
-          className={`h-4 w-4 ${
+          className={`h-3.5 w-3.5 ${
             index < Math.round(rating)
               ? "fill-yellow-400 text-yellow-400"
               : "fill-gray-200 text-gray-200"
@@ -82,6 +88,115 @@ function getErrorMessage(data: ReviewsData): string {
   }
 }
 
+function getReviewerNameDisplayMode(
+  content: TestimonialsContent,
+): ReviewerNameDisplay {
+  if (content.reviewerNameDisplay) {
+    return content.reviewerNameDisplay;
+  }
+
+  return content.showReviewerName === false ? "hidden" : "full";
+}
+
+function formatReviewerName(
+  authorName: string,
+  displayMode: ReviewerNameDisplay,
+): string {
+  const normalizedName = authorName.trim();
+  if (!normalizedName || displayMode === "hidden") return "";
+
+  const parts = normalizedName.split(/\s+/).filter(Boolean);
+  if (!parts.length) return "";
+
+  if (displayMode === "firstName") {
+    return parts[0];
+  }
+
+  if (displayMode === "initials") {
+    return parts.map((part) => part.charAt(0).toUpperCase()).join(".") + ".";
+  }
+
+  return normalizedName;
+}
+
+function getExcerpt(text: string, maxWords: number) {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+
+  if (words.length <= maxWords) {
+    return { text, isTruncated: false };
+  }
+
+  return {
+    text: `${words.slice(0, maxWords).join(" ")}…`,
+    isTruncated: true,
+  };
+}
+
+function ReviewCard({
+  review,
+  displayMode,
+}: {
+  review: Review;
+  displayMode: ReviewerNameDisplay;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const reviewName = formatReviewerName(review.authorName, displayMode);
+  const excerpt = useMemo(
+    () => getExcerpt(review.text, REVIEW_PREVIEW_WORD_COUNT),
+    [review.text],
+  );
+  const reviewText = isExpanded || !excerpt.isTruncated ? review.text : excerpt.text;
+
+  return (
+    <article className="flex h-full flex-col justify-between border border-[#d8d8d8] bg-white bg-[url('/images/backgrounds/quote-bg.png')] bg-[length:56px] bg-no-repeat bg-[position:left_18px_top_18px] p-6 shadow-sm">
+      <div>
+        <StarRating rating={review.rating} />
+        <p className="mt-4 font-outfit text-[16px] leading-[1.7] text-black">
+          {reviewText}
+        </p>
+        {excerpt.isTruncated && (
+          <button
+            type="button"
+            onClick={() => setIsExpanded((expanded) => !expanded)}
+            className="mt-3 font-outfit text-[13px] font-semibold uppercase tracking-[0.08em] text-law-accent transition-colors duration-200 hover:text-black"
+          >
+            {isExpanded ? "Read less" : "Read more"}
+          </button>
+        )}
+      </div>
+
+      <div className="mt-6 border-t border-black/10 pt-4">
+        <div className="flex items-center gap-3">
+          {review.authorPhoto ? (
+            <img
+              src={review.authorPhoto}
+              alt={review.authorName}
+              className="h-10 w-10 rounded-full border border-gray-200 object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-law-accent/30 bg-law-accent/20">
+              <User className="h-4 w-4 text-law-accent-dark" />
+            </div>
+          )}
+          <div>
+            {reviewName && (
+              <p className="font-outfit text-[16px] font-semibold text-black">
+                {reviewName}
+              </p>
+            )}
+            {review.publishTime && (
+              <p className="mt-1 font-outfit text-[13px] text-black/65">
+                {review.publishTime}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function TestimonialsSection({
   content,
 }: TestimonialsSectionProps) {
@@ -91,7 +206,7 @@ export default function TestimonialsSection({
   const [activeSlide, setActiveSlide] = useState(0);
   const minimumRating = Number(data.minimumRating || 0);
   const reviewStartIndex = Math.max(0, Number(data.reviewStartNumber || 1) - 1);
-  const showReviewerName = data.showReviewerName !== false;
+  const reviewerNameDisplay = getReviewerNameDisplayMode(data);
   const googleReviewsUrl = `https://www.google.com/search?q=Cherney+Law+Firm%2C+LLC#lrd=${data.googlePlaceId || defaultContent.googlePlaceId},1,,,,`;
 
   useEffect(() => {
@@ -167,7 +282,7 @@ export default function TestimonialsSection({
   }, [minimumRating, reviewStartIndex, reviewsData?.reviews]);
 
   const testimonialPages = useMemo(
-    () => groupReviews(filteredReviews, 3),
+    () => groupReviews(filteredReviews, REVIEWS_PER_SLIDE),
     [filteredReviews],
   );
   const hasMultiplePages = testimonialPages.length > 1;
@@ -220,50 +335,50 @@ export default function TestimonialsSection({
       : null;
 
   return (
-    <div className="bg-white py-[30px] md:py-[54px]">
+    <div className="bg-white py-[18px] md:py-[34px]">
       {reviewSchema && (
         <Helmet>
           <script type="application/ld+json">{JSON.stringify(reviewSchema)}</script>
         </Helmet>
       )}
-      <div className="max-w-[1080px] mx-auto w-[95%] md:w-[85%] lg:w-[80%] py-[20px] md:py-[27px]">
-        <div className="text-center mb-[10px]">
-          <HeadingTag className="font-outfit text-[18px] md:text-[24px] leading-tight md:leading-[36px] text-law-accent">
+      <div className="max-w-[1080px] mx-auto w-[95%] md:w-[85%] lg:w-[80%] py-[12px] md:py-[18px]">
+        <div className="text-center mb-[8px]">
+          <HeadingTag className="font-outfit text-[18px] md:text-[22px] leading-tight md:leading-[32px] text-law-accent">
             {data.sectionLabel}
           </HeadingTag>
         </div>
         <div className="text-center">
-          <p className="font-playfair text-[32px] md:text-[48px] lg:text-[54px] leading-tight md:leading-[54px] text-black pb-[10px]">
+          <p className="font-playfair text-[30px] md:text-[42px] lg:text-[48px] leading-tight text-black pb-[8px]">
             {data.heading}
           </p>
         </div>
 
         {!loading && reviewsData && reviewsData.averageRating > 0 && (
-          <div className="mt-5 text-center">
+          <div className="mt-4 text-center">
             <div className="flex items-center justify-center gap-3">
               <StarRating rating={reviewsData.averageRating} />
-              <span className="font-outfit text-[17px] font-semibold text-black">
+              <span className="font-outfit text-[16px] font-semibold text-black">
                 {reviewsData.averageRating.toFixed(1)} Google rating
               </span>
             </div>
-            <p className="mt-1 font-outfit text-[14px] text-black/60">
+            <p className="mt-1 font-outfit text-[13px] text-black/60">
               Based on {reviewsData.totalReviews} Google reviews
             </p>
           </div>
         )}
       </div>
 
-      <div className="max-w-[1360px] mx-auto w-[90%] md:w-[85%] lg:w-[80%] py-[27px]">
+      <div className="max-w-[1320px] mx-auto w-[92%] md:w-[86%] lg:w-[80%] py-[18px]">
         {loading ? (
-          <div className="py-16 text-center">
-            <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-law-accent border-r-transparent" />
-            <p className="mt-5 font-outfit text-[16px] text-black/60">
+          <div className="py-14 text-center">
+            <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-solid border-law-accent border-r-transparent" />
+            <p className="mt-4 font-outfit text-[15px] text-black/60">
               Loading Google reviews...
             </p>
           </div>
         ) : reviewsData?.error ? (
-          <div className="border border-red-200 bg-red-50 p-8 text-center">
-            <p className="font-outfit text-[16px] text-red-800">
+          <div className="border border-red-200 bg-red-50 p-6 text-center">
+            <p className="font-outfit text-[15px] text-red-800">
               {getErrorMessage(reviewsData)}
             </p>
           </div>
@@ -276,48 +391,13 @@ export default function TestimonialsSection({
               >
                 {testimonialPages.map((page, pageIndex) => (
                   <div key={pageIndex} className="w-full shrink-0">
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
                       {page.map((review, itemIndex) => (
-                        <article
+                        <ReviewCard
                           key={`${pageIndex}-${itemIndex}-${review.authorName}-${review.publishTime}`}
-                          className="flex h-full flex-col justify-between border border-[#d8d8d8] bg-white bg-[url('/images/backgrounds/quote-bg.png')] bg-no-repeat bg-[position:left_24px_top_24px] p-8 shadow-sm"
-                        >
-                          <div>
-                            <StarRating rating={review.rating} />
-                            <p className="mt-5 font-outfit text-[19px] leading-[1.65] text-black">
-                              {review.text}
-                            </p>
-                          </div>
-
-                          <div className="mt-8 border-t border-black/10 pt-5">
-                            <div className="flex items-center gap-3">
-                              {review.authorPhoto ? (
-                                <img
-                                  src={review.authorPhoto}
-                                  alt={review.authorName}
-                                  className="h-11 w-11 rounded-full border border-gray-200 object-cover"
-                                  loading="lazy"
-                                />
-                              ) : (
-                                <div className="flex h-11 w-11 items-center justify-center rounded-full border border-law-accent/30 bg-law-accent/20">
-                                  <User className="h-5 w-5 text-law-accent-dark" />
-                                </div>
-                              )}
-                              <div>
-                                {showReviewerName && (
-                                  <p className="font-outfit text-[20px] font-semibold text-black">
-                                    {review.authorName}
-                                  </p>
-                                )}
-                                {review.publishTime && (
-                                  <p className="mt-1 font-outfit text-[15px] text-black/70">
-                                    {review.publishTime}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </article>
+                          review={review}
+                          displayMode={reviewerNameDisplay}
+                        />
                       ))}
                     </div>
                   </div>
@@ -331,26 +411,26 @@ export default function TestimonialsSection({
                     className="absolute left-2 top-1/2 z-[100] -translate-y-1/2 cursor-pointer bg-white/90 p-2 text-[rgb(95,99,104)] opacity-0 shadow-sm transition-opacity duration-200 hover:bg-white group-hover:opacity-100"
                     aria-label="Previous testimonials"
                   >
-                    <ChevronLeft className="w-8 h-8" />
+                    <ChevronLeft className="w-7 h-7" />
                   </button>
                   <button
                     onClick={nextSlide}
                     className="absolute right-2 top-1/2 z-[100] -translate-y-1/2 cursor-pointer bg-white/90 p-2 text-[rgb(95,99,104)] opacity-0 shadow-sm transition-opacity duration-200 hover:bg-white group-hover:opacity-100"
                     aria-label="Next testimonials"
                   >
-                    <ChevronRight className="w-8 h-8" />
+                    <ChevronRight className="w-7 h-7" />
                   </button>
                 </>
               )}
             </div>
 
             {hasMultiplePages && (
-              <div className="mt-6 flex justify-center gap-2">
+              <div className="mt-5 flex justify-center gap-2">
                 {testimonialPages.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => setActiveSlide(index)}
-                    className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center"
+                    className="inline-flex min-h-10 min-w-10 cursor-pointer items-center justify-center"
                     aria-label={`Go to testimonial page ${index + 1}`}
                   >
                     <span
@@ -364,20 +444,20 @@ export default function TestimonialsSection({
               </div>
             )}
 
-            <div className="mt-8 text-center">
+            <div className="mt-6 text-center">
               <a
                 href={googleReviewsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center border border-transparent bg-[#161715] px-7 py-4 font-outfit text-[15px] font-semibold uppercase tracking-[0.08em] text-white transition-all duration-300 hover:-translate-y-1 hover:border-[#161715] hover:bg-black hover:shadow-[0_16px_35px_rgba(22,23,21,0.28)]"
+                className="inline-flex items-center justify-center border border-transparent bg-[#161715] px-6 py-3 font-outfit text-[14px] font-semibold uppercase tracking-[0.08em] text-white transition-all duration-300 hover:-translate-y-1 hover:border-[#161715] hover:bg-black hover:shadow-[0_16px_35px_rgba(22,23,21,0.28)]"
               >
                 See all reviews on Google
               </a>
             </div>
           </>
         ) : (
-          <div className="border border-gray-200 bg-gray-50 p-8 text-center">
-            <p className="font-outfit text-[16px] text-gray-600">
+          <div className="border border-gray-200 bg-gray-50 p-6 text-center">
+            <p className="font-outfit text-[15px] text-gray-600">
               No Google reviews match the current rating filter.
             </p>
           </div>

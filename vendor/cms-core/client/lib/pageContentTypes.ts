@@ -100,6 +100,9 @@ export interface HomePageContent {
     description: string;
   };
   practiceAreas: PracticeAreaItem[];
+  featureBoxes: {
+    items: FeatureBox[];
+  };
   testimonials: {
     sectionLabel: string;
     heading: string;
@@ -109,6 +112,7 @@ export interface HomePageContent {
     minimumRating?: number;
     reviewStartNumber?: number;
     showReviewerName?: boolean;
+    reviewerNameDisplay?: "full" | "firstName" | "initials" | "hidden";
     items: TestimonialItem[];
   };
   faq: {

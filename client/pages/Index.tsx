@@ -9,6 +9,7 @@ import PracticeAreasSection from "@site/components/home/PracticeAreasSection";
 import PracticeAreasGrid from "@site/components/home/PracticeAreasGrid";
 import AwardsSection from "@site/components/home/AwardsSection";
 import TestimonialsSection from "@site/components/home/TestimonialsSection";
+import HomeFeatureBoxesSection from "@site/components/home/HomeFeatureBoxesSection";
 import AttorneyInfoSection from "@site/components/home/AttorneyInfoSection";
 import HomeFaqSection from "@site/components/home/HomeFaqSection";
 import ContactUsSection from "@site/components/home/ContactUsSection";
@@ -37,7 +38,7 @@ export default function Index() {
   const seo = resolveSeo(page, siteSettings.settings, pathname, siteUrl);
 
   const heroContent = content.hero;
-  const featureBoxes = heroContent.featureBoxes;
+  const featureBoxes = content.featureBoxes;
   const heroButtons = heroContent.buttons;
 
   // Icon map for CMS-driven icons
@@ -193,40 +194,11 @@ export default function Index() {
         </div>
       </div>
 
-      {/* Feature Boxes Section - Bottom of Hero */}
-      {featureBoxes.length > 0 && (
-        <div className="bg-law-accent py-[40px] md:py-[60px] w-full">
-          <div className="max-w-[2560px] mx-auto w-[95%] flex justify-center">
-            <div className="flex flex-col md:flex-row gap-6 md:gap-8 max-w-[1200px]">
-              {featureBoxes.map((item, index) => (
-                <div
-                  key={index}
-                  className="bg-[#161715] p-[25px] md:p-[30px] flex items-start gap-4 flex-1"
-                >
-                  <div className="flex-shrink-0 mt-1">
-                    <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-law-accent flex items-center justify-center">
-                      <svg
-                        className="w-4 h-4 md:w-5 md:h-5 text-black"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                  <p className="font-outfit text-[16px] md:text-[18px] text-white font-normal leading-tight">
-                    {item.title}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Testimonials Section */}
+      <TestimonialsSection content={content.testimonials} />
+
+      {/* Feature Boxes Section */}
+      <HomeFeatureBoxesSection content={featureBoxes} />
 
       {/* About Us Section */}
       <AboutSection content={content.about} />
@@ -242,9 +214,6 @@ export default function Index() {
 
       {/* Awards CTA Section */}
       <AwardsSection content={content.awardsCTA} />
-
-      {/* Testimonials Section */}
-      <TestimonialsSection content={content.testimonials} />
 
       {/* Attorney Info Section */}
       <AttorneyInfoSection content={content.attorneyInfo} />

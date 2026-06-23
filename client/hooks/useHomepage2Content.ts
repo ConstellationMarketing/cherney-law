@@ -56,6 +56,15 @@ function mergeWithDefaults(
     practiceAreas: cmsContent.practiceAreas?.length
       ? cmsContent.practiceAreas
       : defaults.practiceAreas,
+    featureBoxes: {
+      ...defaults.featureBoxes,
+      ...cmsContent.featureBoxes,
+      items: cmsContent.featureBoxes?.items?.length
+        ? cmsContent.featureBoxes.items
+        : cmsContent.hero?.featureBoxes?.length
+          ? cmsContent.hero.featureBoxes
+          : defaults.featureBoxes.items,
+    },
     testimonials: {
       ...defaults.testimonials,
       ...cmsContent.testimonials,

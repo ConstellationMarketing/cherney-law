@@ -26,7 +26,7 @@ export default function AboutUs() {
   const seo = resolveSeo(page, siteSettings.settings, pathname, siteUrl);
 
   // Feature boxes and stats are managed on the homepage CMS only
-  const featureBoxes = homeContent.hero.featureBoxes;
+  const featureBoxes = homeContent.featureBoxes.items;
   const stats = homeContent.about.stats;
 
   return (

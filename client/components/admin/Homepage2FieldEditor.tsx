@@ -102,14 +102,15 @@ export default function Homepage2FieldEditor({ content, onChange }: Props) {
   // --- Hero ---
   const hero = content.hero;
   const setHero = (k: string, v: unknown) => set("hero", { [k]: v } as any);
+  const featureBoxes = content.featureBoxes;
 
   const addFeatureBox = () =>
-    set("hero", { featureBoxes: [...hero.featureBoxes, { icon: "", title: "", description: "" }] });
+    set("featureBoxes", { items: [...featureBoxes.items, { icon: "", title: "", description: "" }] });
   const removeFeatureBox = (i: number) =>
-    set("hero", { featureBoxes: hero.featureBoxes.filter((_, idx) => idx !== i) });
+    set("featureBoxes", { items: featureBoxes.items.filter((_, idx) => idx !== i) });
   const updateFeatureBox = (i: number, k: string, v: string) => {
-    const boxes = hero.featureBoxes.map((b, idx) => (idx === i ? { ...b, [k]: v } : b));
-    set("hero", { featureBoxes: boxes });
+    const boxes = featureBoxes.items.map((b, idx) => (idx === i ? { ...b, [k]: v } : b));
+    set("featureBoxes", { items: boxes });
   };
 
   const addButton = () =>
@@ -184,31 +185,6 @@ export default function Homepage2FieldEditor({ content, onChange }: Props) {
               folder="attorney"
             />
           </Field>
-
-          {/* Feature Boxes */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Feature Boxes</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addFeatureBox}>
-                <Plus className="w-3 h-3 mr-1" /> Add Box
-              </Button>
-            </div>
-            {hero.featureBoxes.map((box, i) => (
-              <ArrayCard key={i} onRemove={() => removeFeatureBox(i)}>
-                <SectionGrid>
-                  <Field label="Title">
-                    <Input value={box.title} onChange={e => updateFeatureBox(i, "title", e.target.value)} />
-                  </Field>
-                  <Field label="Icon (lucide name)" hint="e.g. Scale, Briefcase">
-                    <Input value={box.icon || ""} onChange={e => updateFeatureBox(i, "icon", e.target.value)} />
-                  </Field>
-                </SectionGrid>
-                <Field label="Description">
-                  <Textarea value={box.description} onChange={e => updateFeatureBox(i, "description", e.target.value)} rows={2} />
-                </Field>
-              </ArrayCard>
-            ))}
-          </div>
 
           {/* CTA Buttons */}
           <div className="space-y-2">
@@ -481,21 +457,59 @@ export default function Homepage2FieldEditor({ content, onChange }: Props) {
                 onChange={e => set("testimonials", { reviewStartNumber: Number(e.target.value) || 1 })}
               />
             </Field>
-            <Field label="Reviewer Name Display" hint="Choose whether reviewer names are shown on the homepage cards.">
+            <Field label="Reviewer Name Display" hint="Choose whether to show the full name, first name only, initials, or hide the reviewer name.">
               <Select
-                value={content.testimonials.showReviewerName === false ? "false" : "true"}
-                onValueChange={v => set("testimonials", { showReviewerName: v === "true" })}
+                value={content.testimonials.reviewerNameDisplay || (content.testimonials.showReviewerName === false ? "hidden" : "full")}
+                onValueChange={v => set("testimonials", {
+                  reviewerNameDisplay: v as "full" | "firstName" | "initials" | "hidden",
+                  showReviewerName: v !== "hidden",
+                })}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="true">Show names</SelectItem>
-                  <SelectItem value="false">Hide names</SelectItem>
+                  <SelectItem value="full">Full name</SelectItem>
+                  <SelectItem value="firstName">Hide last name only</SelectItem>
+                  <SelectItem value="initials">Initials only</SelectItem>
+                  <SelectItem value="hidden">Hide name</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
           </SectionGrid>
+        </AccordionContent>
+      </AccordionItem>
+
+      {/* ── FEATURE BOXES ── */}
+      <AccordionItem value="featureBoxes" className="border rounded-lg px-4">
+        <AccordionTrigger className="text-sm font-semibold">Feature Boxes Section</AccordionTrigger>
+        <AccordionContent className="space-y-4 pb-4">
+          <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+            This section appears below the homepage testimonials and is managed separately from the hero so you can reorder it independently in the CMS.
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Feature Boxes</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addFeatureBox}>
+                <Plus className="w-3 h-3 mr-1" /> Add Box
+              </Button>
+            </div>
+            {featureBoxes.items.map((box, i) => (
+              <ArrayCard key={i} onRemove={() => removeFeatureBox(i)}>
+                <SectionGrid>
+                  <Field label="Title">
+                    <Input value={box.title} onChange={e => updateFeatureBox(i, "title", e.target.value)} />
+                  </Field>
+                  <Field label="Icon (lucide name)" hint="e.g. Scale, Briefcase">
+                    <Input value={box.icon || ""} onChange={e => updateFeatureBox(i, "icon", e.target.value)} />
+                  </Field>
+                </SectionGrid>
+                <Field label="Description">
+                  <Textarea value={box.description || ""} onChange={e => updateFeatureBox(i, "description", e.target.value)} rows={2} />
+                </Field>
+              </ArrayCard>
+            ))}
+          </div>
         </AccordionContent>
       </AccordionItem>
 

@@ -73,10 +73,26 @@ export function normalizeHomePageContent(content: unknown): HomePageContent {
       description: str(c.practiceAreasIntro?.description),
     }),
     practiceAreas: ensureArray(c.practiceAreas, { title: '', description: '', icon: '', href: '' }),
+    featureBoxes: ensureObject(c.featureBoxes, {
+      items: ensureArray(c.featureBoxes?.items ?? c.hero?.featureBoxes, { icon: '', title: '', description: '' }),
+    }),
     testimonials: ensureObject(c.testimonials, {
       sectionLabel: str(c.testimonials?.sectionLabel),
       heading: str(c.testimonials?.heading),
       backgroundImage: str(c.testimonials?.backgroundImage),
+      googlePlaceId: str(c.testimonials?.googlePlaceId),
+      minimumRating:
+        typeof c.testimonials?.minimumRating === 'number' ? c.testimonials.minimumRating : 0,
+      reviewStartNumber:
+        typeof c.testimonials?.reviewStartNumber === 'number' ? c.testimonials.reviewStartNumber : 1,
+      showReviewerName:
+        typeof c.testimonials?.showReviewerName === 'boolean' ? c.testimonials.showReviewerName : true,
+      reviewerNameDisplay:
+        c.testimonials?.reviewerNameDisplay === 'firstName' ||
+        c.testimonials?.reviewerNameDisplay === 'initials' ||
+        c.testimonials?.reviewerNameDisplay === 'hidden'
+          ? c.testimonials.reviewerNameDisplay
+          : 'full',
       items: ensureArray(c.testimonials?.items, { quote: '', author: '', location: '' }),
     }),
     faq: ensureObject(c.faq, {

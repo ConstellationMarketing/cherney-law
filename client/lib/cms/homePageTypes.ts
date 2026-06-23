@@ -25,6 +25,10 @@ export interface HeroContent {
   heroBgImage?: string;
 }
 
+export interface HomeFeatureBoxesContent {
+  items: HeroFeatureBox[];
+}
+
 export interface AboutFeature {
   number: string;
   title: string;
@@ -84,6 +88,7 @@ export interface TestimonialsContent {
   minimumRating?: number;
   reviewStartNumber?: number;
   showReviewerName?: boolean;
+  reviewerNameDisplay?: "full" | "firstName" | "initials" | "hidden";
   items: TestimonialItem[];
 }
 
@@ -158,6 +163,7 @@ export interface HomePageContent {
   about: AboutContent;
   practiceAreasIntro: PracticeAreasIntroContent;
   practiceAreas: PracticeAreaItem[];
+  featureBoxes: HomeFeatureBoxesContent;
   testimonials: TestimonialsContent;
   contact: ContactContent;
   firmDescription: FirmDescriptionContent;
@@ -197,6 +203,9 @@ export const defaultHomeContent: HomePageContent = {
     description: "",
   },
   practiceAreas: [],
+  featureBoxes: {
+    items: [],
+  },
   testimonials: {
     sectionLabel: "",
     heading: "",
@@ -205,6 +214,7 @@ export const defaultHomeContent: HomePageContent = {
     minimumRating: 0,
     reviewStartNumber: 1,
     showReviewerName: true,
+    reviewerNameDisplay: "full",
     items: [],
   },
   contact: {
