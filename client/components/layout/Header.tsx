@@ -108,8 +108,8 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                   src={settings.logoUrl}
                   alt={settings.logoAlt}
                   className="w-[306px] max-w-full"
-                  width={320}
-                  height={56}
+                  width={306}
+                  height={50}
                 />
               </Link>
             </div>

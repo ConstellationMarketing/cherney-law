@@ -204,8 +204,8 @@ export default function Footer() {
                 src={settings.logoUrl}
                 alt={settings.logoAlt}
                 className="w-[160px] md:w-[200px] max-w-full h-auto object-contain"
-                width={320}
-                height={56}
+                width={306}
+                height={50}
               />
             </Link>
           </div>
