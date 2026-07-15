@@ -6,6 +6,24 @@
   directory = "vendor/cms-core/netlify/functions"
   node_bundler = "esbuild"
 
+# HTML and extensionless page routes must revalidate.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Stable public images can be cached for about 30 days.
+[[headers]]
+  for = "/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000"
+
+# Vite emits content-hashed assets, so these are safe to cache immutably.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
 # API routes → Netlify Functions (must be first)
 [[redirects]]
   force = true

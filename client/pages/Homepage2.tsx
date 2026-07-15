@@ -12,12 +12,18 @@ import TestimonialsSection from "@site/components/home/TestimonialsSection";
 import HomeFeatureBoxesSection from "@site/components/home/HomeFeatureBoxesSection";
 import AttorneyInfoSection from "@site/components/home/AttorneyInfoSection";
 import HomeFaqSection from "@site/components/home/HomeFaqSection";
-import ContactUsSection from "@site/components/home/ContactUsSection";
+import { lazy, Suspense } from "react";
 import { useHomepage2Content } from "@site/hooks/useHomepage2Content";
 import { useGlobalPhone, useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { resolveSeo } from "@site/utils/resolveSeo";
 import { getSiteUrlFallback } from "@site/lib/runtime-env";
-import { getOptimizedBackgroundImage, getOptimizedImageUrl } from "@site/lib/imageOptimizer";
+import { getOptimizedImageUrl } from "@site/lib/imageOptimizer";
+import HeroBackgroundImage from "@site/components/home/HeroBackgroundImage";
+import DeferredSection from "@site/components/home/DeferredSection";
+
+const ContactUsSection = lazy(
+  () => import("@site/components/home/ContactUsSection"),
+);
 
 const DEFAULT_HERO_BG =
   "https://cdn.builder.io/api/v1/image/assets%2F50bd0f2438824f8ea1271cf7dd2c508e%2F1e4bfebf4b62496e9f4b00ad011729ba?format=webp&width=800&height=1200";
@@ -62,15 +68,10 @@ export default function Homepage2() {
 
       {/* Hero Section - negative margin pulls div up behind the transparent header.
           pt-[141px] = 114px header height + 27px original top padding */}
-      <div
-        className="relative -mt-[144px] pt-[171px] pb-[27px] w-full bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: getOptimizedBackgroundImage(
-            (heroContent as any).heroBgImage || DEFAULT_HERO_BG,
-            { width: 1920, quality: 75, resize: "cover" },
-          ),
-        }}
-      >
+      <div className="relative -mt-[144px] pt-[171px] pb-[27px] w-full bg-law-accent">
+        <HeroBackgroundImage
+          src={(heroContent as any).heroBgImage || DEFAULT_HERO_BG}
+        />
         <div className="relative z-10 max-w-[2560px] mx-auto w-[95%] flex flex-col lg:flex-row lg:items-end gap-8 lg:gap-[3%]">
           {/* Left Side: Headline and Call Box */}
           <div className="lg:w-[65.667%]">
@@ -199,6 +200,8 @@ export default function Homepage2() {
                   { width: 700, quality: 75, resize: "contain" },
                 )}
                 alt="Attorney"
+                width={700}
+                height={480}
                 className="max-w-full w-auto h-auto object-contain max-h-[480px]"
                 style={{
                   maskImage:
@@ -219,31 +222,49 @@ export default function Homepage2() {
       <HomeFeatureBoxesSection content={featureBoxes} />
 
       {/* About Us Section */}
-      <AboutSection
-        content={content.about}
-        syndicationsLabel={(content.about as any).syndicationsLabel}
-      />
+      <DeferredSection intrinsicBlockSize={760}>
+        <AboutSection
+          content={content.about}
+          syndicationsLabel={(content.about as any).syndicationsLabel}
+        />
+      </DeferredSection>
 
       {/* Firm Description Section */}
-      <FirmDescriptionSection content={content.firmDescription} />
+      <DeferredSection intrinsicBlockSize={720}>
+        <FirmDescriptionSection content={content.firmDescription} />
+      </DeferredSection>
 
       {/* Practice Areas Section */}
-      <PracticeAreasSection content={content.practiceAreasIntro} />
+      <DeferredSection intrinsicBlockSize={420}>
+        <PracticeAreasSection content={content.practiceAreasIntro} />
+      </DeferredSection>
 
       {/* Practice Areas Grid */}
-      <PracticeAreasGrid areas={content.practiceAreas} />
+      <DeferredSection intrinsicBlockSize={900}>
+        <PracticeAreasGrid areas={content.practiceAreas} />
+      </DeferredSection>
 
       {/* Awards CTA Section */}
-      <AwardsSection content={content.awardsCTA} />
+      <DeferredSection intrinsicBlockSize={480}>
+        <AwardsSection content={content.awardsCTA} />
+      </DeferredSection>
 
       {/* Attorney Info Section */}
-      <AttorneyInfoSection content={content.attorneyInfo} />
+      <DeferredSection intrinsicBlockSize={1100}>
+        <AttorneyInfoSection content={content.attorneyInfo} />
+      </DeferredSection>
 
       {/* FAQ Section */}
-      <HomeFaqSection content={content.faq} />
+      <DeferredSection intrinsicBlockSize={700}>
+        <HomeFaqSection content={content.faq} />
+      </DeferredSection>
 
       {/* Contact Us Section */}
-      <ContactUsSection content={content.contact} />
+      <DeferredSection intrinsicBlockSize={850}>
+        <Suspense fallback={<div className="min-h-[850px]" />}>
+          <ContactUsSection content={content.contact} />
+        </Suspense>
+      </DeferredSection>
     </Layout>
   );
 }

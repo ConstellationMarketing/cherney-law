@@ -1,4 +1,11 @@
-import { Component, useRef, type ErrorInfo, type ReactNode } from "react";
+import {
+  Component,
+  lazy,
+  Suspense,
+  useRef,
+  type ErrorInfo,
+  type ReactNode,
+} from "react";
 import { HelmetProvider } from "@site/lib/helmet";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Route, Routes, useLocation } from "react-router-dom";
@@ -10,8 +17,9 @@ import WcDniManager from "./components/WcDniManager";
 import GlobalScripts from "./components/GlobalScripts";
 import PublicFullDocumentNavigation from "./components/PublicFullDocumentNavigation";
 import DynamicCmsPage from "./pages/DynamicCmsPage";
-import AdminRoutes from "./pages/AdminRoutes";
 import ScrollToTop from "./components/ScrollToTop";
+
+const AdminRoutes = lazy(() => import("./pages/AdminRoutes"));
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -91,7 +99,14 @@ export function AppShell() {
       {!isAdminRoute && <WcDniManager />}
       <ScrollToTop />
       <Routes>
-        <Route path="/admin/*" element={<AdminRoutes />} />
+        <Route
+          path="/admin/*"
+          element={
+            <Suspense fallback={null}>
+              <AdminRoutes />
+            </Suspense>
+          }
+        />
         <Route path="*" element={<DynamicCmsPage />} />
       </Routes>
     </>

@@ -74,7 +74,7 @@ interface OptimizedImageUrlOptions {
   resize?: "cover" | "contain" | "fill";
 }
 
-const RASTER_IMAGE_EXTENSION = /\.(?:jpe?g|png)(?:$|[?#])/i;
+const RASTER_IMAGE_EXTENSION = /\.(?:jpe?g|png|webp)(?:$|[?#])/i;
 
 export function getOptimizedImageUrl(
   src: string | null | undefined,

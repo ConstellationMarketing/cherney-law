@@ -164,7 +164,7 @@ function injectRenderedHtml(
 async function renderRoute(template: string, pathname: string) {
   const state = await preparePrerenderState(pathname);
   const helmetContext: Record<string, any> = {};
-  const appHtml = renderAppToString(pathname, helmetContext);
+  const appHtml = await renderAppToString(pathname, helmetContext);
 
   return injectRenderedHtml(
     template,

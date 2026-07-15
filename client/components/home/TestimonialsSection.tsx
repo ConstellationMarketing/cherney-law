@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Helmet } from "@site/lib/helmet";
 import { ChevronLeft, ChevronRight, Star, User } from "lucide-react";
 import type { TestimonialsContent } from "@site/lib/cms/homePageTypes";
@@ -171,6 +171,8 @@ function ReviewCard({
             <img
               src={review.authorPhoto}
               alt={review.authorName}
+              width={40}
+              height={40}
               className="h-10 w-10 rounded-full border border-gray-200 object-cover"
               loading="lazy"
             />
@@ -204,6 +206,8 @@ export default function TestimonialsSection({
   const [reviewsData, setReviewsData] = useState<ReviewsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeSlide, setActiveSlide] = useState(0);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const hasStartedFetch = useRef(false);
   const minimumRating = Number(data.minimumRating || 0);
   const reviewStartIndex = Math.max(0, Number(data.reviewStartNumber || 1) - 1);
   const reviewerNameDisplay = getReviewerNameDisplayMode(data);
@@ -269,7 +273,35 @@ export default function TestimonialsSection({
       }
     }
 
-    fetchReviews();
+    const startFetch = () => {
+      if (hasStartedFetch.current) return;
+      hasStartedFetch.current = true;
+      void fetchReviews();
+    };
+
+    if (typeof IntersectionObserver === "undefined") {
+      startFetch();
+      return;
+    }
+
+    const section = sectionRef.current;
+    if (!section) {
+      startFetch();
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          observer.disconnect();
+          startFetch();
+        }
+      },
+      { rootMargin: "600px 0px" },
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
   }, []);
 
   const filteredReviews = useMemo(() => {
@@ -335,7 +367,7 @@ export default function TestimonialsSection({
       : null;
 
   return (
-    <div className="bg-white py-[18px] md:py-[34px]">
+    <div ref={sectionRef} className="bg-white py-[18px] md:py-[34px]">
       {reviewSchema && (
         <Helmet>
           <script type="application/ld+json">{JSON.stringify(reviewSchema)}</script>

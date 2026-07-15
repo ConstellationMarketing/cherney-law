@@ -1,11 +1,8 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import Layout from "@site/components/layout/Layout";
 import Seo from "@site/components/Seo";
-import BlockRenderer from "@site/components/BlockRenderer";
-import AreaPageRenderer from "@site/components/area-page/AreaPageRenderer";
 import type { AreaPageContent } from "@site/lib/cms/areaPageTypes";
-import PracticeAreaDetailRenderer from "@site/components/practice-detail/PracticeAreaDetailRenderer";
 import type { PracticeAreaDetailPageContent } from "@site/lib/cms/practiceAreaDetailPageTypes";
 import { useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { resolveSeo } from "@site/utils/resolveSeo";
@@ -20,16 +17,33 @@ import {
   type CmsPage,
 } from "@site/lib/cms/dynamicRoute";
 import { getSiteUrlFallback } from "@site/lib/runtime-env";
-import BlogPost from "./BlogPost";
-import NotFound from "./NotFound";
-import Index from "./Index";
-import Homepage2 from "./Homepage2";
-import AboutUs from "./AboutUs";
-import ContactPage from "./ContactPage";
-import PracticeAreas from "./PracticeAreas";
-import TestimonialsPage from "./TestimonialsPage";
-import CommonQuestionsPage from "./CommonQuestionsPage";
-import AreasWeServePage from "./AreasWeServePage";
+const BlogPost = lazy(() => import("./BlogPost"));
+const NotFound = lazy(() => import("./NotFound"));
+const Index = lazy(() => import("./Index"));
+const Homepage2 = lazy(() => import("./Homepage2"));
+const AboutUs = lazy(() => import("./AboutUs"));
+const ContactPage = lazy(() => import("./ContactPage"));
+const PracticeAreas = lazy(() => import("./PracticeAreas"));
+const TestimonialsPage = lazy(() => import("./TestimonialsPage"));
+const CommonQuestionsPage = lazy(() => import("./CommonQuestionsPage"));
+const AreasWeServePage = lazy(() => import("./AreasWeServePage"));
+const BlockRenderer = lazy(() => import("@site/components/BlockRenderer"));
+const AreaPageRenderer = lazy(
+  () => import("@site/components/area-page/AreaPageRenderer"),
+);
+const PracticeAreaDetailRenderer = lazy(
+  () => import("@site/components/practice-detail/PracticeAreaDetailRenderer"),
+);
+
+function PageFallback() {
+  return (
+    <Layout>
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="text-gray-400">Loading...</div>
+      </div>
+    </Layout>
+  );
+}
 
 export default function DynamicCmsPage() {
   const { pathname } = useLocation();
@@ -87,35 +101,71 @@ export default function DynamicCmsPage() {
 
   if (isBlogPost) {
     const slug = normalizeCmsPath(pathname).replace(/^\//, "");
-    return <BlogPost slugOverride={slug} />;
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <BlogPost slugOverride={slug} />
+      </Suspense>
+    );
   }
 
   if (!page) {
-    return <NotFound />;
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <NotFound />
+      </Suspense>
+    );
   }
 
   if (page.page_type !== "area" && page.page_type !== "practice_detail") {
     const inferredTemplate = inferStructuredTemplateType(page.content);
     if (inferredTemplate === "home") {
-      return pathname === "/homepage-2/" ? <Homepage2 /> : <Index />;
+      return (
+        <Suspense fallback={<PageFallback />}>
+          {pathname === "/homepage-2/" ? <Homepage2 /> : <Index />}
+        </Suspense>
+      );
     }
     if (inferredTemplate === "about") {
-      return <AboutUs />;
+      return (
+        <Suspense fallback={<PageFallback />}>
+          <AboutUs />
+        </Suspense>
+      );
     }
     if (inferredTemplate === "contact") {
-      return <ContactPage />;
+      return (
+        <Suspense fallback={<PageFallback />}>
+          <ContactPage />
+        </Suspense>
+      );
     }
     if (inferredTemplate === "practice-areas") {
-      return <PracticeAreas />;
+      return (
+        <Suspense fallback={<PageFallback />}>
+          <PracticeAreas />
+        </Suspense>
+      );
     }
     if (inferredTemplate === "testimonials") {
-      return <TestimonialsPage />;
+      return (
+        <Suspense fallback={<PageFallback />}>
+          <TestimonialsPage />
+        </Suspense>
+      );
     }
     if (inferredTemplate === "common-questions") {
-      return <CommonQuestionsPage />;
+      return (
+        <Suspense fallback={<PageFallback />}>
+          <CommonQuestionsPage />
+        </Suspense>
+      );
     }
     if (inferredTemplate === "areas-we-serve") {
-      return <AreasWeServePage />;
+      return (
+        <Suspense fallback={<PageFallback />}>
+          <AreasWeServePage />
+        </Suspense>
+      );
     }
   }
 
@@ -151,15 +201,17 @@ export default function DynamicCmsPage() {
       }
     >
       <Seo {...seo} pageContent={page.content} />
-      {page.page_type === "area" ? (
-        <AreaPageRenderer content={page.content as AreaPageContent} />
-      ) : page.page_type === "practice_detail" ? (
-        <PracticeAreaDetailRenderer
-          content={page.content as unknown as PracticeAreaDetailPageContent}
-        />
-      ) : (
-        <BlockRenderer content={page.content as ContentBlock[]} />
-      )}
+      <Suspense fallback={<div className="min-h-[60vh]" />}>
+        {page.page_type === "area" ? (
+          <AreaPageRenderer content={page.content as AreaPageContent} />
+        ) : page.page_type === "practice_detail" ? (
+          <PracticeAreaDetailRenderer
+            content={page.content as unknown as PracticeAreaDetailPageContent}
+          />
+        ) : (
+          <BlockRenderer content={page.content as ContentBlock[]} />
+        )}
+      </Suspense>
     </Layout>
   );
 }

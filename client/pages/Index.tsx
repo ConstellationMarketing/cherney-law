@@ -12,12 +12,18 @@ import TestimonialsSection from "@site/components/home/TestimonialsSection";
 import HomeFeatureBoxesSection from "@site/components/home/HomeFeatureBoxesSection";
 import AttorneyInfoSection from "@site/components/home/AttorneyInfoSection";
 import HomeFaqSection from "@site/components/home/HomeFaqSection";
-import ContactUsSection from "@site/components/home/ContactUsSection";
+import { lazy, Suspense } from "react";
 import { useHomeContent } from "@site/hooks/useHomeContent";
 import { useGlobalPhone, useSiteSettings } from "@site/contexts/SiteSettingsContext";
 import { resolveSeo } from "@site/utils/resolveSeo";
 import { getSiteUrlFallback } from "@site/lib/runtime-env";
-import { getOptimizedBackgroundImage, getOptimizedImageUrl } from "@site/lib/imageOptimizer";
+import { getOptimizedImageUrl } from "@site/lib/imageOptimizer";
+import HeroBackgroundImage from "@site/components/home/HeroBackgroundImage";
+import DeferredSection from "@site/components/home/DeferredSection";
+
+const ContactUsSection = lazy(
+  () => import("@site/components/home/ContactUsSection"),
+);
 
 export default function Index() {
   const { pathname } = useLocation();
@@ -56,19 +62,10 @@ export default function Index() {
       <Seo {...seo} />
 
       {/* Hero Section */}
-      <div
-        className="relative -mt-[144px] pt-[171px] pb-[27px] w-full bg-law-accent bg-cover bg-center bg-no-repeat"
-        style={
-          (heroContent as any).heroBgImage
-            ? {
-                backgroundImage: getOptimizedBackgroundImage(
-                  (heroContent as any).heroBgImage,
-                  { width: 1920, quality: 75, resize: "cover" },
-                ),
-              }
-            : {}
-        }
-      >
+      <div className="relative -mt-[144px] pt-[171px] pb-[27px] w-full bg-law-accent">
+        {(heroContent as any).heroBgImage && (
+          <HeroBackgroundImage src={(heroContent as any).heroBgImage} />
+        )}
         <div className="relative z-10 max-w-[2560px] mx-auto w-[95%] flex flex-col lg:flex-row lg:items-end gap-8 lg:gap-[3%]">
           {/* Left Side: Headline and Call Box */}
           <div className="lg:w-[65.667%]">
@@ -183,6 +180,8 @@ export default function Index() {
                   resize: "contain",
                 })}
                 alt="Attorney"
+                width={700}
+                height={480}
                 className="max-w-full w-auto h-auto object-contain max-h-[480px]"
                 style={{
                   maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
@@ -201,28 +200,46 @@ export default function Index() {
       <HomeFeatureBoxesSection content={featureBoxes} />
 
       {/* About Us Section */}
-      <AboutSection content={content.about} />
+      <DeferredSection intrinsicBlockSize={760}>
+        <AboutSection content={content.about} />
+      </DeferredSection>
 
       {/* Firm Description Section */}
-      <FirmDescriptionSection content={content.firmDescription} />
+      <DeferredSection intrinsicBlockSize={720}>
+        <FirmDescriptionSection content={content.firmDescription} />
+      </DeferredSection>
 
       {/* Practice Areas Section */}
-      <PracticeAreasSection content={content.practiceAreasIntro} />
+      <DeferredSection intrinsicBlockSize={420}>
+        <PracticeAreasSection content={content.practiceAreasIntro} />
+      </DeferredSection>
 
       {/* Practice Areas Grid */}
-      <PracticeAreasGrid areas={content.practiceAreas} />
+      <DeferredSection intrinsicBlockSize={900}>
+        <PracticeAreasGrid areas={content.practiceAreas} />
+      </DeferredSection>
 
       {/* Awards CTA Section */}
-      <AwardsSection content={content.awardsCTA} />
+      <DeferredSection intrinsicBlockSize={480}>
+        <AwardsSection content={content.awardsCTA} />
+      </DeferredSection>
 
       {/* Attorney Info Section */}
-      <AttorneyInfoSection content={content.attorneyInfo} />
+      <DeferredSection intrinsicBlockSize={1100}>
+        <AttorneyInfoSection content={content.attorneyInfo} />
+      </DeferredSection>
 
       {/* FAQ Section */}
-      <HomeFaqSection content={content.faq} />
+      <DeferredSection intrinsicBlockSize={700}>
+        <HomeFaqSection content={content.faq} />
+      </DeferredSection>
 
       {/* Contact Us Section */}
-      <ContactUsSection content={content.contact} />
+      <DeferredSection intrinsicBlockSize={850}>
+        <Suspense fallback={<div className="min-h-[850px]" />}>
+          <ContactUsSection content={content.contact} />
+        </Suspense>
+      </DeferredSection>
     </Layout>
   );
 }

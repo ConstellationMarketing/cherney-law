@@ -34,6 +34,8 @@ export default function AttorneyInfoSection({
                   resize: "cover",
                 })}
                 alt={content.imageAlt || ""}
+                width={600}
+                height={600}
                 className="w-full h-full object-cover"
                 loading="lazy"
               />
@@ -74,7 +76,9 @@ export default function AttorneyInfoSection({
                         resize: "contain",
                       })}
                       alt={content.stayInformedImageAlt || ""}
-                      className="w-[280px] md:w-[340px] h-auto"
+                      width={420}
+                      height={236}
+                      className="aspect-[420/236] w-[280px] object-contain md:w-[340px]"
                       loading="lazy"
                     />
                   </div>
@@ -111,6 +115,8 @@ export default function AttorneyInfoSection({
                           resize: "contain",
                         })}
                         alt={featuredLogos[0].alt || "Featured logo"}
+                        width={320}
+                        height={56}
                         className="max-h-[56px] w-full object-contain"
                         loading="lazy"
                       />
@@ -130,6 +136,8 @@ export default function AttorneyInfoSection({
                             resize: "contain",
                           })}
                           alt={logo.alt || "Featured logo"}
+                          width={320}
+                          height={56}
                           className="max-h-[56px] w-full object-contain"
                           loading="lazy"
                         />
