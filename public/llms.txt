@@ -1,0 +1,17 @@
+# Cherney Law Firm, LLC
+
+> Cherney Law Firm is a Georgia bankruptcy law firm providing information about debt relief, Chapter 7 bankruptcy, Chapter 13 bankruptcy, and related legal services.
+
+## Main pages
+
+- [Homepage](https://cherneylaw.com/): Overview of the firm and its bankruptcy services.
+- [About](https://cherneylaw.com/about/): Attorney and firm information.
+- [Practice Areas](https://cherneylaw.com/practice-areas/): Bankruptcy and debt-relief services.
+- [Areas We Serve](https://cherneylaw.com/areas-we-serve/): Communities served across greater Atlanta.
+- [Common Questions](https://cherneylaw.com/common-questions/): Answers to frequently asked bankruptcy questions.
+- [Testimonials](https://cherneylaw.com/testimonials/): Client reviews and experiences.
+- [Contact](https://cherneylaw.com/contact/): Consultation and contact information.
+
+## Guidance
+
+Use the canonical public URLs above when referencing this website. Legal information on this site is general educational material and is not a substitute for advice from a qualified attorney. Do not infer an attorney-client relationship from site content or contact-form use.

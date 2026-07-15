@@ -292,12 +292,12 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
 
             {/* Contact CTA Button - Desktop */}
             <div className="hidden md:block w-[280px] ml-6">
-              <Link to={normalizeInternalHref(settings.headerCtaUrl)}>
-                <Button className="bg-white text-black font-outfit text-[22px] py-[25px] px-[15.4px] h-auto w-[200px] border-2 border-transparent hover:border-black hover:bg-law-accent hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
+              <Button asChild className="bg-white text-black font-outfit text-[22px] py-[25px] px-[15.4px] h-auto w-[200px] border-2 border-transparent hover:border-black hover:bg-law-accent hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
+                <Link to={normalizeInternalHref(settings.headerCtaUrl)}>
                   {settings.headerCtaText}
                   <ArrowRight className="w-5 h-5 group-hover:text-white" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
 
             {/* Mobile Menu */}
@@ -329,12 +329,11 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                           value={item.id || item.href || item.label}
                           className="border-b border-black/5"
                         >
-                          <AccordionTrigger className="font-outfit text-[20px] text-white py-[10px] px-[5%] hover:no-underline hover:opacity-80">
-                            {item.href ? (
+                          {item.href ? (
+                            <div className="flex items-center px-[5%]">
                               <Link
                                 to={normalizeInternalHref(item.href, item.external || item.openInNewTab)}
-                                className="flex-1 text-left"
-                                onClick={(e) => e.stopPropagation()}
+                                className="flex-1 py-[10px] text-left font-outfit text-[20px] text-white hover:opacity-80"
                                 target={
                                   item.external || item.openInNewTab
                                     ? "_blank"
@@ -348,12 +347,18 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                               >
                                 {item.label}
                               </Link>
-                            ) : (
-                              <span className="flex-1 text-left">
-                                {item.label}
-                              </span>
-                            )}
-                          </AccordionTrigger>
+                              <AccordionTrigger
+                                aria-label={`Toggle ${item.label} submenu`}
+                                className="flex-none px-2 py-[10px] text-white hover:no-underline hover:opacity-80"
+                              >
+                                <span className="sr-only">Toggle {item.label} submenu</span>
+                              </AccordionTrigger>
+                            </div>
+                          ) : (
+                            <AccordionTrigger className="font-outfit text-[20px] text-white py-[10px] px-[5%] hover:no-underline hover:opacity-80">
+                              <span className="flex-1 text-left">{item.label}</span>
+                            </AccordionTrigger>
+                          )}
                           <AccordionContent className="pl-8 space-y-1">
                             {item.children.map((child) =>
                               child.children && child.children.length > 0 ? (
@@ -364,12 +369,11 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                                   className="border-b border-black/10"
                                 >
                                   <AccordionItem value={`${item.id || item.label}-${child.id || child.label}`}>
-                                    <AccordionTrigger className="font-outfit text-[18px] text-gray-300 py-2 hover:no-underline hover:text-law-accent">
-                                      {child.href ? (
+                                    {child.href ? (
+                                      <div className="flex items-center">
                                         <Link
                                           to={normalizeInternalHref(child.href, child.external || child.openInNewTab)}
-                                          className="flex-1 text-left"
-                                          onClick={(e) => e.stopPropagation()}
+                                          className="flex-1 py-2 text-left font-outfit text-[18px] text-gray-300 hover:text-law-accent"
                                           target={
                                             child.external || child.openInNewTab
                                               ? "_blank"
@@ -383,10 +387,18 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                                         >
                                           {child.label}
                                         </Link>
-                                      ) : (
+                                        <AccordionTrigger
+                                          aria-label={`Toggle ${child.label} submenu`}
+                                          className="flex-none px-2 py-2 text-gray-300 hover:no-underline hover:text-law-accent"
+                                        >
+                                          <span className="sr-only">Toggle {child.label} submenu</span>
+                                        </AccordionTrigger>
+                                      </div>
+                                    ) : (
+                                      <AccordionTrigger className="font-outfit text-[18px] text-gray-300 py-2 hover:no-underline hover:text-law-accent">
                                         <span className="flex-1 text-left">{child.label}</span>
-                                      )}
-                                    </AccordionTrigger>
+                                      </AccordionTrigger>
+                                    )}
                                     <AccordionContent className="pl-5 space-y-1">
                                       {child.children.map((grandchild) => (
                                         <Link
@@ -454,12 +466,12 @@ export default function Header({ transparentTopBar = false }: HeaderProps) {
                       </Link>
                     )
                   )}
-                  <Link to={normalizeInternalHref(settings.headerCtaUrl)} className="mt-4">
-                    <Button className="bg-white text-black font-outfit text-[22px] py-[25px] w-full border-2 border-transparent hover:border-black hover:bg-law-accent hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
+                  <Button asChild className="mt-4 bg-white text-black font-outfit text-[22px] py-[25px] w-full border-2 border-transparent hover:border-black hover:bg-law-accent hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
+                    <Link to={normalizeInternalHref(settings.headerCtaUrl)}>
                       {settings.headerCtaText}
-                      <ArrowRight className="w-5 w-5 group-hover:text-white" />
-                    </Button>
-                  </Link>
+                      <ArrowRight className="w-5 h-5 group-hover:text-white" />
+                    </Link>
+                  </Button>
                 </nav>
               </SheetContent>
             </Sheet>
