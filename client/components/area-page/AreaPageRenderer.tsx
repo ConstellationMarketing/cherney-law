@@ -53,9 +53,13 @@ function BodyContent({ html }: { html: string }) {
 
 interface AreaPageRendererProps {
   content: AreaPageContent;
+  lastUpdated?: string;
 }
 
-export default function AreaPageRenderer({ content }: AreaPageRendererProps) {
+export default function AreaPageRenderer({
+  content,
+  lastUpdated,
+}: AreaPageRendererProps) {
   const { phoneDisplay } = useGlobalPhone();
   const { locationsSection: hubLocations, cta: hubCta } = useHubPageLocations();
   // Use hub page data as source of truth; fall back to page's own data
@@ -65,7 +69,12 @@ export default function AreaPageRenderer({ content }: AreaPageRendererProps) {
   return (
     <>
       {/* Hero */}
-      <AboutHero content={content.hero} phoneDisplay={phoneDisplay} phoneLabel="Call us" />
+      <AboutHero
+        content={content.hero}
+        phoneDisplay={phoneDisplay}
+        phoneLabel="Call us"
+        lastUpdated={lastUpdated}
+      />
 
       {/* Main Content Section */}
       <div className="bg-white pt-[30px] md:pt-[54px] pb-[30px] md:pb-[54px]">

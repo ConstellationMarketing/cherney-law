@@ -2,13 +2,19 @@ import type { PracticeAreaDetailHero as HeroContent } from "@site/lib/cms/practi
 import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
 import DynamicHeading from "@site/components/shared/DynamicHeading";
 import { Phone } from "lucide-react";
+import LastUpdated from "@site/components/shared/LastUpdated";
 
 interface Props {
   content: HeroContent;
   headingTag?: string;
+  lastUpdated?: string;
 }
 
-export default function PracticeAreaDetailHero({ content, headingTag }: Props) {
+export default function PracticeAreaDetailHero({
+  content,
+  headingTag,
+  lastUpdated,
+}: Props) {
   const { phoneDisplay, phoneLabel } = useGlobalPhone();
 
   return (
@@ -43,6 +49,10 @@ export default function PracticeAreaDetailHero({ content, headingTag }: Props) {
                 {content.description}
               </p>
             )}
+            <LastUpdated
+              value={lastUpdated}
+              className="mt-4 font-outfit text-[14px] md:text-[16px] font-medium text-black/70"
+            />
           </div>
 
           {/* Right — Phone Button */}

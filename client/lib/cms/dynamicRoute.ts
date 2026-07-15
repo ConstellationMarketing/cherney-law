@@ -14,6 +14,7 @@ export interface CmsPage {
   og_image: string | null;
   noindex: boolean;
   status: string;
+  updated_at: string;
 }
 
 export type StructuredTemplateType =

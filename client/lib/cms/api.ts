@@ -4,7 +4,7 @@ export const PAGE_SEO_SELECT =
   "content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,url_path,title";
 
 export const CMS_PAGE_SELECT =
-  "id,title,url_path,page_type,content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,status";
+  "id,title,url_path,page_type,content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,status,updated_at";
 
 export const PRACTICE_DETAIL_SELECT =
   "id,title,url_path,page_type,content,meta_title,meta_description,canonical_url,og_title,og_description,og_image,noindex,schema_type,schema_data";

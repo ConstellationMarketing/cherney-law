@@ -35,6 +35,12 @@ const PracticeAreaDetailRenderer = lazy(
   () => import("@site/components/practice-detail/PracticeAreaDetailRenderer"),
 );
 
+const LAST_UPDATED_PAGE_PATHS = new Set([
+  "/areas-we-serve/kennesaw-bankruptcy-lawyer/",
+  "/bankruptcy-areas-of-specialty/chapter-13-bankruptcy/",
+  "/understanding-bankruptcy/home-foreclosure/",
+]);
+
 function PageFallback() {
   return (
     <Layout>
@@ -189,6 +195,9 @@ export default function DynamicCmsPage() {
     page.page_type === "practice_detail" ||
     (firstBlock?.type === "hero" &&
       ((firstBlock as any).variant === "dark" || firstBlock.backgroundImage));
+  const lastUpdated = LAST_UPDATED_PAGE_PATHS.has(normalizeCmsPath(pathname))
+    ? page.updated_at
+    : undefined;
 
   return (
     <Layout
@@ -203,10 +212,14 @@ export default function DynamicCmsPage() {
       <Seo {...seo} pageContent={page.content} />
       <Suspense fallback={<div className="min-h-[60vh]" />}>
         {page.page_type === "area" ? (
-          <AreaPageRenderer content={page.content as AreaPageContent} />
+          <AreaPageRenderer
+            content={page.content as AreaPageContent}
+            lastUpdated={lastUpdated}
+          />
         ) : page.page_type === "practice_detail" ? (
           <PracticeAreaDetailRenderer
             content={page.content as unknown as PracticeAreaDetailPageContent}
+            lastUpdated={lastUpdated}
           />
         ) : (
           <BlockRenderer content={page.content as ContentBlock[]} />

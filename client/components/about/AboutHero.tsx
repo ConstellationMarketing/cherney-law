@@ -1,13 +1,20 @@
 import type { AboutHeroContent } from "@site/lib/cms/aboutPageTypes";
 import { Phone } from "lucide-react";
+import LastUpdated from "@site/components/shared/LastUpdated";
 
 interface AboutHeroProps {
   content: AboutHeroContent;
   phoneDisplay: string;
   phoneLabel: string;
+  lastUpdated?: string;
 }
 
-export default function AboutHero({ content, phoneDisplay, phoneLabel }: AboutHeroProps) {
+export default function AboutHero({
+  content,
+  phoneDisplay,
+  phoneLabel,
+  lastUpdated,
+}: AboutHeroProps) {
   return (
     <div className="bg-law-accent pt-[30px] md:pt-[54px] pb-[30px] md:pb-[54px]">
       <div className="max-w-[2560px] mx-auto w-[95%] md:w-[90%]">
@@ -20,6 +27,10 @@ export default function AboutHero({ content, phoneDisplay, phoneLabel }: AboutHe
             <p className="font-playfair text-[clamp(2.5rem,7vw,68.8px)] font-light leading-[1.2] text-black max-w-[900px]">
               {content.tagline}
             </p>
+            <LastUpdated
+              value={lastUpdated}
+              className="mt-4 font-outfit text-[14px] md:text-[16px] font-medium text-black/70"
+            />
           </div>
 
           {/* Right — Phone Button */}

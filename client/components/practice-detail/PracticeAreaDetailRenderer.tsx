@@ -23,9 +23,13 @@ function deepMerge(defaults: any, cms: any): any {
 
 interface Props {
   content: PracticeAreaDetailPageContent;
+  lastUpdated?: string;
 }
 
-export default function PracticeAreaDetailRenderer({ content: rawContent }: Props) {
+export default function PracticeAreaDetailRenderer({
+  content: rawContent,
+  lastUpdated,
+}: Props) {
   const content = deepMerge(defaultPracticeAreaDetailContent, rawContent);
 
   return (
@@ -33,6 +37,7 @@ export default function PracticeAreaDetailRenderer({ content: rawContent }: Prop
       <PracticeAreaDetailHero
         content={content.hero}
         headingTag={content.headingTags?.hero}
+        lastUpdated={lastUpdated}
       />
       <PracticeAreaDetailSocialProof content={content.socialProof} />
       {content.contentSections.map((section: any, i: number) => (
