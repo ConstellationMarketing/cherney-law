@@ -25,7 +25,7 @@ export default function PracticeAreasSection({
                 </HeadingTag>
               );
             })()}
-            <p className="font-playfair text-[32px] md:text-[48px] lg:text-[54px] leading-tight md:leading-[54px] text-white pb-[10px]">
+            <p className="font-playfair text-[32px] md:text-[48px] lg:text-[54px] leading-tight md:leading-[54px] text-black pb-[10px]">
               {heading}
             </p>
           </div>
