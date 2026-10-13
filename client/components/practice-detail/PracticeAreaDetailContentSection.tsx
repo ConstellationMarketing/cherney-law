@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { PracticeAreaContentSectionItem } from "@site/lib/cms/practiceAreaDetailPageTypes";
 import { useGlobalPhone } from "@site/contexts/SiteSettingsContext";
 import { Phone, Calendar } from "lucide-react";
@@ -7,6 +8,8 @@ import { Link } from "react-router-dom";
 interface Props {
   section: PracticeAreaContentSectionItem;
   index: number;
+  // Rendered at the top of the right column (e.g. an office practice areas widget)
+  sidebar?: ReactNode;
 }
 
 function sanitizeSectionBody(html: string): string {
@@ -16,7 +19,7 @@ function sanitizeSectionBody(html: string): string {
     .trim();
 }
 
-export default function PracticeAreaDetailContentSection({ section, index }: Props) {
+export default function PracticeAreaDetailContentSection({ section, index, sidebar }: Props) {
   const { phoneDisplay, phoneLabel, phoneNumber } = useGlobalPhone();
   const isEven = index % 2 === 0;
   const bgClass = isEven ? "bg-white" : "bg-gray-50";
@@ -24,7 +27,7 @@ export default function PracticeAreaDetailContentSection({ section, index }: Pro
 
   const hasImage = !!section.image;
   const hasCTAs = section.showCTAs !== false;
-  const hasRightColumn = hasImage;
+  const hasRightColumn = hasImage || !!sidebar;
   const sanitizedBody = sanitizeSectionBody(section.body || "");
 
   const ctaContent = hasCTAs ? (
@@ -64,22 +67,26 @@ export default function PracticeAreaDetailContentSection({ section, index }: Pro
             />
           </div>
 
-          {/* Image + CTA column */}
+          {/* Sidebar + Image + CTA column */}
           {hasRightColumn && (
             <div className="lg:w-[36%] space-y-6">
-              <img
-                src={section.image}
-                alt={section.imageAlt || ""}
-                className="w-full h-auto object-cover"
-                loading="lazy"
-              />
+              {sidebar}
+
+              {hasImage && (
+                <img
+                  src={section.image}
+                  alt={section.imageAlt || ""}
+                  className="w-full h-auto object-cover"
+                  loading="lazy"
+                />
+              )}
 
               {ctaContent}
             </div>
           )}
         </div>
 
-        {!hasImage && hasCTAs && (
+        {!hasRightColumn && hasCTAs && (
           <div className="mt-8 flex justify-center">
             <div className="w-full max-w-[420px]">
               {ctaContent}
