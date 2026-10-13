@@ -4,6 +4,8 @@ import PracticeAreaDetailHero from "./PracticeAreaDetailHero";
 import PracticeAreaDetailSocialProof from "./PracticeAreaDetailSocialProof";
 import PracticeAreaDetailContentSection from "./PracticeAreaDetailContentSection";
 import PracticeAreaDetailFaq from "./PracticeAreaDetailFaq";
+import PracticeAreasWidget from "./PracticeAreasWidget";
+import { getPracticeAreaWidgetForPath } from "@site/lib/cms/officePracticeAreaWidgets";
 
 function deepMerge(defaults: any, cms: any): any {
   if (!cms || typeof cms !== "object") return defaults;
@@ -24,13 +26,16 @@ function deepMerge(defaults: any, cms: any): any {
 interface Props {
   content: PracticeAreaDetailPageContent;
   lastUpdated?: string;
+  pathname?: string;
 }
 
 export default function PracticeAreaDetailRenderer({
   content: rawContent,
   lastUpdated,
+  pathname,
 }: Props) {
   const content = deepMerge(defaultPracticeAreaDetailContent, rawContent);
+  const widget = getPracticeAreaWidgetForPath(pathname);
 
   return (
     <>
@@ -41,7 +46,12 @@ export default function PracticeAreaDetailRenderer({
       />
       <PracticeAreaDetailSocialProof content={content.socialProof} />
       {content.contentSections.map((section: any, i: number) => (
-        <PracticeAreaDetailContentSection key={i} section={section} index={i} />
+        <PracticeAreaDetailContentSection
+          key={i}
+          section={section}
+          index={i}
+          sidebar={i === 0 && widget ? <PracticeAreasWidget widget={widget} /> : undefined}
+        />
       ))}
       <PracticeAreaDetailFaq
         content={content.faq}

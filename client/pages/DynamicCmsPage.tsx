@@ -220,6 +220,7 @@ export default function DynamicCmsPage() {
           <PracticeAreaDetailRenderer
             content={page.content as unknown as PracticeAreaDetailPageContent}
             lastUpdated={lastUpdated}
+            pathname={pathname}
           />
         ) : (
           <BlockRenderer content={page.content as ContentBlock[]} />
