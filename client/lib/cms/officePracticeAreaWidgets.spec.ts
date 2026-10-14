@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getActiveGroupIndex,
   getPracticeAreaWidgetForPath,
   mariettaPracticeAreaWidget,
 } from "./officePracticeAreaWidgets";
@@ -22,13 +23,11 @@ describe("mariettaPracticeAreaWidget", () => {
     expect(
       mariettaPracticeAreaWidget.groups.map((group) => ({
         label: group.label,
-        href: group.href,
         items: group.items.map((item) => [item.label, item.href]),
       })),
     ).toEqual([
       {
         label: "Bankruptcy",
-        href: undefined,
         items: [
           ["Chapter 7 Bankruptcy", "/marietta-chapter-7-bankruptcy-attorney/"],
           ["Chapter 13 Bankruptcy", "/marietta-chapter-13-bankruptcy-attorney/"],
@@ -37,7 +36,6 @@ describe("mariettaPracticeAreaWidget", () => {
       },
       {
         label: "Debt Protection",
-        href: undefined,
         items: [
           ["Foreclosure Defense", "/marietta-foreclosure-attorney/"],
           ["Wage Garnishment", "/wage-garnishment-attorney-marietta/"],
@@ -45,8 +43,8 @@ describe("mariettaPracticeAreaWidget", () => {
       },
       {
         label: "Debt Relief",
-        href: "/marietta-debt-relief-lawyer/",
         items: [
+          ["Debt Relief", "/marietta-debt-relief-lawyer/"],
           ["Debt Settlement", "/marietta-debt-settlement-attorney/"],
           ["Loan Modification", "/loan-modification-attorney-marietta/"],
           ["Student Loan Debt", "/marietta-student-loan-lawyer/"],
@@ -76,5 +74,22 @@ describe("getPracticeAreaWidgetForPath", () => {
     expect(getPracticeAreaWidgetForPath("/areas-we-serve/marietta-bankruptcy-lawyer/")).toBeNull();
     expect(getPracticeAreaWidgetForPath("/")).toBeNull();
     expect(getPracticeAreaWidgetForPath(undefined)).toBeNull();
+  });
+});
+
+describe("getActiveGroupIndex", () => {
+  it.each([
+    ["/marietta-chapter-7-bankruptcy-attorney/", 0],
+    ["/business-bankruptcy-lawyer-marietta/", 0],
+    ["/marietta-foreclosure-attorney/", 1],
+    ["/wage-garnishment-attorney-marietta/", 1],
+    ["/marietta-debt-relief-lawyer/", 2],
+    ["/credit-report-attorney-marietta", 2],
+  ])("opens the group containing %s", (path, expected) => {
+    expect(getActiveGroupIndex(mariettaPracticeAreaWidget, path)).toBe(expected);
+  });
+
+  it("falls back to the first group when the page is not in any group", () => {
+    expect(getActiveGroupIndex(mariettaPracticeAreaWidget, "/contact/")).toBe(0);
   });
 });

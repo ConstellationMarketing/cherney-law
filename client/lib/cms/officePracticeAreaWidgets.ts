@@ -7,10 +7,9 @@ export interface PracticeAreaWidgetLink {
   href: string;
 }
 
+// Each group is an expandable section; its items are the links shown when it opens
 export interface PracticeAreaWidgetGroup {
   label: string;
-  // Optional link for the group heading itself
-  href?: string;
   items: PracticeAreaWidgetLink[];
 }
 
@@ -41,8 +40,8 @@ export const mariettaPracticeAreaWidget: PracticeAreaWidget = {
     },
     {
       label: "Debt Relief",
-      href: "/marietta-debt-relief-lawyer/",
       items: [
+        { label: "Debt Relief", href: "/marietta-debt-relief-lawyer/" },
         { label: "Debt Settlement", href: "/marietta-debt-settlement-attorney/" },
         { label: "Loan Modification", href: "/loan-modification-attorney-marietta/" },
         { label: "Student Loan Debt", href: "/marietta-student-loan-lawyer/" },
@@ -76,4 +75,16 @@ export function getPracticeAreaWidgetForPath(
       widget.pagePaths.includes(normalizedPath),
     ) ?? null
   );
+}
+
+// Index of the group containing the current page, so it starts open
+export function getActiveGroupIndex(
+  widget: PracticeAreaWidget,
+  pathname: string,
+): number {
+  const normalizedPath = normalizeCmsPath(pathname.toLowerCase());
+  const index = widget.groups.findIndex((group) =>
+    group.items.some((item) => item.href === normalizedPath),
+  );
+  return index === -1 ? 0 : index;
 }
