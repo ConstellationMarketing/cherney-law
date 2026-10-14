@@ -19,7 +19,7 @@ const MARIETTA_PAGES = [
 ];
 
 describe("mariettaPracticeAreaWidget", () => {
-  it("lists the tabbed practice area links from the widget spec", () => {
+  it("lists the grouped practice area links from the widget spec", () => {
     expect(
       mariettaPracticeAreaWidget.groups.map((group) => ({
         label: group.label,
@@ -85,11 +85,11 @@ describe("getActiveGroupIndex", () => {
     ["/wage-garnishment-attorney-marietta/", 1],
     ["/marietta-debt-relief-lawyer/", 2],
     ["/credit-report-attorney-marietta", 2],
-  ])("opens the tab containing %s", (path, expected) => {
+  ])("opens the group containing %s", (path, expected) => {
     expect(getActiveGroupIndex(mariettaPracticeAreaWidget, path)).toBe(expected);
   });
 
-  it("falls back to the first tab when the page is not in any tab", () => {
+  it("falls back to the first group when the page is not in any group", () => {
     expect(getActiveGroupIndex(mariettaPracticeAreaWidget, "/contact/")).toBe(0);
   });
 });

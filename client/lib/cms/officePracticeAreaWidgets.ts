@@ -7,7 +7,7 @@ export interface PracticeAreaWidgetLink {
   href: string;
 }
 
-// Each group is shown as a tab; its items are the links in that tab's panel
+// Each group is an expandable section; its items are the links shown when it opens
 export interface PracticeAreaWidgetGroup {
   label: string;
   items: PracticeAreaWidgetLink[];
@@ -77,7 +77,7 @@ export function getPracticeAreaWidgetForPath(
   );
 }
 
-// Index of the tab containing the current page, so it opens by default
+// Index of the group containing the current page, so it starts open
 export function getActiveGroupIndex(
   widget: PracticeAreaWidget,
   pathname: string,
