@@ -50,7 +50,7 @@ export default function PracticeAreaDetailRenderer({
           key={i}
           section={section}
           index={i}
-          sidebar={i === 0 && widget ? <PracticeAreasWidget widget={widget} /> : undefined}
+          sidebar={i === 0 && widget ? <PracticeAreasWidget key={pathname} widget={widget} /> : undefined}
         />
       ))}
       <PracticeAreaDetailFaq
